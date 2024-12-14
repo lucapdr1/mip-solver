@@ -3,7 +3,7 @@
 from core.optimization_experiment import OptimizationExperiment
 
 if __name__ == "__main__":
-    file_path = "input/example3.mps"  # Replace with your MPS file path
+    file_path = "input/example-min.mps"  # Replace with your MPS file path
     
     try:
         experiment = OptimizationExperiment(file_path)
