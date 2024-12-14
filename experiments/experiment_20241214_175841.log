@@ -1,0 +1,17 @@
+2024-12-14 17:58:42,047 - INFO: Successfully loaded problem from input/example3.mps
+2024-12-14 17:58:42,048 - INFO: Problem Details:
+2024-12-14 17:58:42,049 - INFO: - Variables: 2025
+2024-12-14 17:58:42,050 - INFO: - Constraints: 230
+2024-12-14 17:58:42,051 - INFO: - Objective Sense: Minimize
+2024-12-14 17:58:42,053 - INFO: Starting Optimization Experiment
+2024-12-14 17:58:42,053 - INFO: Solving Original Problem
+2024-12-14 17:59:19,643 - INFO: Solve Status: Problem has no solution
+2024-12-14 17:59:19,644 - INFO: Creating Permuted Problem
+2024-12-14 17:59:19,656 - INFO: Creating permuted problem:
+2024-12-14 17:59:19,658 - INFO: Permutation: [1706  731 1493 ... 1131 1957 1902]
+2024-12-14 17:59:19,659 - INFO: Solving Permuted Problem
+2024-12-14 17:59:55,565 - INFO: Solve Status: Problem has no solution
+2024-12-14 17:59:55,566 - INFO: Comparing Results
+2024-12-14 17:59:55,568 - INFO: Original Objective: None
+2024-12-14 17:59:55,569 - INFO: Permuted Objective: None
+2024-12-14 17:59:55,570 - INFO: Experiment Completed
