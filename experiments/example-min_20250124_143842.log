@@ -1,0 +1,70 @@
+2025-01-24 14:38:43,020 - INFO: Successfully loaded problem from input/example-min.mps
+2025-01-24 14:38:43,021 - INFO: Problem Details:
+2025-01-24 14:38:43,023 - INFO: - Variables: 18
+2025-01-24 14:38:43,024 - INFO: - Constraints: 18
+2025-01-24 14:38:43,025 - INFO: - Objective Sense: Minimize
+2025-01-24 14:38:43,025 - INFO: Starting Optimization Experiment
+2025-01-24 14:38:43,027 - INFO: Solving Original Problem
+2025-01-24 14:38:43,082 - INFO: Solve Status: Optimal solution found
+2025-01-24 14:38:43,083 - INFO: Solve Time: 0.0530 seconds
+2025-01-24 14:38:43,083 - INFO: Objective Value: 1201500.0
+2025-01-24 14:38:43,084 - INFO: Original Problem Results:
+2025-01-24 14:38:43,084 - INFO: - Objective Value: 1201500.0
+2025-01-24 14:38:43,085 - INFO: - Solve Time: 0.0530011654 seconds
+2025-01-24 14:38:43,085 - INFO: Creating Permuted Problem 1/4
+2025-01-24 14:38:43,089 - INFO: Creating permuted problem:
+2025-01-24 14:38:43,090 - INFO: Permutation: [16 15  7  3 11 13  6  5  9 10  0 14  1 12  8 17  2  4]
+2025-01-24 14:38:43,101 - INFO: Permuted problem created successfully.
+2025-01-24 14:38:43,103 - INFO: Solving Permuted Problem 1/4
+2025-01-24 14:38:43,116 - INFO: Solve Status: Optimal solution found
+2025-01-24 14:38:43,117 - INFO: Solve Time: 0.0124 seconds
+2025-01-24 14:38:43,117 - INFO: Objective Value: 1201500.0
+2025-01-24 14:38:43,118 - INFO: Permuted Problem 1 Results:
+2025-01-24 14:38:43,119 - INFO: - Objective Value: 1201500.0
+2025-01-24 14:38:43,120 - INFO: - Solve Time: 0.0123510361 seconds
+2025-01-24 14:38:43,120 - INFO: - Absolute Objective Difference: 0.0
+2025-01-24 14:38:43,121 - INFO: - Relative Objective Difference: 0.0000%
+2025-01-24 14:38:43,121 - INFO: - Absolute Time Difference: 0.0406501293 seconds
+2025-01-24 14:38:43,122 - INFO: Creating Permuted Problem 2/4
+2025-01-24 14:38:43,124 - INFO: Creating permuted problem:
+2025-01-24 14:38:43,126 - INFO: Permutation: [ 5 16 10  0  3  1  6  2  8 15  4 13 12 14 17  7  9 11]
+2025-01-24 14:38:43,130 - INFO: Permuted problem created successfully.
+2025-01-24 14:38:43,131 - INFO: Solving Permuted Problem 2/4
+2025-01-24 14:38:43,142 - INFO: Solve Status: Optimal solution found
+2025-01-24 14:38:43,143 - INFO: Solve Time: 0.0100 seconds
+2025-01-24 14:38:43,144 - INFO: Objective Value: 1201500.0
+2025-01-24 14:38:43,144 - INFO: Permuted Problem 2 Results:
+2025-01-24 14:38:43,145 - INFO: - Objective Value: 1201500.0
+2025-01-24 14:38:43,146 - INFO: - Solve Time: 0.0100317001 seconds
+2025-01-24 14:38:43,146 - INFO: - Absolute Objective Difference: 0.0
+2025-01-24 14:38:43,147 - INFO: - Relative Objective Difference: 0.0000%
+2025-01-24 14:38:43,147 - INFO: - Absolute Time Difference: 0.0429694653 seconds
+2025-01-24 14:38:43,148 - INFO: Creating Permuted Problem 3/4
+2025-01-24 14:38:43,152 - INFO: Creating permuted problem:
+2025-01-24 14:38:43,154 - INFO: Permutation: [ 7  5 15  8  4  1  9 17 12  3 10  6 14 13  0 11 16  2]
+2025-01-24 14:38:43,158 - INFO: Permuted problem created successfully.
+2025-01-24 14:38:43,159 - INFO: Solving Permuted Problem 3/4
+2025-01-24 14:38:43,169 - INFO: Solve Status: Optimal solution found
+2025-01-24 14:38:43,169 - INFO: Solve Time: 0.0090 seconds
+2025-01-24 14:38:43,170 - INFO: Objective Value: 1201500.0
+2025-01-24 14:38:43,170 - INFO: Permuted Problem 3 Results:
+2025-01-24 14:38:43,170 - INFO: - Objective Value: 1201500.0
+2025-01-24 14:38:43,171 - INFO: - Solve Time: 0.0089991093 seconds
+2025-01-24 14:38:43,171 - INFO: - Absolute Objective Difference: 0.0
+2025-01-24 14:38:43,171 - INFO: - Relative Objective Difference: 0.0000%
+2025-01-24 14:38:43,172 - INFO: - Absolute Time Difference: 0.0440020561 seconds
+2025-01-24 14:38:43,172 - INFO: Creating Permuted Problem 4/4
+2025-01-24 14:38:43,174 - INFO: Creating permuted problem:
+2025-01-24 14:38:43,176 - INFO: Permutation: [13 10  8 17  0 14  1 16  7  5  9  2  4  6 15 11  3 12]
+2025-01-24 14:38:43,179 - INFO: Permuted problem created successfully.
+2025-01-24 14:38:43,181 - INFO: Solving Permuted Problem 4/4
+2025-01-24 14:38:43,190 - INFO: Solve Status: Optimal solution found
+2025-01-24 14:38:43,190 - INFO: Solve Time: 0.0090 seconds
+2025-01-24 14:38:43,191 - INFO: Objective Value: 1201500.0
+2025-01-24 14:38:43,192 - INFO: Permuted Problem 4 Results:
+2025-01-24 14:38:43,192 - INFO: - Objective Value: 1201500.0
+2025-01-24 14:38:43,193 - INFO: - Solve Time: 0.0089657307 seconds
+2025-01-24 14:38:43,193 - INFO: - Absolute Objective Difference: 0.0
+2025-01-24 14:38:43,194 - INFO: - Relative Objective Difference: 0.0000%
+2025-01-24 14:38:43,195 - INFO: - Absolute Time Difference: 0.0440354347 seconds
+2025-01-24 14:38:43,195 - INFO: Experiment Completed

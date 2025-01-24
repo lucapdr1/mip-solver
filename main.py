@@ -7,6 +7,6 @@ if __name__ == "__main__":
     
     try:
         experiment = OptimizationExperiment(file_path)
-        results = experiment.run_experiment()
+        results = experiment.run_experiment(4)
     except Exception as e:
         print(f"Experiment failed: {e}")

@@ -87,45 +87,57 @@ class OptimizationExperiment:
             self.logger.error(f"Gurobi Error: {e}")
             raise
 
-    def run_experiment(self):
+    def run_experiment(self, N=1):
         """
         Run the complete optimization experiment.
-        Compare original and permuted problem solutions.
+        Compare the original problem solution with N permuted problem solutions.
+
+        Args:
+            N (int): Number of permutations to create and solve.
         """
         self.logger.info("Starting Optimization Experiment")
 
-        # Solve original problem
+        # Solve the original problem
         self.logger.info("Solving Original Problem")
         original_result = self.solve_problem(self.original_model)
 
-        # Create and solve permuted problem
-        self.logger.info("Creating Permuted Problem")
-        permuted_model = ProblemPermutator(self.file_path).create_permuted_problem()
+        # Log original problem details
+        self.logger.info("Original Problem Results:")
+        self.logger.info(f"- Objective Value: {original_result['objective_value']}")
+        self.logger.info(f"- Solve Time: {original_result['solve_time']:.10f} seconds")
 
-        self.logger.info("Solving Permuted Problem")
-        permuted_result = self.solve_problem(permuted_model)
+        # Initialize results for all permutations
+        permuted_results = []
 
-        # Compare results
-        self.logger.info("Comparing Results")
-        self.logger.info(f"Original Objective: {original_result['objective_value']}")
-        self.logger.info(f"Permuted Objective: {permuted_result['objective_value']}")
-        self.logger.info(f"Original Solve Time: {original_result['solve_time']:.10f} seconds")
-        self.logger.info(f"Permuted Solve Time: {permuted_result['solve_time']:.10f} seconds")
+        # Create and solve N permuted problems
+        for i in range(N):
+            self.logger.info(f"Creating Permuted Problem {i + 1}/{N}")
+            permuted_model = ProblemPermutator(self.file_path).create_permuted_problem()
 
-        if original_result['solve_status'] == GRB.OPTIMAL and permuted_result['solve_status'] == GRB.OPTIMAL:
-            objective_diff = abs(original_result['objective_value'] - permuted_result['objective_value'])
-            relative_diff = objective_diff / abs(original_result['objective_value']) * 100
-            time_diff = abs(original_result['solve_time'] - permuted_result['solve_time'])
+            self.logger.info(f"Solving Permuted Problem {i + 1}/{N}")
+            permuted_result = self.solve_problem(permuted_model)
+            permuted_results.append(permuted_result)
 
-            self.logger.info(f"Absolute Objective Difference: {objective_diff}")
-            self.logger.info(f"Relative Objective Difference: {relative_diff:.4f}%")
-            self.logger.info(f"Absolute Time Difference: {time_diff:.10f} seconds")
-        
+            # Log permuted problem results
+            self.logger.info(f"Permuted Problem {i + 1} Results:")
+            self.logger.info(f"- Objective Value: {permuted_result['objective_value']}")
+            self.logger.info(f"- Solve Time: {permuted_result['solve_time']:.10f} seconds")
+
+            # Compare original and permuted results if both are optimal
+            if original_result['solve_status'] == GRB.OPTIMAL and permuted_result['solve_status'] == GRB.OPTIMAL:
+                objective_diff = abs(original_result['objective_value'] - permuted_result['objective_value'])
+                relative_diff = objective_diff / abs(original_result['objective_value']) * 100
+                time_diff = abs(original_result['solve_time'] - permuted_result['solve_time'])
+
+                self.logger.info(f"- Absolute Objective Difference: {objective_diff}")
+                self.logger.info(f"- Relative Objective Difference: {relative_diff:.4f}%")
+                self.logger.info(f"- Absolute Time Difference: {time_diff:.10f} seconds")
+
         self.logger.info("Experiment Completed")
 
         return {
             'original_result': original_result,
-            'permuted_result': permuted_result,
+            'permuted_results': permuted_results,
         }
 
 
