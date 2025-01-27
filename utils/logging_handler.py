@@ -3,8 +3,7 @@
 import logging
 import os
 from datetime import datetime
-
-LOGGING_LEVEL = logging.DEBUG
+from utils.config import LOG_LEVEL
 
 class LoggingHandler:
     def __init__(self, log_dir='experiments', file_path=None):
@@ -32,7 +31,7 @@ class LoggingHandler:
         # Avoid duplicate handlers by checking if handlers are already set
         if not self.logger.hasHandlers():
             # Configure logging
-            self.logger.setLevel(LOGGING_LEVEL)
+            self.logger.setLevel(LOG_LEVEL)
             file_handler = logging.FileHandler(log_file)
             stream_handler = logging.StreamHandler()
             

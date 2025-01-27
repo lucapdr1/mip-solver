@@ -1,14 +1,11 @@
 from core.problem_permutator import ProblemPermutator
 import gurobipy as gp
-from gurobipy import GRB
 import numpy as np
-import hashlib
-import scipy.sparse as sp
-from networkx import Graph, community
+from utils.config import INPUT_PROBLEM
 
 # Test permutation integrity
-original = gp.read("input/dummy.mps")
-permutator = ProblemPermutator("input/dummy.mps")
+original = gp.read(INPUT_PROBLEM)
+permutator = ProblemPermutator(INPUT_PROBLEM)
 permuted = permutator.create_permuted_problem()
 
 # Should print True for valid permutations

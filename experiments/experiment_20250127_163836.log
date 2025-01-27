@@ -1,0 +1,328 @@
+2025-01-27 16:38:36,100 - INFO: Successfully loaded problem from input/dummy.mps
+2025-01-27 16:38:36,100 - INFO: Problem Details:
+2025-01-27 16:38:36,101 - INFO: - Variables: 4
+2025-01-27 16:38:36,101 - INFO: - Constraints: 3
+2025-01-27 16:38:36,101 - INFO: - Objective Sense: Minimize
+2025-01-27 16:38:36,105 - DEBUG: 
+Objective:
+    +4 x1 + +5 x2 + +2 x3 + +3 x4 (minimize)
+
+Variables:
+    x1 [0, inf] (Integer)
+    x2 [0, inf] (Integer)
+    x3 [0, inf] (Continuous)
+    x4 [0, inf] (Continuous)
+
+Constraints:
+    +2 x1 + +3 x3 <= 6
+    +1 x2 - 1 x4 <= 0
+    +1 x1 + +1 x2 + +1 x3 + +1 x4 <= 10
+2025-01-27 16:38:36,107 - INFO: Solving Original Problem
+2025-01-27 16:38:36,116 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,117 - INFO: Solve Time: 0.0080 seconds
+2025-01-27 16:38:36,117 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,118 - INFO: Original Problem Results:
+2025-01-27 16:38:36,118 - INFO: - Objective Value: 0.0
+2025-01-27 16:38:36,118 - INFO: - Solve Time: 0.0079977512 seconds
+2025-01-27 16:38:36,119 - DEBUG: Generating canonical form for the original model...
+2025-01-27 16:38:36,119 - DEBUG: Starting normalization...
+2025-01-27 16:38:36,121 - DEBUG: Normalization completed.
+2025-01-27 16:38:36,121 - DEBUG: Normalized matrix shape: (3, 4), nnz: 8
+2025-01-27 16:38:36,124 - DEBUG: 
+Objective:
+    +4.24264 x1 + +6.32456 x2 + +7.07107 x3 + +8.94427 x4 (minimize)
+
+Variables:
+    x1 [0, inf] (Continuous)
+    x2 [0, inf] (Continuous)
+    x3 [-0, inf] (Integer)
+    x4 [-0, inf] (Integer)
+
+Constraints:
+    +0.263117 x2 + +0.248069 x4 <= 1.6641
+    -0.5 x1 + +0.5 x3 <= 0
+    +0.353553 x1 + +0.158114 x2 + +0.353553 x3 + +0.223607 x4 <= 5
+2025-01-27 16:38:36,128 - INFO: Running iteration 1/4
+2025-01-27 16:38:36,128 - DEBUG: Starting new iteration...
+2025-01-27 16:38:36,129 - INFO: Creating Permuted Problem
+2025-01-27 16:38:36,131 - DEBUG: 
+Objective:
+    +5 x0 + +3 x1 + +2 x2 + +4 x3 (minimize)
+
+Variables:
+    x0 [-0, inf] (Integer)
+    x1 [0, inf] (Continuous)
+    x2 [0, inf] (Continuous)
+    x3 [-0, inf] (Integer)
+
+Constraints:
+    +3 x2 + +2 x3 <= 6
+    +1 x0 - 1 x1 <= 0
+    +1 x0 + +1 x1 + +1 x2 + +1 x3 <= 10
+2025-01-27 16:38:36,134 - INFO: Solving Permuted Problem
+2025-01-27 16:38:36,140 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,141 - INFO: Solve Time: 0.0060 seconds
+2025-01-27 16:38:36,142 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,142 - INFO: Permuted Problem Results:
+2025-01-27 16:38:36,143 - INFO: - Objective Value: 0.0
+2025-01-27 16:38:36,143 - INFO: - Solve Time: 0.0059854984 seconds
+2025-01-27 16:38:36,144 - DEBUG: Before canonicalization:
+2025-01-27 16:38:36,145 - DEBUG: Original matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,145 - DEBUG: Permuted matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,145 - DEBUG: Generating canonical form for permuted model...
+2025-01-27 16:38:36,146 - DEBUG: Starting normalization...
+2025-01-27 16:38:36,148 - DEBUG: Normalization completed.
+2025-01-27 16:38:36,148 - DEBUG: Normalized matrix shape: (3, 4), nnz: 8
+2025-01-27 16:38:36,150 - DEBUG: 
+Objective:
+    +4.24264 x1 + +6.32456 x2 + +7.07107 x3 + +8.94427 x4 (minimize)
+
+Variables:
+    x1 [0, inf] (Continuous)
+    x2 [-0, inf] (Continuous)
+    x3 [-0, inf] (Integer)
+    x4 [-0, inf] (Integer)
+
+Constraints:
+    +0.263117 x2 + +0.248069 x4 <= 1.6641
+    -0.5 x1 + +0.5 x3 <= 0
+    +0.353553 x1 + +0.158114 x2 + +0.353553 x3 + +0.223607 x4 <= 5
+2025-01-27 16:38:36,153 - INFO: Solving Canonical Form from Original Model
+2025-01-27 16:38:36,160 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,160 - INFO: Solve Time: 0.0070 seconds
+2025-01-27 16:38:36,161 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,161 - INFO: Solving Canonical Form from Permuted Model
+2025-01-27 16:38:36,168 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,168 - INFO: Solve Time: 0.0060 seconds
+2025-01-27 16:38:36,168 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,169 - DEBUG: Starting model validation...
+2025-01-27 16:38:36,169 - DEBUG: Original canonical matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,170 - DEBUG: Permuted canonical matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,170 - DEBUG: Starting detailed model comparison...
+2025-01-27 16:38:36,172 - DEBUG: Models are equivalent within tolerance
+2025-01-27 16:38:36,172 - DEBUG: Validation result: True
+2025-01-27 16:38:36,173 - INFO: Iteration 1 Results:
+2025-01-27 16:38:36,174 - INFO: - Models equivalent: True
+2025-01-27 16:38:36,175 - INFO: - Variable counts match: True
+2025-01-27 16:38:36,176 - INFO: - Constraint counts match: True
+2025-01-27 16:38:36,176 - INFO: - Original Objective Value: 0.0
+2025-01-27 16:38:36,177 - INFO: - Permuted Objective Value: 0.0
+2025-01-27 16:38:36,177 - INFO: - Canonical from Original Objective Value: 0.0
+2025-01-27 16:38:36,177 - INFO: - Canonical from Permuted Objective Value: 0.0
+2025-01-27 16:38:36,178 - INFO: - Original Solve Time: 0.0079977512 seconds
+2025-01-27 16:38:36,178 - INFO: - Permuted Solve Time: 0.0059854984 seconds
+2025-01-27 16:38:36,178 - INFO: - Canonical from Original Solve Time: 0.0070114136 seconds
+2025-01-27 16:38:36,179 - INFO: - Canonical from Permuted Solve Time: 0.0060098171 seconds
+2025-01-27 16:38:36,179 - INFO: Running iteration 2/4
+2025-01-27 16:38:36,179 - DEBUG: Starting new iteration...
+2025-01-27 16:38:36,180 - INFO: Creating Permuted Problem
+2025-01-27 16:38:36,181 - DEBUG: 
+Objective:
+    +5 x0 + +3 x1 + +2 x2 + +4 x3 (minimize)
+
+Variables:
+    x0 [-0, inf] (Integer)
+    x1 [0, inf] (Continuous)
+    x2 [0, inf] (Continuous)
+    x3 [-0, inf] (Integer)
+
+Constraints:
+    +3 x2 + +2 x3 <= 6
+    +1 x0 - 1 x1 <= 0
+    +1 x0 + +1 x1 + +1 x2 + +1 x3 <= 10
+2025-01-27 16:38:36,183 - INFO: Solving Permuted Problem
+2025-01-27 16:38:36,188 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,188 - INFO: Solve Time: 0.0050 seconds
+2025-01-27 16:38:36,189 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,189 - INFO: Permuted Problem Results:
+2025-01-27 16:38:36,190 - INFO: - Objective Value: 0.0
+2025-01-27 16:38:36,191 - INFO: - Solve Time: 0.0049879551 seconds
+2025-01-27 16:38:36,192 - DEBUG: Before canonicalization:
+2025-01-27 16:38:36,192 - DEBUG: Original matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,193 - DEBUG: Permuted matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,193 - DEBUG: Generating canonical form for permuted model...
+2025-01-27 16:38:36,194 - DEBUG: Starting normalization...
+2025-01-27 16:38:36,196 - DEBUG: Normalization completed.
+2025-01-27 16:38:36,196 - DEBUG: Normalized matrix shape: (3, 4), nnz: 8
+2025-01-27 16:38:36,198 - DEBUG: 
+Objective:
+    +4.24264 x1 + +6.32456 x2 + +7.07107 x3 + +8.94427 x4 (minimize)
+
+Variables:
+    x1 [0, inf] (Continuous)
+    x2 [-0, inf] (Continuous)
+    x3 [-0, inf] (Integer)
+    x4 [-0, inf] (Integer)
+
+Constraints:
+    +0.263117 x2 + +0.248069 x4 <= 1.6641
+    -0.5 x1 + +0.5 x3 <= 0
+    +0.353553 x1 + +0.158114 x2 + +0.353553 x3 + +0.223607 x4 <= 5
+2025-01-27 16:38:36,201 - INFO: Solving Canonical Form from Original Model
+2025-01-27 16:38:36,209 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,210 - INFO: Solve Time: 0.0080 seconds
+2025-01-27 16:38:36,210 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,211 - INFO: Solving Canonical Form from Permuted Model
+2025-01-27 16:38:36,216 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,217 - INFO: Solve Time: 0.0050 seconds
+2025-01-27 16:38:36,217 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,217 - DEBUG: Starting model validation...
+2025-01-27 16:38:36,218 - DEBUG: Original canonical matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,218 - DEBUG: Permuted canonical matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,219 - DEBUG: Starting detailed model comparison...
+2025-01-27 16:38:36,220 - DEBUG: Models are equivalent within tolerance
+2025-01-27 16:38:36,220 - DEBUG: Validation result: True
+2025-01-27 16:38:36,221 - INFO: Iteration 2 Results:
+2025-01-27 16:38:36,221 - INFO: - Models equivalent: True
+2025-01-27 16:38:36,222 - INFO: - Variable counts match: True
+2025-01-27 16:38:36,223 - INFO: - Constraint counts match: True
+2025-01-27 16:38:36,223 - INFO: - Original Objective Value: 0.0
+2025-01-27 16:38:36,224 - INFO: - Permuted Objective Value: 0.0
+2025-01-27 16:38:36,225 - INFO: - Canonical from Original Objective Value: 0.0
+2025-01-27 16:38:36,226 - INFO: - Canonical from Permuted Objective Value: 0.0
+2025-01-27 16:38:36,226 - INFO: - Original Solve Time: 0.0079977512 seconds
+2025-01-27 16:38:36,227 - INFO: - Permuted Solve Time: 0.0049879551 seconds
+2025-01-27 16:38:36,228 - INFO: - Canonical from Original Solve Time: 0.0080013275 seconds
+2025-01-27 16:38:36,228 - INFO: - Canonical from Permuted Solve Time: 0.0049896240 seconds
+2025-01-27 16:38:36,229 - INFO: Running iteration 3/4
+2025-01-27 16:38:36,229 - DEBUG: Starting new iteration...
+2025-01-27 16:38:36,230 - INFO: Creating Permuted Problem
+2025-01-27 16:38:36,231 - DEBUG: 
+Objective:
+    +4 x0 + +3 x1 + +2 x2 + +5 x3 (minimize)
+
+Variables:
+    x0 [-0, inf] (Integer)
+    x1 [0, inf] (Continuous)
+    x2 [0, inf] (Continuous)
+    x3 [-0, inf] (Integer)
+
+Constraints:
+    +2 x0 + +3 x2 <= 6
+    -1 x1 + +1 x3 <= 0
+    +1 x0 + +1 x1 + +1 x2 + +1 x3 <= 10
+2025-01-27 16:38:36,234 - INFO: Solving Permuted Problem
+2025-01-27 16:38:36,242 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,243 - INFO: Solve Time: 0.0080 seconds
+2025-01-27 16:38:36,243 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,244 - INFO: Permuted Problem Results:
+2025-01-27 16:38:36,245 - INFO: - Objective Value: 0.0
+2025-01-27 16:38:36,245 - INFO: - Solve Time: 0.0080242157 seconds
+2025-01-27 16:38:36,246 - DEBUG: Before canonicalization:
+2025-01-27 16:38:36,247 - DEBUG: Original matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,248 - DEBUG: Permuted matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,248 - DEBUG: Generating canonical form for permuted model...
+2025-01-27 16:38:36,250 - DEBUG: Starting normalization...
+2025-01-27 16:38:36,253 - DEBUG: Normalization completed.
+2025-01-27 16:38:36,253 - DEBUG: Normalized matrix shape: (3, 4), nnz: 8
+2025-01-27 16:38:36,255 - DEBUG: 
+Objective:
+    +4.24264 x1 + +6.32456 x2 + +7.07107 x3 + +8.94427 x4 (minimize)
+
+Variables:
+    x1 [0, inf] (Continuous)
+    x2 [-0, inf] (Continuous)
+    x3 [-0, inf] (Integer)
+    x4 [-0, inf] (Integer)
+
+Constraints:
+    +0.263117 x2 + +0.248069 x4 <= 1.6641
+    -0.5 x1 + +0.5 x3 <= 0
+    +0.353553 x1 + +0.158114 x2 + +0.353553 x3 + +0.223607 x4 <= 5
+2025-01-27 16:38:36,259 - INFO: Solving Canonical Form from Original Model
+2025-01-27 16:38:36,268 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,269 - INFO: Solve Time: 0.0080 seconds
+2025-01-27 16:38:36,269 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,269 - INFO: Solving Canonical Form from Permuted Model
+2025-01-27 16:38:36,276 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,277 - INFO: Solve Time: 0.0060 seconds
+2025-01-27 16:38:36,277 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,277 - DEBUG: Starting model validation...
+2025-01-27 16:38:36,278 - DEBUG: Original canonical matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,279 - DEBUG: Permuted canonical matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,279 - DEBUG: Starting detailed model comparison...
+2025-01-27 16:38:36,282 - DEBUG: Models are equivalent within tolerance
+2025-01-27 16:38:36,282 - DEBUG: Validation result: True
+2025-01-27 16:38:36,283 - INFO: Iteration 3 Results:
+2025-01-27 16:38:36,283 - INFO: - Models equivalent: True
+2025-01-27 16:38:36,284 - INFO: - Variable counts match: True
+2025-01-27 16:38:36,284 - INFO: - Constraint counts match: True
+2025-01-27 16:38:36,285 - INFO: - Original Objective Value: 0.0
+2025-01-27 16:38:36,285 - INFO: - Permuted Objective Value: 0.0
+2025-01-27 16:38:36,286 - INFO: - Canonical from Original Objective Value: 0.0
+2025-01-27 16:38:36,286 - INFO: - Canonical from Permuted Objective Value: 0.0
+2025-01-27 16:38:36,286 - INFO: - Original Solve Time: 0.0079977512 seconds
+2025-01-27 16:38:36,287 - INFO: - Permuted Solve Time: 0.0080242157 seconds
+2025-01-27 16:38:36,287 - INFO: - Canonical from Original Solve Time: 0.0079851151 seconds
+2025-01-27 16:38:36,287 - INFO: - Canonical from Permuted Solve Time: 0.0060064793 seconds
+2025-01-27 16:38:36,288 - INFO: Running iteration 4/4
+2025-01-27 16:38:36,288 - DEBUG: Starting new iteration...
+2025-01-27 16:38:36,289 - INFO: Creating Permuted Problem
+2025-01-27 16:38:36,291 - DEBUG: 
+Objective:
+    +4 x0 + +5 x1 + +3 x2 + +2 x3 (minimize)
+
+Variables:
+    x0 [-0, inf] (Integer)
+    x1 [-0, inf] (Integer)
+    x2 [0, inf] (Continuous)
+    x3 [0, inf] (Continuous)
+
+Constraints:
+    +2 x0 + +3 x3 <= 6
+    +1 x1 - 1 x2 <= 0
+    +1 x0 + +1 x1 + +1 x2 + +1 x3 <= 10
+2025-01-27 16:38:36,294 - INFO: Solving Permuted Problem
+2025-01-27 16:38:36,301 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,302 - INFO: Solve Time: 0.0060 seconds
+2025-01-27 16:38:36,302 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,303 - INFO: Permuted Problem Results:
+2025-01-27 16:38:36,303 - INFO: - Objective Value: 0.0
+2025-01-27 16:38:36,304 - INFO: - Solve Time: 0.0060021877 seconds
+2025-01-27 16:38:36,304 - DEBUG: Before canonicalization:
+2025-01-27 16:38:36,305 - DEBUG: Original matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,306 - DEBUG: Permuted matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,307 - DEBUG: Generating canonical form for permuted model...
+2025-01-27 16:38:36,309 - DEBUG: Starting normalization...
+2025-01-27 16:38:36,311 - DEBUG: Normalization completed.
+2025-01-27 16:38:36,312 - DEBUG: Normalized matrix shape: (3, 4), nnz: 8
+2025-01-27 16:38:36,314 - DEBUG: 
+Objective:
+    +4.24264 x1 + +6.32456 x2 + +7.07107 x3 + +8.94427 x4 (minimize)
+
+Variables:
+    x1 [-0, inf] (Continuous)
+    x2 [-0, inf] (Continuous)
+    x3 [-0, inf] (Integer)
+    x4 [-0, inf] (Integer)
+
+Constraints:
+    +0.263117 x2 + +0.248069 x4 <= 1.6641
+    -0.5 x1 + +0.5 x3 <= 0
+    +0.353553 x1 + +0.158114 x2 + +0.353553 x3 + +0.223607 x4 <= 5
+2025-01-27 16:38:36,316 - INFO: Solving Canonical Form from Original Model
+2025-01-27 16:38:36,324 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,325 - INFO: Solve Time: 0.0060 seconds
+2025-01-27 16:38:36,326 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,326 - INFO: Solving Canonical Form from Permuted Model
+2025-01-27 16:38:36,332 - INFO: Solve Status: Optimal solution found
+2025-01-27 16:38:36,333 - INFO: Solve Time: 0.0050 seconds
+2025-01-27 16:38:36,333 - INFO: Objective Value: 0.0
+2025-01-27 16:38:36,334 - DEBUG: Starting model validation...
+2025-01-27 16:38:36,334 - DEBUG: Original canonical matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,335 - DEBUG: Permuted canonical matrix: shape=(3, 4), nnz=8
+2025-01-27 16:38:36,336 - DEBUG: Starting detailed model comparison...
+2025-01-27 16:38:36,337 - DEBUG: Models are equivalent within tolerance
+2025-01-27 16:38:36,337 - DEBUG: Validation result: True
+2025-01-27 16:38:36,338 - INFO: Iteration 4 Results:
+2025-01-27 16:38:36,339 - INFO: - Models equivalent: True
+2025-01-27 16:38:36,340 - INFO: - Variable counts match: True
+2025-01-27 16:38:36,340 - INFO: - Constraint counts match: True
+2025-01-27 16:38:36,341 - INFO: - Original Objective Value: 0.0
+2025-01-27 16:38:36,341 - INFO: - Permuted Objective Value: 0.0
+2025-01-27 16:38:36,342 - INFO: - Canonical from Original Objective Value: 0.0
+2025-01-27 16:38:36,342 - INFO: - Canonical from Permuted Objective Value: 0.0
+2025-01-27 16:38:36,343 - INFO: - Original Solve Time: 0.0079977512 seconds
+2025-01-27 16:38:36,344 - INFO: - Permuted Solve Time: 0.0060021877 seconds
+2025-01-27 16:38:36,344 - INFO: - Canonical from Original Solve Time: 0.0060014725 seconds
+2025-01-27 16:38:36,345 - INFO: - Canonical from Permuted Solve Time: 0.0049984455 seconds

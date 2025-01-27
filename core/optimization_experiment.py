@@ -4,10 +4,10 @@ import os
 import time
 import gurobipy as gp
 from gurobipy import GRB
-from core.logging_handler import LoggingHandler
+from utils.logging_handler import LoggingHandler
 from core.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
-from core.problem_printer import ProblemPrinter
+from utils.problem_printer import ProblemPrinter
 
 
 class OptimizationExperiment:

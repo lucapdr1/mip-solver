@@ -1,12 +1,12 @@
 import gurobipy as gp
 from gurobipy import GRB
 from core.canonical_form_generator import CanonicalFormGenerator
-from core.problem_printer import ProblemPrinter
+from utils.config import INPUT_PROBLEM
 
 # Example of usage with your CanonicalFormGenerator
 if __name__ == "__main__":
     # Create the dummy model
-    model = gp.read("input/dummy.mps")
+    model = gp.read(INPUT_PROBLEM)
 
     # Generate the canonical form
     generator = CanonicalFormGenerator(model)

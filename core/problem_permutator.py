@@ -3,7 +3,7 @@
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
-from core.logging_handler import LoggingHandler
+from utils.logging_handler import LoggingHandler
 
 class ProblemPermutator:
     def __init__(self, file_path):
