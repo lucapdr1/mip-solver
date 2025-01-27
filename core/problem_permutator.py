@@ -1,89 +1,64 @@
 # core/problem_permutator.py
 
 import gurobipy as gp
+from gurobipy import GRB
 import numpy as np
 from core.logging_handler import LoggingHandler
 
 class ProblemPermutator:
     def __init__(self, file_path):
-        """
-        Initialize the ProblemPermutator.
-
-        Args:
-            file_path (str): Path to the LP or MPS file.
-        """
         self.file_path = file_path
         self.logger = LoggingHandler().get_logger()
+        self.original_model = gp.read(file_path)
 
     def create_permuted_problem(self):
-        """
-        Create a randomly permuted version of the original problem.
-
-        Returns:
-            gurobipy.Model: Permuted Gurobi model
-        """
-        # Load the original problem
-        original_model = gp.read(self.file_path)
-
-        # Get variable list
-        variables = original_model.getVars()
-        num_vars = len(variables)
-
-        # Create a random permutation of variable indices
-        permutation = np.random.permutation(num_vars)
-        self.logger.info("Creating permuted problem:")
-        self.logger.info(f"Permutation: {permutation}")
-
-        # Extract data from the original model
-        obj_coeffs = [v.obj for v in variables]
-        lower_bounds = [v.lb for v in variables]
-        upper_bounds = [v.ub for v in variables]
-        var_types = [v.vtype for v in variables]
-
-        # Apply permutation to objective, bounds, and types
-        permuted_obj = [obj_coeffs[i] for i in permutation]
-        permuted_lb = [lower_bounds[i] for i in permutation]
-        permuted_ub = [upper_bounds[i] for i in permutation]
-        permuted_types = [var_types[i] for i in permutation]
-
-        # Create a new model
+        """Create permuted problem with structural validation"""
+        # Create a new model instead of copying to avoid reference issues
         permuted_model = gp.Model()
+        original_vars = self.original_model.getVars()
+        num_vars = len(original_vars)
 
-        # Add permuted variables to the new model
-        permuted_variables = permuted_model.addVars(
-            num_vars,
-            obj=permuted_obj,
-            lb=permuted_lb,
-            ub=permuted_ub,
-            vtype=permuted_types,
-            name="x"
-        )
-        permuted_variables_list = list(permuted_variables.values())
-
-        # Map original variables to permuted variables
-        var_map = {variables[i]: permuted_variables_list[permutation.tolist().index(i)] for i in range(num_vars)}
-
-        # Add constraints from the original model
-        for constraint in original_model.getConstrs():
-            expr = original_model.getRow(constraint)  # Linear expression for the constraint
-            coeffs = [expr.getCoeff(i) for i in range(expr.size())]
-            vars_ = [expr.getVar(i) for i in range(expr.size())]
-
-            # Map variables and coefficients to the permuted variables
-            permuted_expr = gp.LinExpr(
-                [coeffs[i] for i in range(len(coeffs))],
-                [var_map[vars_[i]] for i in range(len(vars_))]
+        # Generate permutation
+        permutation = np.random.permutation(num_vars)
+        
+        # Create new variables with permuted properties
+        var_map = {}
+        for i, orig_idx in enumerate(permutation):
+            orig_var = original_vars[orig_idx]
+            new_var = permuted_model.addVar(
+                lb=orig_var.LB,
+                ub=orig_var.UB,
+                obj=orig_var.Obj,
+                vtype=orig_var.VType,
+                name=f"x{i}"
             )
+            var_map[orig_idx] = new_var
 
-            # Add the permuted constraint based on its sense
-            if constraint.sense == gp.GRB.LESS_EQUAL:
-                permuted_model.addConstr(permuted_expr <= constraint.rhs, name=constraint.ConstrName)
-            elif constraint.sense == gp.GRB.GREATER_EQUAL:
-                permuted_model.addConstr(permuted_expr >= constraint.rhs, name=constraint.ConstrName)
-            elif constraint.sense == gp.GRB.EQUAL:
-                permuted_model.addConstr(permuted_expr == constraint.rhs, name=constraint.ConstrName)
+        # Get constraint matrix
+        A = self.original_model.getA()
+        constrs = self.original_model.getConstrs()
 
-        self.logger.info("Permuted problem created successfully.")
+        # Rebuild constraints with permuted variables
+        for i, constr in enumerate(constrs):
+            expr = gp.LinExpr()
+            row = A.getrow(i)
+            
+            # Iterate through non-zero elements
+            for j, val in zip(row.indices, row.data):
+                expr.add(var_map[j], float(val))
+            
+            # Correct syntax for addConstr
+            if constr.Sense == GRB.LESS_EQUAL:
+                permuted_model.addConstr(expr <= constr.RHS)
+            elif constr.Sense == GRB.GREATER_EQUAL:
+                permuted_model.addConstr(expr >= constr.RHS)
+            else:  # GRB.EQUAL
+                permuted_model.addConstr(expr == constr.RHS)
+
+        # Set objective sense
+        permuted_model.ModelSense = self.original_model.ModelSense
+        
+        permuted_model.update()
         return permuted_model
 
 
