@@ -261,5 +261,4 @@ class OptimizationExperiment:
             self.logger.error(f"Gurobi Error: {e}")
             raise
 
-    #TODO: better logs and config file
 

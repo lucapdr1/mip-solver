@@ -30,6 +30,7 @@ class CanonicalFormGenerator:
         self.obj_coeffs = np.array([var.Obj for var in self.vars])
         self.rhs = np.array([c.RHS for c in self.constrs])
         self.sense = self.model.ModelSense
+        self.original_bounds = [(var.LB, var.UB) for var in self.vars]
     
     def normalize_matrix_consistently(self,A, obj_coeffs, rhs):
         """
@@ -49,6 +50,10 @@ class CanonicalFormGenerator:
         row_norms = np.sqrt(A_csr.power(2).sum(axis=1).A.flatten())  # Row norms
         col_norms = np.sqrt(A_csr.power(2).sum(axis=0).A.flatten())  # Column norms
 
+        self.logger.debug("Column norms before scaling:")
+        for i, norm in enumerate(col_norms):
+            self.logger.debug(f"Col {i}: {norm}")
+
         # Avoid division by zero
         row_norms[row_norms == 0] = 1
         col_norms[col_norms == 0] = 1
@@ -64,6 +69,13 @@ class CanonicalFormGenerator:
         # Normalize objective coefficients and RHS
         obj_coeffs = obj_coeffs * col_norms
         rhs = rhs * row_scaling
+
+        # Normalize bounds
+        normalized_bounds = []
+        for i, (lb, ub) in enumerate(self.original_bounds):
+            scale = col_scaling[i]
+            normalized_bounds.append((lb * scale, ub * scale))
+        self.normalized_bounds = normalized_bounds
 
         return A_normalized, obj_coeffs, rhs
 
@@ -84,10 +96,27 @@ class CanonicalFormGenerator:
 
     def generate_ordering(self):
         """Generate a consistent ordering of variables and constraints"""
-        # Score and sort variables
+         # Score and sort variables
         var_scores = np.abs(self.obj_coeffs)
-        var_types = np.array([var.VType for var in self.vars])  # Extract variable types
+        self.logger.debug("Variable scores before ordering:")
+        for i, score in enumerate(var_scores):
+            self.logger.debug(f"Var {i} score: {score}")
+        
+        var_types = np.array([var.VType for var in self.vars])
         var_order = np.argsort(var_scores)
+        
+        self.logger.debug("Variable ordering:")
+        self.logger.debug(f"Order: {var_order}")
+        
+        # Original variable bounds before reordering
+        self.logger.debug("Original bounds before reordering:")
+        for i, var in enumerate(self.vars):
+            self.logger.debug(f"Var {i}: [{var.LB}, {var.UB}]")
+        
+        # Use normalized bounds for logging
+        self.logger.debug("Original bounds before reordering:")
+        for i, (lb, ub) in enumerate(self.normalized_bounds):
+            self.logger.debug(f"Var {i}: [{lb}, {ub}]")
 
         # Reorder columns of A
         self.A = self.A[:, var_order]
@@ -104,6 +133,7 @@ class CanonicalFormGenerator:
         self.vars = [self.vars[idx] for idx in var_order]
         self.obj_coeffs = self.obj_coeffs[var_order]
         var_types = var_types[var_order]
+        self.normalized_bounds = [self.normalized_bounds[idx] for idx in var_order]
 
         return var_order, var_types, constr_order
 
@@ -118,9 +148,10 @@ class CanonicalFormGenerator:
 
         for i, var_idx in enumerate(var_order):
             var = self.vars[var_idx]
+            ord_lb, ord_ub = self.normalized_bounds[i]
             new_var = canonical_model.addVar(
-                lb=self.vars[var_idx].LB,  # Ensure this aligns with the reordered index
-                ub=self.vars[var_idx].UB,
+                lb=ord_lb,  # Ensure this aligns with the reordered index
+                ub=ord_ub,
                 obj=self.obj_coeffs[i],
                 vtype=var_types[i],  # Use the reordered variable types
                 name=f"x{i+1}"
