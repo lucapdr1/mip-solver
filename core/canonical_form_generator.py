@@ -1,6 +1,7 @@
 import gurobipy as gp
 from gurobipy import GRB
 from core.logging_handler import LoggingHandler
+from core.problem_printer import ProblemPrinter
 import numpy as np
 import hashlib
 import scipy.sparse as sp
@@ -64,7 +65,7 @@ class CanonicalFormGenerator:
         A_normalized = D_row @ A_csr @ D_col  # Apply row and column normalization
 
         # Normalize objective coefficients and RHS
-        obj_coeffs = obj_coeffs * col_scaling
+        obj_coeffs = obj_coeffs * col_norms
         rhs = rhs * row_scaling
 
         return A_normalized, obj_coeffs, rhs
@@ -72,6 +73,7 @@ class CanonicalFormGenerator:
 
     def normalize(self):
         """Normalize the matrix A, objective coefficients, and RHS."""
+        #TODO: since floating point issues lead to problems, just exctract the ordering and not try to solve the normalized problem
         self.logger.debug("Starting normalization...")
         
         A_csr, self.obj_coeffs, self.rhs = self.normalize_matrix_consistently(
@@ -87,6 +89,7 @@ class CanonicalFormGenerator:
         """Generate a consistent ordering of variables and constraints"""
         # Score and sort variables
         var_scores = np.abs(self.obj_coeffs)
+        var_types = np.array([var.VType for var in self.vars])  # Extract variable types
         var_order = np.argsort(var_scores)
 
         # Reorder columns of A
@@ -100,12 +103,17 @@ class CanonicalFormGenerator:
         self.A = self.A[constr_order, :]
         self.rhs = self.rhs[constr_order]
 
-        return var_order, constr_order
+        # Ensure variable types match the reordered variables
+        self.vars = [self.vars[idx] for idx in var_order]
+        self.obj_coeffs = self.obj_coeffs[var_order]
+        var_types = var_types[var_order]
+
+        return var_order, var_types, constr_order
 
     def get_canonical_form(self):
         """Generate canonical model"""
         self.normalize()
-        var_order, constr_order = self.generate_ordering()
+        var_order, var_types, constr_order = self.generate_ordering()
 
         # Create a new model
         canonical_model = gp.Model()
@@ -114,11 +122,11 @@ class CanonicalFormGenerator:
         for i, var_idx in enumerate(var_order):
             var = self.vars[var_idx]
             new_var = canonical_model.addVar(
-                lb=var.LB,
-                ub=var.UB,
+                lb=self.vars[var_idx].LB,  # Ensure this aligns with the reordered index
+                ub=self.vars[var_idx].UB,
                 obj=self.obj_coeffs[i],
-                vtype=var.VType,
-                name=f"x{i}"
+                vtype=var_types[i],  # Use the reordered variable types
+                name=f"x{i+1}"
             )
             new_vars.append(new_var)
 

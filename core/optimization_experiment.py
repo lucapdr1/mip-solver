@@ -7,6 +7,7 @@ from gurobipy import GRB
 from core.logging_handler import LoggingHandler
 from core.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
+from core.problem_printer import ProblemPrinter
 
 
 class OptimizationExperiment:
@@ -24,23 +25,15 @@ class OptimizationExperiment:
         self.permutator = ProblemPermutator(file_path)
         self.canonical_generator = CanonicalFormGenerator(self.original_model)
 
-    def run_single_iteration(self):
+    def run_single_iteration(self, original_result, original_canonical):
         """Run a single iteration of the experiment with solving and detailed logging"""
         try:
-            self.logger.debug("\nStarting new iteration...")
-
-            # Solve the original problem
-            self.logger.info("Solving Original Problem")
-            original_result = self.solve_problem(self.original_model)
-
-            # Log original problem details
-            self.logger.info("Original Problem Results:")
-            self.logger.info(f"- Objective Value: {original_result['objective_value']}")
-            self.logger.info(f"- Solve Time: {original_result['solve_time']:.10f} seconds")
+            self.logger.debug("Starting new iteration...")
 
             # Create permuted problem
             self.logger.info("Creating Permuted Problem")
             permuted_model = self.permutator.create_permuted_problem()
+            ProblemPrinter.log_model(permuted_model, self.logger, level="DEBUG")
 
             # Solve the permuted problem
             self.logger.info("Solving Permuted Problem")
@@ -52,16 +45,16 @@ class OptimizationExperiment:
             self.logger.info(f"- Solve Time: {permuted_result['solve_time']:.10f} seconds")
 
             # Compare original and permuted before canonicalization
-            self.logger.debug("\nBefore canonicalization:")
+            self.logger.debug("Before canonicalization:")
             A_orig = self.original_model.getA()
             A_perm = permuted_model.getA()
             self.logger.debug(f"Original matrix: shape={A_orig.shape}, nnz={A_orig.nnz}")
             self.logger.debug(f"Permuted matrix: shape={A_perm.shape}, nnz={A_perm.nnz}")
 
-            # Generate canonical forms
-            self.logger.debug("\nGenerating canonical forms...")
-            original_canonical = self.canonical_generator.get_canonical_form()
+            # Generate canonical form for the permuted model
+            self.logger.debug("Generating canonical form for permuted model...")
             permuted_canonical = CanonicalFormGenerator(permuted_model).get_canonical_form()
+            ProblemPrinter.log_model(permuted_canonical, self.logger, level="DEBUG")
 
             # Solve the canonical forms
             self.logger.info("Solving Canonical Form from Original Model")
@@ -91,17 +84,8 @@ class OptimizationExperiment:
 
             # Log detailed differences if not equivalent
             if not are_equivalent:
-                self.logger.debug("\nDetailed model comparison:")
+                self.logger.debug("Detailed model comparison:")
                 self._log_model_differences(original_canonical, permuted_canonical)
-
-            # Log canonical solving comparison
-            self.logger.info("\nCanonical Form Results Comparison:")
-            self.logger.info(f"- Canonical Objective Values Match: "
-                            f"{canonical_from_original_result['objective_value'] == canonical_from_permuted_result['objective_value']}")
-            self.logger.info(f"- Original Canonical Solve Time: {canonical_from_original_result['solve_time']:.10f} seconds")
-            self.logger.info(f"- Permuted Canonical Solve Time: {canonical_from_permuted_result['solve_time']:.10f} seconds")
-            time_diff = abs(canonical_from_original_result['solve_time'] - canonical_from_permuted_result['solve_time'])
-            self.logger.info(f"- Canonical Solve Time Difference: {time_diff:.10f} seconds")
 
             return result
 
@@ -109,15 +93,29 @@ class OptimizationExperiment:
             self.logger.error(f"Error in single iteration: {str(e)}")
             raise
 
-
     def run_experiment(self, num_iterations):
         """Run multiple iterations with detailed logging and solving functionality"""
+        ProblemPrinter.log_model(self.original_model, self.logger, level="DEBUG")
         results = []
 
+        # Solve the original problem once
+        self.logger.info("Solving Original Problem")
+        original_result = self.solve_problem(self.original_model)
+
+        # Log original problem details
+        self.logger.info("Original Problem Results:")
+        self.logger.info(f"- Objective Value: {original_result['objective_value']}")
+        self.logger.info(f"- Solve Time: {original_result['solve_time']:.10f} seconds")
+
+        # Generate the canonical form of the original model once
+        self.logger.debug("Generating canonical form for the original model...")
+        original_canonical = self.canonical_generator.get_canonical_form()
+        ProblemPrinter.log_model(original_canonical, self.logger, level="DEBUG")
+
         for i in range(num_iterations):
-            self.logger.info(f"\nRunning iteration {i+1}/{num_iterations}")
+            self.logger.info(f"Running iteration {i+1}/{num_iterations}")
             try:
-                iteration_result = self.run_single_iteration()
+                iteration_result = self.run_single_iteration(original_result, original_canonical)
                 results.append(iteration_result)
 
                 # Log iteration results
@@ -139,6 +137,7 @@ class OptimizationExperiment:
                 raise
 
         return results
+
 
     
     def _log_model_differences(self, model1, model2):
@@ -261,60 +260,6 @@ class OptimizationExperiment:
         except gp.GurobiError as e:
             self.logger.error(f"Gurobi Error: {e}")
             raise
-    
-    """
-    def run_experiment(self, N=1):
-        
-        Run the complete optimization experiment.
-        Compare the original problem solution with N permuted problem solutions.
 
-        Args:
-            N (int): Number of permutations to create and solve.
-        
-        self.logger.info("Starting Optimization Experiment")
-
-        # Solve the original problem
-        self.logger.info("Solving Original Problem")
-        original_result = self.solve_problem(self.original_model)
-
-        # Log original problem details
-        self.logger.info("Original Problem Results:")
-        self.logger.info(f"- Objective Value: {original_result['objective_value']}")
-        self.logger.info(f"- Solve Time: {original_result['solve_time']:.10f} seconds")
-
-        # Initialize results for all permutations
-        permuted_results = []
-
-        # Create and solve N permuted problems
-        for i in range(N):
-            self.logger.info(f"Creating Permuted Problem {i + 1}/{N}")
-            permuted_model = ProblemPermutator(self.file_path).create_permuted_problem()
-
-            self.logger.info(f"Solving Permuted Problem {i + 1}/{N}")
-            permuted_result = self.solve_problem(permuted_model)
-            permuted_results.append(permuted_result)
-
-            # Log permuted problem results
-            self.logger.info(f"Permuted Problem {i + 1} Results:")
-            self.logger.info(f"- Objective Value: {permuted_result['objective_value']}")
-            self.logger.info(f"- Solve Time: {permuted_result['solve_time']:.10f} seconds")
-
-            # Compare original and permuted results if both are optimal
-            if original_result['solve_status'] == GRB.OPTIMAL and permuted_result['solve_status'] == GRB.OPTIMAL:
-                objective_diff = abs(original_result['objective_value'] - permuted_result['objective_value'])
-                relative_diff = objective_diff / abs(original_result['objective_value']) * 100
-                time_diff = abs(original_result['solve_time'] - permuted_result['solve_time'])
-
-                self.logger.info(f"- Absolute Objective Difference: {objective_diff}")
-                self.logger.info(f"- Relative Objective Difference: {relative_diff:.4f}%")
-                self.logger.info(f"- Absolute Time Difference: {time_diff:.10f} seconds")
-
-        self.logger.info("Experiment Completed")
-
-        return {
-            'original_result': original_result,
-            'permuted_results': permuted_results,
-        }
-    """
-    #TODO: better logs
+    #TODO: better logs and config file
 

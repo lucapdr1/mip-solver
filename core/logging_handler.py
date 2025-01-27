@@ -4,7 +4,7 @@ import logging
 import os
 from datetime import datetime
 
-LOGGING_LEVEL = logging.INFO
+LOGGING_LEVEL = logging.DEBUG
 
 class LoggingHandler:
     def __init__(self, log_dir='experiments', file_path=None):
@@ -18,7 +18,7 @@ class LoggingHandler:
         # Create log directory if it doesn't exist
         os.makedirs(log_dir, exist_ok=True)
         
-        # Extract the base file name from file_path (e.g., "example-min" from "input/example-min.mps")
+        # Extract the base file name from file_path (e.g., "example-min" from "input/dummy.mps")
         base_file_name = os.path.basename(file_path) if file_path else "experiment"
         base_file_name_no_ext = os.path.splitext(base_file_name)[0]
         
