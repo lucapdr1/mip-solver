@@ -5,12 +5,14 @@ from core.ordering.rule_combination import RuleComposition
 from core.ordering.variable_type_rule import VariableTypeRule
 from core.ordering.objective_coefficient_rule import ObjectiveCoefficientRule
 from core.ordering.constraint_sense_rule import ConstraintSenseRule
+from core.ordering.rhs_value_rule import RHSValueRule
 from utils.config import INPUT_PROBLEM
 
 rules = [
-    #VariableTypeRule(),
+    VariableTypeRule(),
     ObjectiveCoefficientRule(),
-    #ConstraintSenseRule()
+    ConstraintSenseRule(),
+    RHSValueRule()
 ]
 ordering_rule = RuleComposition(rules)
 

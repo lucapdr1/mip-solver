@@ -1,11 +1,11 @@
 from core.ordering.ordering_rule_interface import OrderingRule
+import numpy as np
 
-class ConstraintSenseRule(OrderingRule):
+class RHSValueRule(OrderingRule):
     def score_variables(self, vars, obj_coeffs, bounds):
         # This rule does not reorder variables
         return [0] * len(vars)
 
     def score_constraints(self, constraints, A, rhs):
-        # Prioritize constraints by type: '<', '=', '>'
-        sense_priority = {'<': 100, '=': 200, '>': 300}
-        return [sense_priority.get(c.Sense, 4) for c in constraints]
+       # Higher absolute values of rhs get higher scores
+        return np.abs(rhs).tolist()

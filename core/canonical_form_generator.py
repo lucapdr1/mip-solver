@@ -53,19 +53,33 @@ class CanonicalFormGenerator:
         # Original variable bounds before reordering
         self.logger.debug("Original bounds before reordering:")
         for i, var in enumerate(self.vars):
-            self.logger.debug(f"Var {i}: [{var.LB}, {var.UB}]")
+            var_type = "Continuous" if var.VType == GRB.CONTINUOUS else "Integer" if var.VType == GRB.INTEGER else "Binary"
+            self.logger.debug(f"Var {i} (Type: {var_type}): [{var.LB}, {var.UB}]")
         
-        # Use normalized bounds for logging
-        self.logger.debug("Original bounds before reordering:")
-        for i, (lb, ub) in enumerate(self.original_bounds):
-            self.logger.debug(f"Var {i}: [{lb}, {ub}]")
 
         # Reorder columns of A
         self.A = self.A[:, var_order]
 
         # Score and sort constraints
         constraint_scores = self.ordering_rule.score_constraints(self.constrs, self.A, self.rhs)
+        self.logger.debug("Constraint scores before ordering:")
+        for i, score in enumerate(constraint_scores):
+            self.logger.debug(f"Constr {i}: Score: {score}")
+
         constr_order = np.argsort(constraint_scores)
+
+        self.logger.debug("Constraint ordering:")
+        self.logger.debug(f"Order: {constr_order}")
+
+        # Log original constraints before reordering
+        self.logger.debug("Original constraints before reordering:")
+        for i, constr in enumerate(self.constrs):
+            sense = {
+                "<": "<=",
+                ">": ">=",
+                "=": "=",
+            }[constr.Sense]
+            self.logger.debug(f"Constr {i}: {sense} {self.rhs[i]}")
 
         # Reorder rows of A and RHS
         self.A = self.A[constr_order, :]
