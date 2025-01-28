@@ -1,13 +1,17 @@
 import gurobipy as gp
 from gurobipy import GRB
-from utils.logging_handler import LoggingHandler
 import numpy as np
 import scipy.sparse as sp
+from utils.logging_handler import LoggingHandler
+from utils.config import NORMALIZATION_ACTIVE
+
 
 class CanonicalFormGenerator:
-    def __init__(self, model):
+    def __init__(self, model, ordering_rule, normalizer=None):
         self.original_model = model
         self.model = model.copy()
+        self.ordering_rule = ordering_rule
+        self.normalizer = normalizer
         self.logger = LoggingHandler().get_logger()
         self._initialize_structures()
         
@@ -32,72 +36,10 @@ class CanonicalFormGenerator:
         self.sense = self.model.ModelSense
         self.original_bounds = [(var.LB, var.UB) for var in self.vars]
     
-    def normalize_matrix_consistently(self,A, obj_coeffs, rhs):
-        """
-        Consistently normalize both rows and columns of matrix A.
-        
-        Args:
-            A (scipy.sparse.csr_matrix): Constraint matrix.
-            obj_coeffs (np.ndarray): Objective coefficients.
-            rhs (np.ndarray): Right-hand side values.
-
-        Returns:
-            tuple: Normalized (A, obj_coeffs, rhs) and the scaling factors.
-        """
-        A_csr = A.tocsr()
-
-        # Compute row and column norms
-        row_norms = np.sqrt(A_csr.power(2).sum(axis=1).A.flatten())  # Row norms
-        col_norms = np.sqrt(A_csr.power(2).sum(axis=0).A.flatten())  # Column norms
-
-        self.logger.debug("Column norms before scaling:")
-        for i, norm in enumerate(col_norms):
-            self.logger.debug(f"Col {i}: {norm}")
-
-        # Avoid division by zero
-        row_norms[row_norms == 0] = 1
-        col_norms[col_norms == 0] = 1
-
-        # Normalize the matrix
-        row_scaling = np.reciprocal(row_norms)
-        col_scaling = np.reciprocal(col_norms)
-        D_row = sp.diags(row_scaling)  # Diagonal matrix for rows
-        D_col = sp.diags(col_scaling)  # Diagonal matrix for columns
-
-        A_normalized = D_row @ A_csr @ D_col  # Apply row and column normalization
-
-        # Normalize objective coefficients and RHS
-        obj_coeffs = obj_coeffs * col_norms
-        rhs = rhs * row_scaling
-
-        # Normalize bounds
-        normalized_bounds = []
-        for i, (lb, ub) in enumerate(self.original_bounds):
-            scale = col_scaling[i]
-            normalized_bounds.append((lb * scale, ub * scale))
-        self.normalized_bounds = normalized_bounds
-
-        return A_normalized, obj_coeffs, rhs
-
-
-    def normalize(self):
-        """Normalize the matrix A, objective coefficients, and RHS."""
-        #TODO: since floating point issues lead to problems, just exctract the ordering and not try to solve the normalized problem
-        self.logger.debug("Starting normalization...")
-        
-        A_csr, self.obj_coeffs, self.rhs = self.normalize_matrix_consistently(
-            self.A, self.obj_coeffs, self.rhs
-        )
-        self.A = A_csr
-
-        self.logger.debug("Normalization completed.")
-        self.logger.debug(f"Normalized matrix shape: {self.A.shape}, nnz: {self.A.nnz}")
-
-
     def generate_ordering(self):
         """Generate a consistent ordering of variables and constraints"""
          # Score and sort variables
-        var_scores = np.abs(self.obj_coeffs)
+        var_scores = self.ordering_rule.score_variables(self.vars, self.obj_coeffs, self.original_bounds)
         self.logger.debug("Variable scores before ordering:")
         for i, score in enumerate(var_scores):
             self.logger.debug(f"Var {i} score: {score}")
@@ -111,19 +53,33 @@ class CanonicalFormGenerator:
         # Original variable bounds before reordering
         self.logger.debug("Original bounds before reordering:")
         for i, var in enumerate(self.vars):
-            self.logger.debug(f"Var {i}: [{var.LB}, {var.UB}]")
+            var_type = "Continuous" if var.VType == GRB.CONTINUOUS else "Integer" if var.VType == GRB.INTEGER else "Binary"
+            self.logger.debug(f"Var {i} (Type: {var_type}): [{var.LB}, {var.UB}]")
         
-        # Use normalized bounds for logging
-        self.logger.debug("Original bounds before reordering:")
-        for i, (lb, ub) in enumerate(self.normalized_bounds):
-            self.logger.debug(f"Var {i}: [{lb}, {ub}]")
 
         # Reorder columns of A
         self.A = self.A[:, var_order]
 
         # Score and sort constraints
-        constraint_scores = np.abs(self.A).sum(axis=1).A1
+        constraint_scores = self.ordering_rule.score_constraints(self.constrs, self.A, self.rhs)
+        self.logger.debug("Constraint scores before ordering:")
+        for i, score in enumerate(constraint_scores):
+            self.logger.debug(f"Constr {i}: Score: {score}")
+
         constr_order = np.argsort(constraint_scores)
+
+        self.logger.debug("Constraint ordering:")
+        self.logger.debug(f"Order: {constr_order}")
+
+        # Log original constraints before reordering
+        self.logger.debug("Original constraints before reordering:")
+        for i, constr in enumerate(self.constrs):
+            sense = {
+                "<": "<=",
+                ">": ">=",
+                "=": "=",
+            }[constr.Sense]
+            self.logger.debug(f"Constr {i}: {sense} {self.rhs[i]}")
 
         # Reorder rows of A and RHS
         self.A = self.A[constr_order, :]
@@ -133,13 +89,14 @@ class CanonicalFormGenerator:
         self.vars = [self.vars[idx] for idx in var_order]
         self.obj_coeffs = self.obj_coeffs[var_order]
         var_types = var_types[var_order]
-        self.normalized_bounds = [self.normalized_bounds[idx] for idx in var_order]
+        self.original_bounds = [self.original_bounds[idx] for idx in var_order]
 
         return var_order, var_types, constr_order
 
     def get_canonical_form(self):
         """Generate canonical model"""
-        self.normalize()
+        if NORMALIZATION_ACTIVE:
+            self.normalize()
         var_order, var_types, constr_order = self.generate_ordering()
 
         # Create a new model
@@ -148,7 +105,7 @@ class CanonicalFormGenerator:
 
         for i, var_idx in enumerate(var_order):
             var = self.vars[var_idx]
-            ord_lb, ord_ub = self.normalized_bounds[i]
+            ord_lb, ord_ub = self.original_bounds[i]
             new_var = canonical_model.addVar(
                 lb=ord_lb,  # Ensure this aligns with the reordered index
                 ub=ord_ub,
@@ -270,3 +227,11 @@ class CanonicalFormGenerator:
         except Exception as e:
             self.logger.error(f"Validation error: {str(e)}")
             return False
+        
+    def normalize(self):
+        """Normalize the model using the Normalizer class, if provided."""
+        if self.normalizer:
+            self.logger.debug("Delegating normalization to the Normalizer class...")
+            self.A, self.obj_coeffs, self.rhs, self.original_bounds = self.normalizer.normalize(
+                self.A, self.obj_coeffs, self.rhs, self.original_bounds
+            )

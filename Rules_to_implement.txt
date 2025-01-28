@@ -1,0 +1,2 @@
+colonne
+- freq of var x_i
