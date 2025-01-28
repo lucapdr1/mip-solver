@@ -1,0 +1,6 @@
+colonne
+- freq of var x_i
+- frist conts and then integ
+
+righe/constr
+- different category (>,<,=)

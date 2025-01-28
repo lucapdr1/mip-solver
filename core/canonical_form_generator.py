@@ -5,9 +5,10 @@ import numpy as np
 import scipy.sparse as sp
 
 class CanonicalFormGenerator:
-    def __init__(self, model):
+    def __init__(self, model, ordering_rule):
         self.original_model = model
         self.model = model.copy()
+        self.ordering_rule = ordering_rule
         self.logger = LoggingHandler().get_logger()
         self._initialize_structures()
         
@@ -97,7 +98,7 @@ class CanonicalFormGenerator:
     def generate_ordering(self):
         """Generate a consistent ordering of variables and constraints"""
          # Score and sort variables
-        var_scores = np.abs(self.obj_coeffs)
+        var_scores = self.ordering_rule.score_variables(self.vars, self.obj_coeffs, self.original_bounds)
         self.logger.debug("Variable scores before ordering:")
         for i, score in enumerate(var_scores):
             self.logger.debug(f"Var {i} score: {score}")
@@ -122,7 +123,7 @@ class CanonicalFormGenerator:
         self.A = self.A[:, var_order]
 
         # Score and sort constraints
-        constraint_scores = np.abs(self.A).sum(axis=1).A1
+        constraint_scores = self.ordering_rule.score_constraints(self.constrs, self.A, self.rhs)
         constr_order = np.argsort(constraint_scores)
 
         # Reorder rows of A and RHS

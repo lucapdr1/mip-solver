@@ -11,10 +11,11 @@ from utils.problem_printer import ProblemPrinter
 
 
 class OptimizationExperiment:
-    def __init__(self, file_path):
+    def __init__(self, file_path, ordering_rule):
         self.file_path = file_path
         self.logger = LoggingHandler().get_logger()
         self.original_model = gp.read(file_path)
+        self.ordering_rule = ordering_rule
         
         self.logger.info(f"Successfully loaded problem from {file_path}")
         self.logger.info("Problem Details:")
@@ -23,7 +24,7 @@ class OptimizationExperiment:
         self.logger.info(f"- Objective Sense: {'Minimize' if self.original_model.ModelSense == 1 else 'Maximize'}")
         
         self.permutator = ProblemPermutator(file_path)
-        self.canonical_generator = CanonicalFormGenerator(self.original_model)
+        self.canonical_generator = CanonicalFormGenerator(self.original_model, ordering_rule)
 
     def run_single_iteration(self, original_result, original_canonical):
         """Run a single iteration of the experiment with solving and detailed logging"""
@@ -53,7 +54,7 @@ class OptimizationExperiment:
 
             # Generate canonical form for the permuted model
             self.logger.debug("Generating canonical form for permuted model...")
-            permuted_canonical = CanonicalFormGenerator(permuted_model).get_canonical_form()
+            permuted_canonical = CanonicalFormGenerator(permuted_model, self.ordering_rule).get_canonical_form()
             ProblemPrinter.log_model(permuted_canonical, self.logger, level="DEBUG")
 
             # Solve the canonical forms
