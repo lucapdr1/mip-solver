@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 class OrderingRule(ABC):
     @abstractmethod
-    def score_variables(self, vars, obj_coeffs, bounds):
+    def score_variables(self, vars, obj_coeffs, A, bounds):
         """
         Score variables based on the ordering rule.
         Args:

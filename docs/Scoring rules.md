@@ -3,7 +3,7 @@
 ## **Cols Ordering**
 
 \[
-\text{Score}_i = P \cdot 10^3 + \log(1 + |\text{Obj}_i|)
+\text{Score}_i = 1000 \cdot P + 100 \cdot \log(1 + |\text{Obj}_i|) + 10 \cdot \#occurrences
 \]
 
 #### **Components**
@@ -19,7 +19,7 @@
 ## **Rows Ordering**
 
 \[
-\text{Score}_j = P \cdot 10^3 + \log(1 + |\text{RHS}_j|) \cdot 10 + \sum{(\log(1 + |\gamma_j|)}
+\text{Score}_j = 1000 \cdot P + 100 \cdot \log(1 + |\text{RHS}_j|) \cdot 10 + \sum{(\log(1 + |\gamma_j|)} + 1 \cdot \log(1 + |\text{Range}_j|) 
 \]
 
 #### **Components**

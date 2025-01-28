@@ -39,7 +39,7 @@ class CanonicalFormGenerator:
     def generate_ordering(self):
         """Generate a consistent ordering of variables and constraints"""
          # Score and sort variables
-        var_scores = self.ordering_rule.score_variables(self.vars, self.obj_coeffs, self.original_bounds)
+        var_scores = self.ordering_rule.score_variables(self.vars, self.obj_coeffs, self.A, self.original_bounds)
         self.logger.debug("Variable scores before ordering:")
         for i, score in enumerate(var_scores):
             self.logger.debug(f"Var {i} score: {score}")
