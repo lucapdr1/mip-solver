@@ -6,13 +6,18 @@ from core.ordering.variable_type_rule import VariableTypeRule
 from core.ordering.objective_coefficient_rule import ObjectiveCoefficientRule
 from core.ordering.constraint_sense_rule import ConstraintSenseRule
 from core.ordering.rhs_value_rule import RHSValueRule
+from core.ordering.row_coefficient_rule import RowCoefficientRule
 from utils.config import INPUT_PROBLEM
 
 rules = [
+    #cols
     VariableTypeRule(),
     ObjectiveCoefficientRule(),
+    #rows
     ConstraintSenseRule(),
-    RHSValueRule()
+    RHSValueRule(),
+    RowCoefficientRule()
+
 ]
 ordering_rule = RuleComposition(rules)
 

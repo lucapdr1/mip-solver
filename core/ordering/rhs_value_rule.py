@@ -8,4 +8,9 @@ class RHSValueRule(OrderingRule):
 
     def score_constraints(self, constraints, A, rhs):
        # Higher absolute values of rhs get higher scores
-        return np.abs(rhs).tolist()
+
+        #Simple absolute value
+        #return np.abs(rhs).tolist()
+
+        #Log(1 + abs_value)
+        return np.log1p(np.abs(rhs)).flatten().tolist()

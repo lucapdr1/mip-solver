@@ -13,8 +13,23 @@ class RuleComposition(OrderingRule):
         return scores.tolist()
 
     def score_constraints(self, constraints, A, rhs):
-        # Combine scores from all rules
+        # Initialize scores array
         scores = np.zeros(len(constraints))
+        
         for rule in self.rules:
-            scores += np.array(rule.score_constraints(constraints, A, rhs))
+            # Assuming each rule's score_constraints method returns a list or array of scores
+            rule_scores = rule.score_constraints(constraints, A, rhs)
+            
+            # Convert rule_scores to numpy array if it's not already
+            if not isinstance(rule_scores, np.ndarray):
+                rule_scores = np.array(rule_scores)
+            
+            # Check if shapes match or need adjustment
+            if rule_scores.shape != scores.shape:
+                # If shapes don't match, you might need to reshape or handle this case specifically
+                raise ValueError(f"Shape mismatch: rule_scores {rule_scores.shape} vs expected {scores.shape}")
+            
+            # Add rule's scores to total scores
+            scores += rule_scores
+
         return scores.tolist()
