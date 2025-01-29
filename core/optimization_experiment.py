@@ -9,6 +9,7 @@ from core.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
 from core.problem_normalizer import Normalizer
 from utils.problem_printer import ProblemPrinter
+from utils.config import LOG_MODEL_COMPARISON
 
 class OptimizationExperiment:
     def __init__(self, file_path, ordering_rule):
@@ -27,7 +28,7 @@ class OptimizationExperiment:
         self.permutator = ProblemPermutator(file_path)
         self.canonical_generator = CanonicalFormGenerator(self.original_model, self.ordering_rule, self.normalizer)
 
-    def run_single_iteration(self, original_result, original_canonical):
+    def run_single_iteration(self, original_result, canonical_from_original_result, original_canonical):
         """Run a single iteration of the experiment with solving and detailed logging"""
         try:
             self.logger.debug("Starting new iteration...")
@@ -41,11 +42,6 @@ class OptimizationExperiment:
             self.logger.info("Solving Permuted Problem")
             permuted_result = self.solve_problem(permuted_model)
 
-            # Log permuted problem details
-            self.logger.info("Permuted Problem Results:")
-            self.logger.info(f"- Objective Value: {permuted_result['objective_value']}")
-            self.logger.info(f"- Solve Time: {permuted_result['solve_time']:.10f} seconds")
-
             # Compare original and permuted before canonicalization
             self.logger.debug("Before canonicalization:")
             A_orig = self.original_model.getA()
@@ -57,10 +53,6 @@ class OptimizationExperiment:
             self.logger.debug("Generating canonical form for permuted model...")
             permuted_canonical = CanonicalFormGenerator(permuted_model, self.ordering_rule, self.normalizer).get_canonical_form()
             ProblemPrinter.log_model(permuted_canonical, self.logger, level="DEBUG")
-
-            # Solve the canonical forms
-            self.logger.info("Solving Canonical Form from Original Model")
-            canonical_from_original_result = self.solve_problem(original_canonical)
 
             self.logger.info("Solving Canonical Form from Permuted Model")
             canonical_from_permuted_result = self.solve_problem(permuted_canonical)
@@ -85,7 +77,7 @@ class OptimizationExperiment:
             }
 
             # Log detailed differences if not equivalent
-            if not are_equivalent:
+            if LOG_MODEL_COMPARISON and not are_equivalent:
                 self.logger.debug("Detailed model comparison:")
                 LoggingHandler().log_model_differences(self.logger, original_canonical, permuted_canonical)
 
@@ -104,40 +96,28 @@ class OptimizationExperiment:
         self.logger.info("Solving Original Problem")
         original_result = self.solve_problem(self.original_model)
 
-        # Log original problem details
-        self.logger.info("Original Problem Results:")
-        self.logger.info(f"- Objective Value: {original_result['objective_value']}")
-        self.logger.info(f"- Solve Time: {original_result['solve_time']:.10f} seconds")
-
         # Generate the canonical form of the original model once
         self.logger.debug("Generating canonical form for the original model...")
         original_canonical = self.canonical_generator.get_canonical_form()
         ProblemPrinter.log_model(original_canonical, self.logger, level="DEBUG")
 
+        # Solve the Canonical from original once
+        self.logger.info("Solving Canonical from Original Problem")
+        canonical_from_original_result  = self.solve_problem(original_canonical)
+
         for i in range(num_iterations):
             self.logger.info(f"Running iteration {i+1}/{num_iterations}")
             try:
-                iteration_result = self.run_single_iteration(original_result, original_canonical)
+                iteration_result = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical)
                 results.append(iteration_result)
-
-                # Log iteration results
-                self.logger.info(f"Iteration {i+1} Results:")
-                self.logger.info(f"- Models equivalent: {iteration_result['equivalent']}")
-                self.logger.info(f"- Variable counts match: {iteration_result['original_vars'] == iteration_result['permuted_vars']}")
-                self.logger.info(f"- Constraint counts match: {iteration_result['original_constrs'] == iteration_result['permuted_constrs']}")
-                self.logger.info(f"- Original Objective Value: {iteration_result['original_objective']}")
-                self.logger.info(f"- Permuted Objective Value: {iteration_result['permuted_objective']}")
-                self.logger.info(f"- Canonical from Original Objective Value: {iteration_result['canonical_from_original_objective']}")
-                self.logger.info(f"- Canonical from Permuted Objective Value: {iteration_result['canonical_from_permuted_objective']}")
-                self.logger.info(f"- Original Solve Time: {iteration_result['original_solve_time']:.10f} seconds")
-                self.logger.info(f"- Permuted Solve Time: {iteration_result['permuted_solve_time']:.10f} seconds")
-                self.logger.info(f"- Canonical from Original Solve Time: {iteration_result['canonical_from_original_solve_time']:.10f} seconds")
-                self.logger.info(f"- Canonical from Permuted Solve Time: {iteration_result['canonical_from_permuted_solve_time']:.10f} seconds")
+                self.log_iteration_results(i + 1, iteration_result)
 
             except Exception as e:
                 self.logger.error(f"Error in iteration {i+1}: {str(e)}")
                 raise
 
+        # Compute and log solve-time variability metrics
+        self.compute_solve_time_variability(results)
         return results
 
     def _load_problem(self):
@@ -203,5 +183,60 @@ class OptimizationExperiment:
         except gp.GurobiError as e:
             self.logger.error(f"Gurobi Error: {e}")
             raise
+
+    def log_iteration_results(self, iteration_num, iteration_result):
+        """Logs the results of a single iteration"""
+        self.logger.info(f"Iteration {iteration_num} Results:")
+        self.logger.info(f"- Models equivalent: {iteration_result['equivalent']}")
+        self.logger.info(f"- Variable counts match: {iteration_result['original_vars'] == iteration_result['permuted_vars']}")
+        self.logger.info(f"- Constraint counts match: {iteration_result['original_constrs'] == iteration_result['permuted_constrs']}")
+        self.logger.info(f"- Original Objective Value: {iteration_result['original_objective']}")
+        self.logger.info(f"- Permuted Objective Value: {iteration_result['permuted_objective']}")
+        self.logger.info(f"- Canonical from Original Objective Value: {iteration_result['canonical_from_original_objective']}")
+        self.logger.info(f"- Canonical from Permuted Objective Value: {iteration_result['canonical_from_permuted_objective']}")
+        self.logger.info(f"- Original Solve Time: {iteration_result['original_solve_time']:.10f} seconds")
+        self.logger.info(f"- Permuted Solve Time: {iteration_result['permuted_solve_time']:.10f} seconds")
+        self.logger.info(f"- Canonical from Original Solve Time: {iteration_result['canonical_from_original_solve_time']:.10f} seconds")
+        self.logger.info(f"- Canonical from Permuted Solve Time: {iteration_result['canonical_from_permuted_solve_time']:.10f} seconds")
+
+    def compute_solve_time_variability(self, results):
+        """
+        Computes and logs the variability in solve times for:
+        - Original vs Permuted model
+        - Canonical (from Original) vs Canonical (from Permuted)
+        """
+        import numpy as np
+
+        def relative_difference(x, y):
+            # Small epsilon to avoid division by zero
+            return abs(x - y) / max(abs(x), abs(y), 1e-12)
+
+        # Collect the relative differences in solve times
+        original_vs_permuted_diffs = []
+        canonical_vs_canonical_diffs = []
+
+        for res in results:
+            original_vs_permuted_diffs.append(
+                relative_difference(res["original_solve_time"], res["permuted_solve_time"])
+            )
+            canonical_vs_canonical_diffs.append(
+                relative_difference(
+                    res["canonical_from_original_solve_time"],
+                    res["canonical_from_permuted_solve_time"]
+                )
+            )
+
+        # Compute mean solve-time variability
+        mean_orig_perm_var = np.mean(original_vs_permuted_diffs) if original_vs_permuted_diffs else 0.0
+        mean_canon_var = np.mean(canonical_vs_canonical_diffs) if canonical_vs_canonical_diffs else 0.0
+
+        self.logger.info("Solve-Time Variability Metrics:")
+        self.logger.info(f"- Mean Solve-Time Variability (Original vs Permuted): {mean_orig_perm_var:.6f}")
+        self.logger.info(f"- Mean Solve-Time Variability (Canonical vs Canonical): {mean_canon_var:.6f}")
+
+        if mean_canon_var < mean_orig_perm_var:
+            self.logger.info("Canonical form has improved solve-time consistency across permutations.")
+        else:
+            self.logger.warning("Canonical form still exhibits significant solve-time variability.")
 
 
