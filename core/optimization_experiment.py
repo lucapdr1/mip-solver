@@ -4,12 +4,13 @@ import os
 import time
 import gurobipy as gp
 from gurobipy import GRB
+import pandas as pd
+import numpy as np
 from utils.logging_handler import LoggingHandler
 from core.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
 from core.problem_normalizer import Normalizer
 from utils.problem_printer import ProblemPrinter
-
 
 class OptimizationExperiment:
     def __init__(self, file_path, ordering_rule):
@@ -141,8 +142,6 @@ class OptimizationExperiment:
 
         return results
 
-
-    
     def _log_model_differences(self, model1, model2):
         """Log detailed differences between all parameters of two models"""
         tolerance = 1e-6  # Define a tolerance for floating-point comparisons
@@ -162,43 +161,47 @@ class OptimizationExperiment:
                 self.logger.debug(f"Variable bounds differ for Var {i}: LB={v1.LB} vs {v2.LB}, UB={v1.UB} vs {v2.UB}")
 
         # Compare constraint matrix structure and coefficients
-        A1 = model1.getA()
-        A2 = model2.getA()
-        if A1.nnz != A2.nnz or A1.shape != A2.shape:
-            self.logger.debug(f"Matrix structure differs: {A1.nnz} vs {A2.nnz} non-zeros, shapes: {A1.shape} vs {A2.shape}")
+        A1 = model1.getA().toarray()  # Convert to dense for easy visualization
+        A2 = model2.getA().toarray()
+
+        if A1.shape != A2.shape:
+            self.logger.debug(f"Matrix shape differs: {A1.shape} vs {A2.shape}")
         else:
-            diff_indices = (A1 != A2).nonzero()
-            if len(diff_indices[0]) > 0:
+            diff_matrix = np.abs(A1 - A2) > tolerance
+            if diff_matrix.any():
                 self.logger.debug("Matrix coefficient differences found:")
-                for i, j in zip(*diff_indices):
-                    self.logger.debug(f"Position ({i}, {j}): {A1[i, j]} vs {A2[i, j]}")
+                df_A1 = pd.DataFrame(A1, columns=[f"x{i}" for i in range(A1.shape[1])])
+                df_A2 = pd.DataFrame(A2, columns=[f"x{i}" for i in range(A2.shape[1])])
+
+                # Concatenate matrices for side-by-side logging
+                df_combined = pd.concat([df_A1, df_A2], axis=1, keys=["Model 1", "Model 2"])
+
+                self.logger.debug("\n" + df_combined.to_string())
 
         # Compare RHS
         rhs1 = [c.RHS for c in model1.getConstrs()]
         rhs2 = [c.RHS for c in model2.getConstrs()]
         if rhs1 != rhs2:
             self.logger.debug("RHS differences found:")
-            for i, (r1, r2) in enumerate(zip(rhs1, rhs2)):
-                if abs(r1 - r2) > tolerance:
-                    self.logger.debug(f"Constraint {i}: {r1} vs {r2}")
+            df_rhs = pd.DataFrame({"Model 1": rhs1, "Model 2": rhs2})
+            self.logger.debug("\n" + df_rhs.to_string())
 
         # Compare constraint senses
         senses1 = [c.Sense for c in model1.getConstrs()]
         senses2 = [c.Sense for c in model2.getConstrs()]
         if senses1 != senses2:
             self.logger.debug("Constraint sense differences found:")
-            for i, (s1, s2) in enumerate(zip(senses1, senses2)):
-                if s1 != s2:
-                    self.logger.debug(f"Constraint {i}: {s1} vs {s2}")
+            df_sense = pd.DataFrame({"Model 1": senses1, "Model 2": senses2})
+            self.logger.debug("\n" + df_sense.to_string())
 
         # Compare variable types
         vtype1 = [v.VType for v in model1.getVars()]
         vtype2 = [v.VType for v in model2.getVars()]
         if vtype1 != vtype2:
             self.logger.debug("Variable type differences found:")
-            for i, (vt1, vt2) in enumerate(zip(vtype1, vtype2)):
-                if vt1 != vt2:
-                    self.logger.debug(f"Var {i}: {vt1} vs {vt2}")
+            df_vtype = pd.DataFrame({"Model 1": vtype1, "Model 2": vtype2})
+            self.logger.debug("\n" + df_vtype.to_string())
+
 
     def _load_problem(self):
         """
