@@ -9,6 +9,7 @@ from core.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
 from core.problem_normalizer import Normalizer
 from utils.problem_printer import ProblemPrinter
+from utils.config import LOG_MODEL_COMPARISON
 
 class OptimizationExperiment:
     def __init__(self, file_path, ordering_rule):
@@ -85,7 +86,7 @@ class OptimizationExperiment:
             }
 
             # Log detailed differences if not equivalent
-            if not are_equivalent:
+            if LOG_MODEL_COMPARISON and not are_equivalent:
                 self.logger.debug("Detailed model comparison:")
                 LoggingHandler().log_model_differences(self.logger, original_canonical, permuted_canonical)
 
