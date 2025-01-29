@@ -10,7 +10,7 @@ from core.ordering.constraint_sense_rule import ConstraintSenseRule
 from core.ordering.rhs_value_rule import RHSValueRule
 from core.ordering.row_coefficient_rule import RowCoefficientRule
 from core.ordering.constraint_range_rule import ConstraintRangeRule
-from utils.config import INPUT_PROBLEM
+from utils.config import INPUT_PROBLEM, NUMBER_OF_PERMUATATIONS
 
 rules = [
     #cols
@@ -31,6 +31,6 @@ ordering_rule = RuleComposition(rules)
 if __name__ == "__main__":    
     try:
         experiment = OptimizationExperiment(INPUT_PROBLEM, ordering_rule)
-        results = experiment.run_experiment(1)
+        results = experiment.run_experiment(NUMBER_OF_PERMUATATIONS)
     except Exception as e:
         print(f"Experiment failed: {e}")
