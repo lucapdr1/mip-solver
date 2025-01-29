@@ -4,7 +4,7 @@ import os
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from utils.config import LOG_LEVEL, MATRICES_TO_CSV
+from utils.config import LOG_LEVEL, MATRICES_TO_CSV, LOG_MATRIX
 
 class LoggingHandler:
     def __init__(self, log_dir='experiments', file_path=None):
@@ -69,7 +69,7 @@ class LoggingHandler:
             logger.debug(f"Matrix shape differs: {A1.shape} vs {A2.shape}")
         else:
             diff_matrix = np.abs(A1 - A2) > tolerance
-            if diff_matrix.any():
+            if LOG_MATRIX and diff_matrix.any():
                 logger.debug("Matrix coefficient differences found:")
                 df_A1 = pd.DataFrame(A1, columns=[f"x{i}" for i in range(A1.shape[1])])
                 df_A2 = pd.DataFrame(A2, columns=[f"x{i}" for i in range(A2.shape[1])])

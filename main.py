@@ -31,6 +31,6 @@ ordering_rule = RuleComposition(rules)
 if __name__ == "__main__":    
     try:
         experiment = OptimizationExperiment(INPUT_PROBLEM, ordering_rule)
-        results = experiment.run_experiment(4)
+        results = experiment.run_experiment(1)
     except Exception as e:
         print(f"Experiment failed: {e}")
