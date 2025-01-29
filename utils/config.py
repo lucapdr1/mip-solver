@@ -5,3 +5,4 @@ INPUT_DIR = "input/"
 INPUT_PROBLEM = INPUT_DIR + "example-min.mps"
 
 NORMALIZATION_ACTIVE = False
+MATRICES_TO_CSV = False
