@@ -1,15 +1,14 @@
-# core/optimization_experiment.py
-
 import os
 import time
 import gurobipy as gp
 from gurobipy import GRB
+import pandas as pd
+import numpy as np
 from utils.logging_handler import LoggingHandler
 from core.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
 from core.problem_normalizer import Normalizer
 from utils.problem_printer import ProblemPrinter
-
 
 class OptimizationExperiment:
     def __init__(self, file_path, ordering_rule):
@@ -88,7 +87,7 @@ class OptimizationExperiment:
             # Log detailed differences if not equivalent
             if not are_equivalent:
                 self.logger.debug("Detailed model comparison:")
-                self._log_model_differences(original_canonical, permuted_canonical)
+                LoggingHandler().log_model_differences(self.logger, original_canonical, permuted_canonical)
 
             return result
 
@@ -140,65 +139,6 @@ class OptimizationExperiment:
                 raise
 
         return results
-
-
-    
-    def _log_model_differences(self, model1, model2):
-        """Log detailed differences between all parameters of two models"""
-        tolerance = 1e-6  # Define a tolerance for floating-point comparisons
-
-        # Compare objective coefficients
-        obj1 = [v.Obj for v in model1.getVars()]
-        obj2 = [v.Obj for v in model2.getVars()]
-        if obj1 != obj2:
-            self.logger.debug("Objective coefficient differences found:")
-            for i, (o1, o2) in enumerate(zip(obj1, obj2)):
-                if abs(o1 - o2) > tolerance:
-                    self.logger.debug(f"Var {i}: {o1} vs {o2}")
-
-        # Compare variable bounds
-        for i, (v1, v2) in enumerate(zip(model1.getVars(), model2.getVars())):
-            if abs(v1.LB - v2.LB) > tolerance or abs(v1.UB - v2.UB) > tolerance:
-                self.logger.debug(f"Variable bounds differ for Var {i}: LB={v1.LB} vs {v2.LB}, UB={v1.UB} vs {v2.UB}")
-
-        # Compare constraint matrix structure and coefficients
-        A1 = model1.getA()
-        A2 = model2.getA()
-        if A1.nnz != A2.nnz or A1.shape != A2.shape:
-            self.logger.debug(f"Matrix structure differs: {A1.nnz} vs {A2.nnz} non-zeros, shapes: {A1.shape} vs {A2.shape}")
-        else:
-            diff_indices = (A1 != A2).nonzero()
-            if len(diff_indices[0]) > 0:
-                self.logger.debug("Matrix coefficient differences found:")
-                for i, j in zip(*diff_indices):
-                    self.logger.debug(f"Position ({i}, {j}): {A1[i, j]} vs {A2[i, j]}")
-
-        # Compare RHS
-        rhs1 = [c.RHS for c in model1.getConstrs()]
-        rhs2 = [c.RHS for c in model2.getConstrs()]
-        if rhs1 != rhs2:
-            self.logger.debug("RHS differences found:")
-            for i, (r1, r2) in enumerate(zip(rhs1, rhs2)):
-                if abs(r1 - r2) > tolerance:
-                    self.logger.debug(f"Constraint {i}: {r1} vs {r2}")
-
-        # Compare constraint senses
-        senses1 = [c.Sense for c in model1.getConstrs()]
-        senses2 = [c.Sense for c in model2.getConstrs()]
-        if senses1 != senses2:
-            self.logger.debug("Constraint sense differences found:")
-            for i, (s1, s2) in enumerate(zip(senses1, senses2)):
-                if s1 != s2:
-                    self.logger.debug(f"Constraint {i}: {s1} vs {s2}")
-
-        # Compare variable types
-        vtype1 = [v.VType for v in model1.getVars()]
-        vtype2 = [v.VType for v in model2.getVars()]
-        if vtype1 != vtype2:
-            self.logger.debug("Variable type differences found:")
-            for i, (vt1, vt2) in enumerate(zip(vtype1, vtype2)):
-                if vt1 != vt2:
-                    self.logger.debug(f"Var {i}: {vt1} vs {vt2}")
 
     def _load_problem(self):
         """
