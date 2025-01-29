@@ -4,6 +4,7 @@ from core.optimization_experiment import OptimizationExperiment
 from core.ordering.rule_combination import RuleComposition
 from core.ordering.variable_type_rule import VariableTypeRule
 from core.ordering.objective_coefficient_rule import ObjectiveCoefficientRule
+from core.ordering.cols_coefficient_rule import ColumnsCoefficientRule
 from core.ordering.variable_occurrence_rule import VariableOccurrenceRule
 from core.ordering.constraint_sense_rule import ConstraintSenseRule
 from core.ordering.rhs_value_rule import RHSValueRule
@@ -15,7 +16,8 @@ rules = [
     #cols
     VariableTypeRule(1e3),
     ObjectiveCoefficientRule(100),
-    VariableOccurrenceRule(10),
+    ColumnsCoefficientRule(10),
+    VariableOccurrenceRule(),
     #rows
     ConstraintSenseRule(1e3),
     RHSValueRule(100),

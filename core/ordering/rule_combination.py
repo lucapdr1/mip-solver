@@ -6,10 +6,26 @@ class RuleComposition(OrderingRule):
         self.rules = rules
 
     def score_variables(self, vars, obj_coeffs, A, bounds):
-        # Combine scores from all rules (e.g., weighted sum)
-        scores = np.zeros(len(vars))
+        # Validate 'vars' is a sequence
+        if not isinstance(vars, (list, tuple, np.ndarray)):
+            raise ValueError(f"Expected 'vars' to be a list, tuple, or array, but got {type(vars)}")
+        
+        # Initialize scores array
+        num_vars = len(vars)
+        scores = np.zeros(num_vars, dtype=float)
+
+        # Loop through all rules to combine scores
         for rule in self.rules:
-            scores += np.array(rule.score_variables(vars, obj_coeffs, A, bounds))
+            rule_scores = rule.score_variables(vars, obj_coeffs, A, bounds)
+            if not isinstance(rule_scores, (list, np.ndarray)):
+                raise ValueError(f"Rule {rule} returned invalid type for scores: {type(rule_scores)}")
+            
+            # Ensure rule_scores is a NumPy array
+            rule_scores = np.array(rule_scores, dtype=float)
+            
+            # Accumulate scores
+            scores += rule_scores
+
         return scores.tolist()
 
     def score_constraints(self, constraints, A, rhs):
