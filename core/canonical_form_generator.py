@@ -2,8 +2,9 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 import scipy.sparse as sp
+from core.block_decomposition import BlockDecomposition
 from utils.logging_handler import LoggingHandler
-from utils.config import NORMALIZATION_ACTIVE
+from utils.config import NORMALIZATION_ACTIVE, BLOCK_DECOMPOSTION_ACTIVE
 
 
 class CanonicalFormGenerator:
@@ -48,17 +49,13 @@ class CanonicalFormGenerator:
         var_order = np.argsort(var_scores)
         
         self.logger.debug("Variable ordering:")
-        self.logger.debug(f"Order: {var_order}")
+        self.logger.debug(f"Order: {var_order[:5]}")
         
         # Original variable bounds before reordering
         self.logger.debug("Original bounds before reordering:")
         for i, var in enumerate(self.vars):
             var_type = "Continuous" if var.VType == GRB.CONTINUOUS else "Integer" if var.VType == GRB.INTEGER else "Binary"
             self.logger.debug(f"Var {i} (Type: {var_type}): [{var.LB}, {var.UB}]")
-        
-
-        # Reorder columns of A
-        self.A = self.A[:, var_order]
 
         # Score and sort constraints
         constraint_scores = self.ordering_rule.score_constraints(self.constrs, self.A, self.rhs)
@@ -69,7 +66,7 @@ class CanonicalFormGenerator:
         constr_order = np.argsort(constraint_scores)
 
         self.logger.debug("Constraint ordering:")
-        self.logger.debug(f"Order: {constr_order}")
+        self.logger.debug(f"Order: {constr_order[:5]}")
 
         # Log original constraints before reordering
         self.logger.debug("Original constraints before reordering:")
@@ -80,6 +77,24 @@ class CanonicalFormGenerator:
                 "=": "=",
             }[constr.Sense]
             self.logger.debug(f"Constr {i}: {sense} {self.rhs[i]}")
+
+        if BLOCK_DECOMPOSTION_ACTIVE:
+            # --- Instantiate BlockDecomposition---
+            block_decomposition = BlockDecomposition(self.A, logger=self.logger)
+
+            # --- Get Variable Ordering ---
+            var_order = block_decomposition.get_variable_order(self.vars, var_scores)
+            self.logger.debug("Variable ordering after block decomposition:")
+            self.logger.debug(f"Order: {var_order[:5]}")
+
+            # --- Get Constraint Ordering ---
+            constr_order = block_decomposition.get_constraint_order(self.constrs, constraint_scores)
+            self.logger.debug("Constraint ordering after block decomposition:")
+            self.logger.debug(f"Order: {constr_order[:5]}")
+
+        # --- Reorder Matrix and Model Components ---
+        # Reorder columns of A
+        self.A = self.A[:, var_order]
 
         # Reorder rows of A and RHS
         self.A = self.A[constr_order, :]
