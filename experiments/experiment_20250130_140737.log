@@ -1,0 +1,139 @@
+2025-01-30 14:07:37,619 - INFO: Successfully loaded problem from input/neos-4306827-ravan.mps
+2025-01-30 14:07:37,620 - INFO: Problem Details:
+2025-01-30 14:07:37,621 - INFO: - Variables: 162291
+2025-01-30 14:07:37,621 - INFO: - Constraints: 261877
+2025-01-30 14:07:37,622 - INFO: - Objective Sense: Minimize
+2025-01-30 14:07:49,093 - INFO: Solving Original Problem
+2025-01-30 14:09:08,778 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:09:08,779 - INFO: Solve Time: 79.5650 seconds
+2025-01-30 14:09:08,780 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:09:33,888 - INFO: Found 1961 variable blocks via bipartite BFS.
+2025-01-30 14:10:15,389 - INFO: Found 361 constraint blocks via bipartite BFS.
+2025-01-30 14:10:46,252 - INFO: Solving Canonical from Original Problem
+2025-01-30 14:12:21,028 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:12:21,028 - INFO: Solve Time: 94.6290 seconds
+2025-01-30 14:12:21,029 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:12:21,030 - INFO: Running iteration 1/5
+2025-01-30 14:12:21,030 - INFO: Creating Permuted Problem
+2025-01-30 14:12:54,588 - INFO: Solving Permuted Problem
+2025-01-30 14:14:58,273 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:14:58,274 - INFO: Solve Time: 123.5610 seconds
+2025-01-30 14:14:58,274 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:15:25,801 - INFO: Found 1961 variable blocks via bipartite BFS.
+2025-01-30 14:16:07,320 - INFO: Found 361 constraint blocks via bipartite BFS.
+2025-01-30 14:16:39,774 - INFO: Solving Canonical Form from Permuted Model
+2025-01-30 14:17:47,980 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:17:47,980 - INFO: Solve Time: 68.0679 seconds
+2025-01-30 14:17:47,981 - INFO: Objective Value: 10186.574257425742
+2025-01-30 14:17:48,480 - INFO: Iteration 1 Results:
+2025-01-30 14:17:48,480 - INFO: - Models equivalent: False
+2025-01-30 14:17:48,481 - INFO: - Variable counts match: True
+2025-01-30 14:17:48,482 - INFO: - Constraint counts match: True
+2025-01-30 14:17:48,483 - INFO: - Original Objective Value: 10186.574257425744
+2025-01-30 14:17:48,483 - INFO: - Permuted Objective Value: 10186.574257425744
+2025-01-30 14:17:48,484 - INFO: - Canonical from Original Objective Value: 10186.574257425744
+2025-01-30 14:17:48,485 - INFO: - Canonical from Permuted Objective Value: 10186.574257425742
+2025-01-30 14:17:48,485 - INFO: - Original Solve Time: 79.5649588108 seconds
+2025-01-30 14:17:48,486 - INFO: - Permuted Solve Time: 123.5609707832 seconds
+2025-01-30 14:17:48,486 - INFO: - Canonical from Original Solve Time: 94.6290066242 seconds
+2025-01-30 14:17:48,487 - INFO: - Canonical from Permuted Solve Time: 68.0679304600 seconds
+2025-01-30 14:17:48,487 - INFO: Running iteration 2/5
+2025-01-30 14:17:48,488 - INFO: Creating Permuted Problem
+2025-01-30 14:18:21,978 - INFO: Solving Permuted Problem
+2025-01-30 14:19:41,966 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:19:41,966 - INFO: Solve Time: 79.8670 seconds
+2025-01-30 14:19:41,967 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:20:10,559 - INFO: Found 1961 variable blocks via bipartite BFS.
+2025-01-30 14:20:51,221 - INFO: Found 361 constraint blocks via bipartite BFS.
+2025-01-30 14:21:23,110 - INFO: Solving Canonical Form from Permuted Model
+2025-01-30 14:21:51,266 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:21:51,267 - INFO: Solve Time: 28.0320 seconds
+2025-01-30 14:21:51,267 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:21:51,697 - INFO: Iteration 2 Results:
+2025-01-30 14:21:51,698 - INFO: - Models equivalent: False
+2025-01-30 14:21:51,698 - INFO: - Variable counts match: True
+2025-01-30 14:21:51,699 - INFO: - Constraint counts match: True
+2025-01-30 14:21:51,700 - INFO: - Original Objective Value: 10186.574257425744
+2025-01-30 14:21:51,700 - INFO: - Permuted Objective Value: 10186.574257425744
+2025-01-30 14:21:51,701 - INFO: - Canonical from Original Objective Value: 10186.574257425744
+2025-01-30 14:21:51,702 - INFO: - Canonical from Permuted Objective Value: 10186.574257425744
+2025-01-30 14:21:51,702 - INFO: - Original Solve Time: 79.5649588108 seconds
+2025-01-30 14:21:51,703 - INFO: - Permuted Solve Time: 79.8669595718 seconds
+2025-01-30 14:21:51,703 - INFO: - Canonical from Original Solve Time: 94.6290066242 seconds
+2025-01-30 14:21:51,704 - INFO: - Canonical from Permuted Solve Time: 28.0319559574 seconds
+2025-01-30 14:21:51,704 - INFO: Running iteration 3/5
+2025-01-30 14:21:51,705 - INFO: Creating Permuted Problem
+2025-01-30 14:22:25,937 - INFO: Solving Permuted Problem
+2025-01-30 14:24:02,204 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:24:02,205 - INFO: Solve Time: 96.1080 seconds
+2025-01-30 14:24:02,206 - INFO: Objective Value: 10186.574257425742
+2025-01-30 14:24:30,698 - INFO: Found 1961 variable blocks via bipartite BFS.
+2025-01-30 14:25:11,042 - INFO: Found 361 constraint blocks via bipartite BFS.
+2025-01-30 14:25:42,935 - INFO: Solving Canonical Form from Permuted Model
+2025-01-30 14:28:33,746 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:28:33,747 - INFO: Solve Time: 170.6950 seconds
+2025-01-30 14:28:33,748 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:28:34,190 - INFO: Iteration 3 Results:
+2025-01-30 14:28:34,191 - INFO: - Models equivalent: False
+2025-01-30 14:28:34,192 - INFO: - Variable counts match: True
+2025-01-30 14:28:34,192 - INFO: - Constraint counts match: True
+2025-01-30 14:28:34,193 - INFO: - Original Objective Value: 10186.574257425744
+2025-01-30 14:28:34,194 - INFO: - Permuted Objective Value: 10186.574257425742
+2025-01-30 14:28:34,194 - INFO: - Canonical from Original Objective Value: 10186.574257425744
+2025-01-30 14:28:34,195 - INFO: - Canonical from Permuted Objective Value: 10186.574257425744
+2025-01-30 14:28:34,195 - INFO: - Original Solve Time: 79.5649588108 seconds
+2025-01-30 14:28:34,196 - INFO: - Permuted Solve Time: 96.1079556942 seconds
+2025-01-30 14:28:34,197 - INFO: - Canonical from Original Solve Time: 94.6290066242 seconds
+2025-01-30 14:28:34,197 - INFO: - Canonical from Permuted Solve Time: 170.6949620247 seconds
+2025-01-30 14:28:34,198 - INFO: Running iteration 4/5
+2025-01-30 14:28:34,198 - INFO: Creating Permuted Problem
+2025-01-30 14:29:09,078 - INFO: Solving Permuted Problem
+2025-01-30 14:30:52,909 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:30:52,909 - INFO: Solve Time: 103.7010 seconds
+2025-01-30 14:30:52,910 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:31:20,868 - INFO: Found 1961 variable blocks via bipartite BFS.
+2025-01-30 14:32:01,675 - INFO: Found 361 constraint blocks via bipartite BFS.
+2025-01-30 14:32:33,014 - INFO: Solving Canonical Form from Permuted Model
+2025-01-30 14:34:08,102 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:34:08,103 - INFO: Solve Time: 94.9720 seconds
+2025-01-30 14:34:08,104 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:34:08,556 - INFO: Iteration 4 Results:
+2025-01-30 14:34:08,557 - INFO: - Models equivalent: False
+2025-01-30 14:34:08,558 - INFO: - Variable counts match: True
+2025-01-30 14:34:08,558 - INFO: - Constraint counts match: True
+2025-01-30 14:34:08,559 - INFO: - Original Objective Value: 10186.574257425744
+2025-01-30 14:34:08,560 - INFO: - Permuted Objective Value: 10186.574257425744
+2025-01-30 14:34:08,560 - INFO: - Canonical from Original Objective Value: 10186.574257425744
+2025-01-30 14:34:08,560 - INFO: - Canonical from Permuted Objective Value: 10186.574257425744
+2025-01-30 14:34:08,561 - INFO: - Original Solve Time: 79.5649588108 seconds
+2025-01-30 14:34:08,561 - INFO: - Permuted Solve Time: 103.7009992599 seconds
+2025-01-30 14:34:08,562 - INFO: - Canonical from Original Solve Time: 94.6290066242 seconds
+2025-01-30 14:34:08,562 - INFO: - Canonical from Permuted Solve Time: 94.9719953537 seconds
+2025-01-30 14:34:08,563 - INFO: Running iteration 5/5
+2025-01-30 14:34:08,564 - INFO: Creating Permuted Problem
+2025-01-30 14:34:43,578 - INFO: Solving Permuted Problem
+2025-01-30 14:36:18,456 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:36:18,456 - INFO: Solve Time: 94.7530 seconds
+2025-01-30 14:36:18,457 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:36:46,981 - INFO: Found 1961 variable blocks via bipartite BFS.
+2025-01-30 14:37:32,251 - INFO: Found 361 constraint blocks via bipartite BFS.
+2025-01-30 14:38:10,329 - INFO: Solving Canonical Form from Permuted Model
+2025-01-30 14:39:13,997 - INFO: Solve Status: Optimal solution found
+2025-01-30 14:39:13,998 - INFO: Solve Time: 63.5347 seconds
+2025-01-30 14:39:13,998 - INFO: Objective Value: 10186.574257425744
+2025-01-30 14:39:14,493 - INFO: Iteration 5 Results:
+2025-01-30 14:39:14,494 - INFO: - Models equivalent: False
+2025-01-30 14:39:14,494 - INFO: - Variable counts match: True
+2025-01-30 14:39:14,495 - INFO: - Constraint counts match: True
+2025-01-30 14:39:14,496 - INFO: - Original Objective Value: 10186.574257425744
+2025-01-30 14:39:14,496 - INFO: - Permuted Objective Value: 10186.574257425744
+2025-01-30 14:39:14,497 - INFO: - Canonical from Original Objective Value: 10186.574257425744
+2025-01-30 14:39:14,497 - INFO: - Canonical from Permuted Objective Value: 10186.574257425744
+2025-01-30 14:39:14,497 - INFO: - Original Solve Time: 79.5649588108 seconds
+2025-01-30 14:39:14,498 - INFO: - Permuted Solve Time: 94.7529997826 seconds
+2025-01-30 14:39:14,498 - INFO: - Canonical from Original Solve Time: 94.6290066242 seconds
+2025-01-30 14:39:14,499 - INFO: - Canonical from Permuted Solve Time: 63.5347452164 seconds
+2025-01-30 14:39:14,499 - INFO: Solve-Time Variability Metrics:
+2025-01-30 14:39:14,500 - INFO: - Mean Solve-Time Variability (Original vs Permuted): 0.185003
+2025-01-30 14:39:14,500 - INFO: - Mean Solve-Time Variability (Canonical vs Canonical): 0.352457
+2025-01-30 14:39:14,501 - WARNING: Canonical form still exhibits significant solve-time variability.
