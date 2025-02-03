@@ -3,10 +3,13 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      - set -x #Enable debugging
       - echo "Logging in to Amazon ECR..."
       - aws --version
-      - aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $REPOSITORY_URI
-      - REPOSITORY_URI=209479294933.dkr.ecr.eu-north-1.amazonaws.com/polimi/mip-solver
+      - REPOSITORY_REGISTRY=209479294933.dkr.ecr.eu-north-1.amazonaws.com
+      - REPOSITORY_NAME=polimi/mip-solver
+      - REPOSITORY_URI=$REPOSITORY_REGISTRY/$REPOSITORY_NAME
+      - aws ecr get-login-password --region eu-north-1 | docker login -u AWS --password-stdin $REPOSITORY_REGISTRY
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
   build:
