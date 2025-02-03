@@ -1,44 +1,123 @@
 
 import logging
 import os
+import atexit
+import boto3
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from utils.config import LOG_LEVEL, MATRICES_TO_CSV, LOG_MATRIX
+from utils.config import LOG_LEVEL, PRODUCTION, MATRICES_TO_CSV, LOG_MATRIX
 
 class LoggingHandler:
+    _instance = None  # Singleton instance tracker
+    _production_initialized = False  # Track production setup
+
+    def __new__(cls, *args, **kwargs):
+        """Enforce singleton pattern"""
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self, log_dir='experiments', file_path=None):
-        """
-        Initialize the logging handler.
+        if hasattr(self, '_initialized') and self._initialized:
+            return
 
-        Args:
-            log_dir (str): Directory to store experiment logs.
-            file_path (str): Path to the input file for customization in log file name.
-        """
-        os.makedirs(log_dir, exist_ok=True)
+        # Initialization code (keep your existing __init__ logic)
+        self.log_dir = log_dir
+        self.file_path = file_path or "experiment"
+        self.logger = None
+        self.log_file = None
+        self._initialize_logging_core()
 
-        base_file_name = os.path.basename(file_path) if file_path else "experiment"
-        base_file_name_no_ext = os.path.splitext(base_file_name)[0]
+        if PRODUCTION and not self._production_initialized:
+            self._setup_production_features()
+            LoggingHandler._production_initialized = True
 
+        self._initialized = True  # Mark as initialized
+
+    def _setup_production_features(self):
+        """Production setup that runs only once"""
+        atexit.register(self._s3_upload_wrapper)
+        self.logger.debug("Initialized S3 logging capabilities")
+
+    # Keep other methods unchanged...
+
+    def _initialize_logging_core(self):
+        """Core logging setup that always runs"""
+        # Ensure directory exists
+        os.makedirs(self.log_dir, exist_ok=True)
+        
+        # Generate filename components
+        base_name = os.path.basename(self.file_path)
+        base_name = os.path.splitext(base_name)[0]
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = os.path.join(log_dir, f'{base_file_name_no_ext}_{timestamp}.log')
+        
+        # Create log file path
+        self.log_file = os.path.join(
+            self.log_dir, 
+            f'{base_name}_{timestamp}.log'
+        )
 
-        self.logger = logging.getLogger(__name__)
+        # Configure logger
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self.logger.setLevel(LOG_LEVEL)
 
-        if not self.logger.hasHandlers():
-            self.logger.setLevel(LOG_LEVEL)
-            file_handler = logging.FileHandler(log_file)
-            stream_handler = logging.StreamHandler()
+        # Clear existing handlers to prevent duplicates
+        if self.logger.hasHandlers():
+            self.logger.handlers.clear()
 
-            formatter = logging.Formatter('%(asctime)s - %(levelname)s: %(message)s')
-            file_handler.setFormatter(formatter)
-            stream_handler.setFormatter(formatter)
+        # File handler (always present)
+        file_handler = logging.FileHandler(self.log_file)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(levelname)s: %(message)s'
+        ))
+        self.logger.addHandler(file_handler)
 
-            self.logger.addHandler(file_handler)
-            self.logger.addHandler(stream_handler)
+        # Stream handler (always present)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(levelname)s: %(message)s'
+        ))
+        self.logger.addHandler(stream_handler)
+
+        # Ensure final flush
+        atexit.register(self._flush_handlers)
+
+    def _s3_upload_wrapper(self):
+        """Safe wrapper for S3 upload with error handling"""
+        try:
+            self._upload_to_s3()
+        except Exception as e:
+            self.logger.error(f"S3 upload failed: {str(e)}")
+
+    def _upload_to_s3(self):
+        """Perform actual S3 upload"""
+        if not PRODUCTION:
+            return
+
+        s3 = boto3.client('s3')
+        bucket_name = "lucapolimi-experiments"
+        s3_path = f"experiments/{os.path.basename(self.log_file)}"
+
+        with open(self.log_file, 'rb') as f:
+            s3.put_object(
+                Bucket=bucket_name,
+                Key=s3_path,
+                Body=f,
+                Metadata={
+                    'generated_at': datetime.now().isoformat(),
+                    'source': self.file_path
+                }
+            )
+        self.logger.info(f"Uploaded logs to s3://{bucket_name}/{s3_path}")
+
+    def _flush_handlers(self):
+        """Ensure all handlers are flushed"""
+        for handler in self.logger.handlers:
+            handler.flush()
 
     def get_logger(self):
-        """Return the logger instance."""
+        """Public accessor for the logger"""
         return self.logger
 
     @staticmethod

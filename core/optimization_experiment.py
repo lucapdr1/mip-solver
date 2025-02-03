@@ -4,19 +4,22 @@ import gurobipy as gp
 from gurobipy import GRB
 import pandas as pd
 import numpy as np
+import boto3
+from botocore.exceptions import ClientError
+import tempfile
 from utils.logging_handler import LoggingHandler
 from core.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
 from core.problem_normalizer import Normalizer
 from utils.problem_printer import ProblemPrinter
-from utils.config import LOG_MODEL_COMPARISON
+from utils.config import LOG_MODEL_COMPARISON, PRODUCTION
 
 class OptimizationExperiment:
     def __init__(self, file_path, ordering_rule):
         self.file_path = file_path
         self.logger = LoggingHandler().get_logger()
         self.normalizer = Normalizer()
-        self.original_model = gp.read(file_path)
+        self.original_model = self.load_problem()
         self.ordering_rule = ordering_rule
         
         self.logger.info(f"Successfully loaded problem from {file_path}")
@@ -120,25 +123,58 @@ class OptimizationExperiment:
         self.compute_solve_time_variability(results)
         return results
 
-    def _load_problem(self):
+    def load_problem(self):
         """
-        Load the optimization problem from LP or MPS file.
+        Load the optimization problem from LP/MPS file, either locally or from S3
+        based on production flag.
 
         Returns:
             gurobipy.Model: Loaded Gurobi model
         """
-        if not os.path.exists(self.file_path):
-            raise FileNotFoundError(f"The file {self.file_path} does not exist.")
-
-        model = gp.read(self.file_path)
-        self.logger.info(f"Successfully loaded problem from {self.file_path}")
-        self.logger.info(f"Problem Details:")
-        self.logger.info(f"- Variables: {model.NumVars}")
-        self.logger.info(f"- Constraints: {model.NumConstrs}")
-        self.logger.info(f"- Objective Sense: {'Minimize' if model.ModelSense == 1 else 'Maximize'}")
-
-        return model
-
+        if PRODUCTION:
+            # Handle S3 path (self.file_path is the part after input/)
+            if not self.file_path:
+                raise ValueError("File path cannot be empty in production mode.")
+            
+            # Construct the full S3 key by prepending "input/"
+            key = f"{self.file_path}"
+            bucket_name = "lucapolimi-experiments"  # Your bucket name
+            
+            try:
+                # Create S3 client
+                s3 = boto3.client('s3')
+                
+                # Get object from S3
+                response = s3.get_object(Bucket=bucket_name, Key=key)
+                file_content = response['Body'].read()
+                
+                ## Save the content to a temporary file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mps") as temp_file:
+                    temp_file.write(file_content)
+                    temp_file_path = temp_file.name
+                
+                # Load model from the temporary file
+                model = gp.read(temp_file_path)
+                self.logger.info(f"Successfully loaded problem from S3: s3://{bucket_name}/{key}")
+                
+                # Clean up the temporary file
+                os.remove(temp_file_path)
+                return model
+                
+            except ClientError as e:
+                if e.response['Error']['Code'] == "404":
+                    raise FileNotFoundError(f"The file s3://{bucket_name}/{key} does not exist in S3")
+                raise
+                
+        else:
+            # Local file handling
+            if not os.path.exists(self.file_path):
+                raise FileNotFoundError(f"The file {self.file_path} does not exist locally")
+                
+            model = gp.read(self.file_path)
+            self.logger.info(f"Successfully loaded local problem from {self.file_path}")
+            return model
+        
     def solve_problem(self, model):
         """
         Solve the given optimization problem.
