@@ -1,6 +1,6 @@
 name: mip
 channels:
-  - defautls
+  - defaults
 dependencies:
   - python=3.10
   - pandas
