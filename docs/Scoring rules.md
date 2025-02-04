@@ -33,3 +33,18 @@
    RHS variables with larger absolute contribution should have a higher score.
 3. **Row Coefficient (\( |\gamma_j| \)):**
    Row variables with larger absolute contributions should have a higher score.
+
+----
+Because the approach focuses on relative differences and the structure of constraints rather than on absolute coefficient sizes, it tends to suit problems where the decision variable roles are defined by their interaction with many constraints and where relative cost or benefit differences are crucial. Examples include:
+
+- **Assignment and Matching Problems:**  
+  In these problems, the decision to assign a task (or match an element) is driven by cost or profit differences. Here, a variable’s importance comes more from how its objective coefficient compares to others rather than its absolute value.
+
+- **Knapsack and Set Covering/Packing Problems:**  
+  For knapsack problems, it’s the profit-to-weight ratio (a relative measure) that drives the optimal selection, not the raw profit numbers. Similarly, in set covering/packing, the “importance” of a column (or variable) is determined by how frequently it appears and how its cost compares with others.
+
+- **Network Design and Facility Location:**  
+  In these models, although the absolute sizes of capacities and costs can vary widely, it’s the relative differences (e.g., the ratio of capacity to demand, or the cost difference between opening and not opening a facility) that typically determine which variables are most critical.
+
+- **Production Planning/Scheduling Problems:**  
+  Such problems often have constraints with widely varying RHS values. Your row score, which includes log(1+|RHS|) and additional measures for coefficient variation (the γ and Range terms), would capture the “tightness” or variability of these constraints—a factor that is often more important than the absolute magnitudes.
