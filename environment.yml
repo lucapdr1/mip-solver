@@ -9,6 +9,7 @@ dependencies:
   - boto3
   - botocore
   - pip
-  - gurobipy
+  - pip:
+    - gurobipy
 
 prefix: /home/p2001/miniconda3/envs/mip
