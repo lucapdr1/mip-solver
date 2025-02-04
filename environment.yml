@@ -1,7 +1,6 @@
 name: mip
 channels:
-  - https://repo.anaconda.com/pkgs/main
-  - https://repo.anaconda.com/pkgs/r
+  - defautls
 dependencies:
   - python=3.10
   - pandas
@@ -9,6 +8,6 @@ dependencies:
   - boto3
   - botocore
   - pip
-  - gurobipy==9.1.2
+  - gurobipy
 
 prefix: /home/p2001/miniconda3/envs/mip
