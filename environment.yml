@@ -7,31 +7,9 @@ dependencies:
   - pandas
   - scipy
   - boto3
+  - botocore
   - pip
   - pip:
-    - boto3
-    - botocore
-    - Bottleneck
-    - Brotli
-    - cffi
     - gurobipy==9.1.2
-    - h2
-    - hpack
-    - hyperframe
-    - jmespath
-    - mkl-service
-    - mkl_fft
-    - mkl_random
-    - numexpr
-    - numpy
-    - pycparser
-    - PySock
-    - python-dateutil
-    - pytz
-    - s3transfer
-    - scipy
-    - six
-    - tzdata
-    - urllib3
-    - zstandard
+
 prefix: /home/p2001/miniconda3/envs/mip
