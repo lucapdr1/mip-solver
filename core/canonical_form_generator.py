@@ -7,13 +7,14 @@ from utils.config import NORMALIZATION_ACTIVE
 
 
 class CanonicalFormGenerator:
-    def __init__(self, model, ordering_rule, normalizer=None):
+    def __init__(self, gp_env, model, ordering_rule, normalizer=None):
         self.original_model = model
         self.model = model.copy()
         self.ordering_rule = ordering_rule
         self.normalizer = normalizer
         self.logger = LoggingHandler().get_logger()
         self._initialize_structures()
+        self.gp_env = gp_env
         
     def _initialize_structures(self):
         """Extract model components with integrity checks"""
@@ -100,7 +101,7 @@ class CanonicalFormGenerator:
         var_order, var_types, constr_order = self.generate_ordering()
 
         # Create a new model
-        canonical_model = gp.Model()
+        canonical_model = gp.Model(env=self.gp_env)
         new_vars = []
 
         for i, var_idx in enumerate(var_order):

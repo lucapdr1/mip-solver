@@ -6,7 +6,8 @@ import numpy as np
 from utils.logging_handler import LoggingHandler
 
 class ProblemPermutator:
-    def __init__(self, file_path):
+    def __init__(self, gp_env, file_path):
+        self.gp_env = gp_env
         self.file_path = file_path
         self.logger = LoggingHandler().get_logger()
         self.original_model = gp.read(file_path)
@@ -14,7 +15,7 @@ class ProblemPermutator:
     def create_permuted_problem(self):
         """Create permuted problem with structural validation"""
         # Create a new model instead of copying to avoid reference issues
-        permuted_model = gp.Model()
+        permuted_model = gp.Model(env=self.gp_env)
         original_vars = self.original_model.getVars()
         num_vars = len(original_vars)
 

@@ -12,6 +12,8 @@ from core.ordering.row_coefficient_rule import RowCoefficientRule
 from core.ordering.constraint_range_rule import ConstraintRangeRule
 from utils.config import INPUT_PROBLEM, NUMBER_OF_PERMUATATIONS
 
+from utils.gurobi_utils import init_gurobi_env
+
 rules = [
     #cols
     VariableTypeRule(1e3),
@@ -30,7 +32,9 @@ ordering_rule = RuleComposition(rules)
 
 if __name__ == "__main__":    
     try:
-        experiment = OptimizationExperiment(INPUT_PROBLEM, ordering_rule)
+        gp_env = init_gurobi_env()
+
+        experiment = OptimizationExperiment(gp_env, INPUT_PROBLEM, ordering_rule)
         results = experiment.run_experiment(NUMBER_OF_PERMUATATIONS)
     except Exception as e:
         print(f"Experiment failed: {e}")

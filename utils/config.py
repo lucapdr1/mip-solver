@@ -1,6 +1,11 @@
 import os
 import logging
 
+#LICENSE
+WLSACCESSID = os.getenv('WLSACCESSID')
+WLSSECRET = os.getenv('WLSSECRET')
+LICENSEID = os.getenv('LICENSEID')
+
 # Read values from environment variables or use hardcoded defaults
 LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
 INPUT_DIR = os.getenv('INPUT_DIR', "input/")
@@ -16,7 +21,7 @@ NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'tr
 MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
 LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'
 LOG_MODEL_COMPARISON = os.getenv('LOG_MODEL_COMPARISON', 'False').lower() == 'true'
-PRODUCTION = os.getenv('PRODUCTION', 'True').lower() == 'true'
+PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 
 # Example of setting up logging
 logging.basicConfig(level=LOG_LEVEL)

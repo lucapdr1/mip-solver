@@ -15,7 +15,8 @@ from utils.problem_printer import ProblemPrinter
 from utils.config import LOG_MODEL_COMPARISON, PRODUCTION
 
 class OptimizationExperiment:
-    def __init__(self, file_path, ordering_rule):
+    def __init__(self, gp_env, file_path, ordering_rule):
+        self.gp_env = gp_env
         self.file_path = file_path
         self.logger = LoggingHandler().get_logger()
         self.normalizer = Normalizer()
@@ -28,8 +29,8 @@ class OptimizationExperiment:
         self.logger.info(f"- Constraints: {self.original_model.NumConstrs}")
         self.logger.info(f"- Objective Sense: {'Minimize' if self.original_model.ModelSense == 1 else 'Maximize'}")
         
-        self.permutator = ProblemPermutator(file_path)
-        self.canonical_generator = CanonicalFormGenerator(self.original_model, self.ordering_rule, self.normalizer)
+        self.permutator = ProblemPermutator(gp_env, file_path)
+        self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule, self.normalizer)
 
     def run_single_iteration(self, original_result, canonical_from_original_result, original_canonical):
         """Run a single iteration of the experiment with solving and detailed logging"""
@@ -54,7 +55,7 @@ class OptimizationExperiment:
 
             # Generate canonical form for the permuted model
             self.logger.debug("Generating canonical form for permuted model...")
-            permuted_canonical = CanonicalFormGenerator(permuted_model, self.ordering_rule, self.normalizer).get_canonical_form()
+            permuted_canonical = CanonicalFormGenerator(self.gp_env, permuted_model, self.ordering_rule, self.normalizer).get_canonical_form()
             ProblemPrinter.log_model(permuted_canonical, self.logger, level="DEBUG")
 
             self.logger.info("Solving Canonical Form from Permuted Model")
