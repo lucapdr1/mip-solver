@@ -5,7 +5,7 @@ class RuleComposition(OrderingRule):
     def __init__(self, rules):
         self.rules = rules
 
-    def score_variables(self, vars, obj_coeffs, A, bounds):
+    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # Validate 'vars' is a sequence
         if not isinstance(vars, (list, tuple, np.ndarray)):
             raise ValueError(f"Expected 'vars' to be a list, tuple, or array, but got {type(vars)}")
@@ -16,7 +16,7 @@ class RuleComposition(OrderingRule):
 
         # Loop through all rules to combine scores
         for rule in self.rules:
-            rule_scores = rule.score_variables(vars, obj_coeffs, A, bounds)
+            rule_scores = rule.score_variables(vars, obj_coeffs, bounds, A, constraints, rhs)
             if not isinstance(rule_scores, (list, np.ndarray)):
                 raise ValueError(f"Rule {rule} returned invalid type for scores: {type(rule_scores)}")
             
@@ -28,13 +28,13 @@ class RuleComposition(OrderingRule):
 
         return scores.tolist()
 
-    def score_constraints(self, constraints, A, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # Initialize scores array
         scores = np.zeros(len(constraints))
         
         for rule in self.rules:
             # Assuming each rule's score_constraints method returns a list or array of scores
-            rule_scores = rule.score_constraints(constraints, A, rhs)
+            rule_scores = rule.score_constraints(vars, obj_coeffs, bounds, A, constraints, rhs)
             
             # Convert rule_scores to numpy array if it's not already
             if not isinstance(rule_scores, np.ndarray):

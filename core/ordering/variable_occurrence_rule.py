@@ -14,14 +14,14 @@ class VariableOccurrenceRule(OrderingRule):
             # For dense matrix, count non-zeros in each column
             return np.count_nonzero(A, axis=0)
     
-    def score_variables(self, vars, obj_coeffs, A, bounds):    
+    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):    
         # Count occurrences for each variable
         occurrences = self.count_occurrences(A)
         
         # Weight the occurrences by the specified factor
         return (occurrences * self.scaling).tolist()
     
-    def score_constraints(self, constraints, A, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
         This rule does not affect constraint ordering.
         
