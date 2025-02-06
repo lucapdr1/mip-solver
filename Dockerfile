@@ -12,7 +12,6 @@ RUN conda env create -f environment.yml -n myenv
 
 # Copy your Python script and other files
 COPY main.py .
-COPY input/ ./input/
 COPY core/ ./core/
 COPY utils/ ./utils/
 
