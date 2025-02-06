@@ -1,0 +1,127 @@
+2025-02-03 17:43:48,865 - INFO: Successfully loaded problem from input/net12.mps
+2025-02-03 17:43:48,865 - INFO: Problem Details:
+2025-02-03 17:43:48,866 - INFO: - Variables: 14115
+2025-02-03 17:43:48,866 - INFO: - Constraints: 14021
+2025-02-03 17:43:48,866 - INFO: - Objective Sense: Minimize
+2025-02-03 17:43:50,193 - INFO: Solving Original Problem
+2025-02-03 17:45:10,450 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:45:10,450 - INFO: Solve Time: 80.2291 seconds
+2025-02-03 17:45:10,451 - INFO: Objective Value: 214.0
+2025-02-03 17:45:20,953 - INFO: Solving Canonical from Original Problem
+2025-02-03 17:47:04,632 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:47:04,632 - INFO: Solve Time: 103.6621 seconds
+2025-02-03 17:47:04,633 - INFO: Objective Value: 214.0
+2025-02-03 17:47:04,633 - INFO: Running iteration 1/5
+2025-02-03 17:47:04,633 - INFO: Creating Permuted Problem
+2025-02-03 17:47:07,829 - INFO: Solving Permuted Problem
+2025-02-03 17:49:01,914 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:49:01,914 - INFO: Solve Time: 114.0710 seconds
+2025-02-03 17:49:01,914 - INFO: Objective Value: 214.0
+2025-02-03 17:49:13,783 - INFO: Solving Canonical Form from Permuted Model
+2025-02-03 17:50:51,052 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:50:51,052 - INFO: Solve Time: 97.2544 seconds
+2025-02-03 17:50:51,052 - INFO: Objective Value: 214.0
+2025-02-03 17:50:51,111 - INFO: Iteration 1 Results:
+2025-02-03 17:50:51,111 - INFO: - Models equivalent: False
+2025-02-03 17:50:51,111 - INFO: - Variable counts match: True
+2025-02-03 17:50:51,111 - INFO: - Constraint counts match: True
+2025-02-03 17:50:51,111 - INFO: - Original Objective Value: 214.0
+2025-02-03 17:50:51,112 - INFO: - Permuted Objective Value: 214.0
+2025-02-03 17:50:51,112 - INFO: - Canonical from Original Objective Value: 214.0
+2025-02-03 17:50:51,112 - INFO: - Canonical from Permuted Objective Value: 214.0
+2025-02-03 17:50:51,112 - INFO: - Original Solve Time: 80.2290844917 seconds
+2025-02-03 17:50:51,112 - INFO: - Permuted Solve Time: 114.0709972382 seconds
+2025-02-03 17:50:51,112 - INFO: - Canonical from Original Solve Time: 103.6621122360 seconds
+2025-02-03 17:50:51,112 - INFO: - Canonical from Permuted Solve Time: 97.2544422150 seconds
+2025-02-03 17:50:51,113 - INFO: Running iteration 2/5
+2025-02-03 17:50:51,113 - INFO: Creating Permuted Problem
+2025-02-03 17:50:54,078 - INFO: Solving Permuted Problem
+2025-02-03 17:51:52,482 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:51:52,482 - INFO: Solve Time: 58.3918 seconds
+2025-02-03 17:51:52,482 - INFO: Objective Value: 214.0
+2025-02-03 17:51:57,481 - INFO: Solving Canonical Form from Permuted Model
+2025-02-03 17:53:15,285 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:53:15,286 - INFO: Solve Time: 77.7730 seconds
+2025-02-03 17:53:15,286 - INFO: Objective Value: 214.0
+2025-02-03 17:53:15,398 - INFO: Iteration 2 Results:
+2025-02-03 17:53:15,399 - INFO: - Models equivalent: False
+2025-02-03 17:53:15,399 - INFO: - Variable counts match: True
+2025-02-03 17:53:15,399 - INFO: - Constraint counts match: True
+2025-02-03 17:53:15,399 - INFO: - Original Objective Value: 214.0
+2025-02-03 17:53:15,399 - INFO: - Permuted Objective Value: 214.0
+2025-02-03 17:53:15,399 - INFO: - Canonical from Original Objective Value: 214.0
+2025-02-03 17:53:15,400 - INFO: - Canonical from Permuted Objective Value: 214.0
+2025-02-03 17:53:15,400 - INFO: - Original Solve Time: 80.2290844917 seconds
+2025-02-03 17:53:15,400 - INFO: - Permuted Solve Time: 58.3918128014 seconds
+2025-02-03 17:53:15,400 - INFO: - Canonical from Original Solve Time: 103.6621122360 seconds
+2025-02-03 17:53:15,401 - INFO: - Canonical from Permuted Solve Time: 77.7729990482 seconds
+2025-02-03 17:53:15,401 - INFO: Running iteration 3/5
+2025-02-03 17:53:15,401 - INFO: Creating Permuted Problem
+2025-02-03 17:53:22,032 - INFO: Solving Permuted Problem
+2025-02-03 17:54:33,414 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:54:33,415 - INFO: Solve Time: 71.3520 seconds
+2025-02-03 17:54:33,415 - INFO: Objective Value: 214.0
+2025-02-03 17:54:45,061 - INFO: Solving Canonical Form from Permuted Model
+2025-02-03 17:56:09,687 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:56:09,688 - INFO: Solve Time: 84.5988 seconds
+2025-02-03 17:56:09,688 - INFO: Objective Value: 214.0
+2025-02-03 17:56:09,791 - INFO: Iteration 3 Results:
+2025-02-03 17:56:09,791 - INFO: - Models equivalent: False
+2025-02-03 17:56:09,791 - INFO: - Variable counts match: True
+2025-02-03 17:56:09,792 - INFO: - Constraint counts match: True
+2025-02-03 17:56:09,792 - INFO: - Original Objective Value: 214.0
+2025-02-03 17:56:09,792 - INFO: - Permuted Objective Value: 214.0
+2025-02-03 17:56:09,792 - INFO: - Canonical from Original Objective Value: 214.0
+2025-02-03 17:56:09,792 - INFO: - Canonical from Permuted Objective Value: 214.0
+2025-02-03 17:56:09,793 - INFO: - Original Solve Time: 80.2290844917 seconds
+2025-02-03 17:56:09,793 - INFO: - Permuted Solve Time: 71.3519694805 seconds
+2025-02-03 17:56:09,793 - INFO: - Canonical from Original Solve Time: 103.6621122360 seconds
+2025-02-03 17:56:09,793 - INFO: - Canonical from Permuted Solve Time: 84.5987913609 seconds
+2025-02-03 17:56:09,793 - INFO: Running iteration 4/5
+2025-02-03 17:56:09,794 - INFO: Creating Permuted Problem
+2025-02-03 17:56:18,139 - INFO: Solving Permuted Problem
+2025-02-03 17:58:12,822 - INFO: Solve Status: Optimal solution found
+2025-02-03 17:58:12,822 - INFO: Solve Time: 114.6490 seconds
+2025-02-03 17:58:12,823 - INFO: Objective Value: 214.0
+2025-02-03 17:58:26,698 - INFO: Solving Canonical Form from Permuted Model
+2025-02-03 18:00:05,569 - INFO: Solve Status: Optimal solution found
+2025-02-03 18:00:05,569 - INFO: Solve Time: 98.8487 seconds
+2025-02-03 18:00:05,569 - INFO: Objective Value: 214.0
+2025-02-03 18:00:05,651 - INFO: Iteration 4 Results:
+2025-02-03 18:00:05,651 - INFO: - Models equivalent: False
+2025-02-03 18:00:05,651 - INFO: - Variable counts match: True
+2025-02-03 18:00:05,651 - INFO: - Constraint counts match: True
+2025-02-03 18:00:05,651 - INFO: - Original Objective Value: 214.0
+2025-02-03 18:00:05,652 - INFO: - Permuted Objective Value: 214.0
+2025-02-03 18:00:05,652 - INFO: - Canonical from Original Objective Value: 214.0
+2025-02-03 18:00:05,652 - INFO: - Canonical from Permuted Objective Value: 214.0
+2025-02-03 18:00:05,652 - INFO: - Original Solve Time: 80.2290844917 seconds
+2025-02-03 18:00:05,652 - INFO: - Permuted Solve Time: 114.6490139961 seconds
+2025-02-03 18:00:05,652 - INFO: - Canonical from Original Solve Time: 103.6621122360 seconds
+2025-02-03 18:00:05,652 - INFO: - Canonical from Permuted Solve Time: 98.8487246037 seconds
+2025-02-03 18:00:05,652 - INFO: Running iteration 5/5
+2025-02-03 18:00:05,653 - INFO: Creating Permuted Problem
+2025-02-03 18:00:10,054 - INFO: Solving Permuted Problem
+2025-02-03 18:01:33,152 - INFO: Solve Status: Optimal solution found
+2025-02-03 18:01:33,152 - INFO: Solve Time: 83.0847 seconds
+2025-02-03 18:01:33,152 - INFO: Objective Value: 214.0
+2025-02-03 18:01:38,547 - INFO: Solving Canonical Form from Permuted Model
+2025-02-03 18:03:19,539 - INFO: Solve Status: Optimal solution found
+2025-02-03 18:03:19,539 - INFO: Solve Time: 100.9671 seconds
+2025-02-03 18:03:19,540 - INFO: Objective Value: 214.0
+2025-02-03 18:03:19,643 - INFO: Iteration 5 Results:
+2025-02-03 18:03:19,643 - INFO: - Models equivalent: False
+2025-02-03 18:03:19,644 - INFO: - Variable counts match: True
+2025-02-03 18:03:19,644 - INFO: - Constraint counts match: True
+2025-02-03 18:03:19,644 - INFO: - Original Objective Value: 214.0
+2025-02-03 18:03:19,644 - INFO: - Permuted Objective Value: 214.0
+2025-02-03 18:03:19,645 - INFO: - Canonical from Original Objective Value: 214.0
+2025-02-03 18:03:19,645 - INFO: - Canonical from Permuted Objective Value: 214.0
+2025-02-03 18:03:19,645 - INFO: - Original Solve Time: 80.2290844917 seconds
+2025-02-03 18:03:19,645 - INFO: - Permuted Solve Time: 83.0846500397 seconds
+2025-02-03 18:03:19,646 - INFO: - Canonical from Original Solve Time: 103.6621122360 seconds
+2025-02-03 18:03:19,646 - INFO: - Canonical from Permuted Solve Time: 100.9670710564 seconds
+2025-02-03 18:03:19,647 - INFO: Solve-Time Variability Metrics:
+2025-02-03 18:03:19,647 - INFO: - Mean Solve-Time Variability (Original vs Permuted): 0.202819
+2025-02-03 18:03:19,647 - INFO: - Mean Solve-Time Variability (Canonical vs Canonical): 0.113578
+2025-02-03 18:03:19,647 - INFO: Canonical form has improved solve-time consistency across permutations.

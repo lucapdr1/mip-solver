@@ -16,15 +16,15 @@ from utils.gurobi_utils import init_gurobi_env
 
 rules = [
     #cols
-    VariableTypeRule(1e3),
+    VariableTypeRule(1e5),
+    ColumnsCoefficientRule(1),
     ObjectiveCoefficientRule(100),
-    ColumnsCoefficientRule(10),
-    VariableOccurrenceRule(),
+    VariableOccurrenceRule(1),
     #rows
-    ConstraintSenseRule(1e3),
+    ConstraintSenseRule(1e5),
+    RowCoefficientRule(1),
     RHSValueRule(100),
-    RowCoefficientRule(10),
-    ConstraintRangeRule()
+    ConstraintRangeRule(1)
     
 
 ]
