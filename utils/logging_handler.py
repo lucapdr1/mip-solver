@@ -97,7 +97,7 @@ class LoggingHandler:
 
         s3 = boto3.client('s3')
         bucket_name = BUCKET_NAME
-        s3_path = f"${OUTPUT_DIR}{os.path.basename(self.log_file)}"
+        s3_path = f"{OUTPUT_DIR}{os.path.basename(self.log_file)}"
 
         with open(self.log_file, 'rb') as f:
             s3.put_object(

@@ -3,16 +3,16 @@
 from core.optimization_experiment import OptimizationExperiment
 from core.ordering.rule_combination import RuleComposition
 from core.ordering.rule_combination_hierarchical import HierarchicalRuleComposition
-from core.ordering.variable_type_rule import VariableTypeRule
-from core.ordering.cols_bound_category_rule import BoundCategoryRule
-from core.ordering.objective_coefficient_rule import ObjectiveCoefficientRule
-from core.ordering.cols_coefficient_rule import ColumnsCoefficientRule
-from core.ordering.variable_occurrence_rule import VariableOccurrenceRule
-from core.ordering.constraint_sense_rule import ConstraintSenseRule
-from core.ordering.constr_composition_rule import ConstraintCompositionRule
-from core.ordering.rhs_value_rule import RHSValueRule
-from core.ordering.row_coefficient_rule import RowCoefficientRule
-from core.ordering.constraint_range_rule import ConstraintRangeRule
+from core.ordering.variables.variable_type_rule import VariableTypeRule
+from core.ordering.variables.cols_bound_category_rule import BoundCategoryRule
+from core.ordering.variables.objective_coefficient_rule import ObjectiveCoefficientRule
+from core.ordering.variables.cols_coefficient_rule import ColumnsCoefficientRule
+from core.ordering.variables.variable_occurrence_rule import VariableOccurrenceRule
+from core.ordering.constraints.constraint_sense_rule import ConstraintSenseRule
+from core.ordering.constraints.constr_composition_rule import ConstraintCompositionRule
+from core.ordering.constraints.rhs_value_rule import RHSValueRule
+from core.ordering.constraints.row_coefficient_rule import RowCoefficientRule
+from core.ordering.constraints.constraint_range_rule import ConstraintRangeRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.config import NUMBER_OF_PERMUATATIONS
 

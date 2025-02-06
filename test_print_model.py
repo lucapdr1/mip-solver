@@ -3,7 +3,7 @@ from gurobipy import GRB
 from utils.gurobi_utils import get_Input_problem
 
 from core.ordering.rule_combination import RuleComposition
-from core.ordering.objective_coefficient_rule import ObjectiveCoefficientRule
+from core.ordering.variables.objective_coefficient_rule import ObjectiveCoefficientRule
 from utils.problem_printer import ProblemPrinter
 from utils.logging_handler import LoggingHandler
 rules = [
