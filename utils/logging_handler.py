@@ -6,7 +6,7 @@ import boto3
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from utils.config import LOG_LEVEL, PRODUCTION, BUCKET_NAME, MATRICES_TO_CSV, LOG_MATRIX
+from utils.config import LOG_LEVEL, PRODUCTION, BUCKET_NAME, OUTPUT_DIR, INPUT_PROBLEM, MATRICES_TO_CSV, LOG_MATRIX
 
 class LoggingHandler:
     _instance = None  # Singleton instance tracker
@@ -18,12 +18,12 @@ class LoggingHandler:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, log_dir='experiments', file_path=None):
+    def __init__(self, file_path=None):
         if hasattr(self, '_initialized') and self._initialized:
             return
 
         # Initialization code (keep your existing __init__ logic)
-        self.log_dir = log_dir
+        self.log_dir = OUTPUT_DIR
         self.file_path = file_path or "experiment"
         self.logger = None
         self.log_file = None
@@ -55,7 +55,7 @@ class LoggingHandler:
         # Create log file path
         self.log_file = os.path.join(
             self.log_dir, 
-            f'{base_name}_{timestamp}.log'
+            f'{base_name}_{timestamp}_{INPUT_PROBLEM}.log'
         )
 
         # Configure logger
@@ -97,7 +97,7 @@ class LoggingHandler:
 
         s3 = boto3.client('s3')
         bucket_name = BUCKET_NAME
-        s3_path = f"experiments/{os.path.basename(self.log_file)}"
+        s3_path = f"${OUTPUT_DIR}{os.path.basename(self.log_file)}"
 
         with open(self.log_file, 'rb') as f:
             s3.put_object(

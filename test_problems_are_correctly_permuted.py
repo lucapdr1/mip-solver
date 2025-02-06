@@ -1,11 +1,12 @@
 from core.problem_permutator import ProblemPermutator
 import gurobipy as gp
 import numpy as np
-from utils.config import INPUT_PROBLEM
+from utils.gurobi_utils import get_Input_problem
 
 # Test permutation integrity
-original = gp.read(INPUT_PROBLEM)
-permutator = ProblemPermutator(INPUT_PROBLEM)
+input_problem = get_Input_problem()
+original = gp.read(input_problem)
+permutator = ProblemPermutator(input_problem)
 permuted = permutator.create_permuted_problem()
 
 # Should print True for valid permutations

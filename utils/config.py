@@ -9,11 +9,12 @@ LICENSEID = os.getenv('LICENSEID')
 # Read values from environment variables or use hardcoded defaults
 LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
 INPUT_DIR = os.getenv('INPUT_DIR', "input/")
+OUTPUT_DIR = os.getenv('INPUT_DIR', "experiments/")
 
-INPUT_PROBLEM = INPUT_DIR + os.getenv('INPUT_PROBLEM', "dummy.mps")
-#INPUT_PROBLEM = INPUT_DIR + os.getenv('INPUT_PROBLEM', "example-min.mps")
-#INPUT_PROBLEM = INPUT_DIR + os.getenv('INPUT_PROBLEM', "30n20b8.mps")
-#INPUT_PROBLEM = INPUT_DIR + os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
+INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
+#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
+#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "30n20b8.mps")
+#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 
 NUMBER_OF_PERMUATATIONS = int(os.getenv('NUMBER_OF_PERMUATATIONS', 1))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
@@ -32,6 +33,7 @@ logging.basicConfig(level=LOG_LEVEL)
 # Print or log the values to verify
 print(f"LOG_LEVEL: {LOG_LEVEL}")
 print(f"INPUT_DIR: {INPUT_DIR}")
+print(f"OUTPUT_DIR: {OUTPUT_DIR}")
 print(f"INPUT_PROBLEM: {INPUT_PROBLEM}")
 print(f"NUMBER_OF_PERMUATATIONS: {NUMBER_OF_PERMUATATIONS}")
 print(f"NORMALIZATION_ACTIVE: {NORMALIZATION_ACTIVE}")

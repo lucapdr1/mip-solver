@@ -13,8 +13,8 @@ from core.ordering.constr_composition_rule import ConstraintCompositionRule
 from core.ordering.rhs_value_rule import RHSValueRule
 from core.ordering.row_coefficient_rule import RowCoefficientRule
 from core.ordering.constraint_range_rule import ConstraintRangeRule
-from utils.gurobi_utils import init_gurobi_env
-from utils.config import INPUT_PROBLEM, NUMBER_OF_PERMUATATIONS
+from utils.gurobi_utils import init_gurobi_env, get_Input_problem
+from utils.config import NUMBER_OF_PERMUATATIONS
 
 
 var_block_rules = [
@@ -52,8 +52,8 @@ ordering_rule = HierarchicalRuleComposition(
 if __name__ == "__main__":    
     try:
         gp_env = init_gurobi_env()
-
-        experiment = OptimizationExperiment(gp_env, INPUT_PROBLEM, ordering_rule)
+        input_problem = get_Input_problem()
+        experiment = OptimizationExperiment(gp_env, input_problem, ordering_rule)
         results = experiment.run_experiment(NUMBER_OF_PERMUATATIONS)
     except Exception as e:
         print(f"Experiment failed: {e}")

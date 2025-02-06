@@ -1,6 +1,6 @@
 import gurobipy as gp
 import os
-from utils.config import WLSACCESSID, WLSSECRET, LICENSEID
+from utils.config import WLSACCESSID, WLSSECRET, LICENSEID, INPUT_DIR, INPUT_PROBLEM
 
 # Initialize the Gurobi environment
 def init_gurobi_env():
@@ -17,3 +17,6 @@ def init_gurobi_env():
     # Initialize the Gurobi environment with parameters
     env = gp.Env(params=params)
     return env
+
+def get_Input_problem():
+    return INPUT_DIR + INPUT_PROBLEM
