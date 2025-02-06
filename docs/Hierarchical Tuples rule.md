@@ -1,123 +1,151 @@
-## **Scoring Rules**
+## **Scoring Rules (Multi-Block Version)**
 
-### **Column (Variable) Ordering**
+Instead of relying on a single large multiplier (e.g., \(10^6\)) for “type” or “sense” alone, the system now uses **two or more block rules** that each produce a partial **score component** (or label). All of these partial labels form the **first part** of a tuple, which defines the **major block** into which each variable or constraint belongs. Then, all **intra-block** rule scores are combined into a **single numeric value** appended as the **last element** of the tuple. The final **lexicographic sort** of these tuples enforces a strict hierarchy:
 
-Variables are ordered using **lexicographical tuples** of the form:  
+1. **Compare block components** (in order)  
+2. If two items have the **same** block components, compare their **intra-block sum** (the last tuple element)
+
+This yields a clean, multi-dimensional grouping while preserving the advantage of a lexicographic approach—no gigantic multipliers are needed.
+
+---
+
+## **Column (Variable) Ordering**
+
+### **Block Rules (for Variables)**
+
+Here are two **example** block rules (though you might have more):
+
+1. **Type-Based Rule**  
+   - Distinguishes each variable as binary (3), integer (2), continuous (1), and possibly detects other categories (e.g., semicontinuous, effectively binary if \([a,a+1]\), etc.).  
+   - Produces a numeric label, e.g. 3, 2, or 1, depending on the variable’s integrality status.
+
+2. **Bound-Based Rule**  
+   - Looks at the domain of each variable:  
+     - Both bounds finite, nonnegative => 4  
+     - Both bounds finite, straddling zero => 3  
+     - One infinite bound => 2  
+     - Both bounds infinite => 1  
+   - Produces another numeric label (e.g., 4, 3, 2, or 1).
+
+An individual variable might thus receive a **two-component** block label (e.g., \((3,4)\) for a **binary** variable with **nonnegative finite** bounds).
+
+### **Intra-Block Rules (for Variables)**
+
+After you place variables into these block categories, you still want to refine ordering **within** each block. For instance:
+
+1. **Column Coefficients**: \(\sum_j \log\bigl(1 + |\delta_{ij}|\bigr)\) measures how “large” or “frequent” variable \(i\) is across constraints.  
+2. **Objective Coefficient**: \(\log\bigl(1 + |\text{Obj}_i|\bigr)\) (often scaled by 100 to emphasize variables with high objective impact).  
+3. **Occurrences**: count of non-zero entries in the constraint matrix for variable \(i\).  
+
+These individual scores can be **summed** into a **single** “intra-block” metric. For example:
+
 \[
-\text{Score}_i = \bigl(\text{TypePriority}, \text{SumCoeffs}, \text{ObjCoeff}, \text{Occurrences}\bigr)
-\]  
+\text{IntraBlockScore}_i 
+= \Bigl[\sum_j \log(1 + |\delta_{ij}|)\Bigr] 
+\;+\; 100\,\log\bigl(1 + |\text{Obj}_i|\bigr) 
+\;+\; [\#\text{occurrences}].
+\]
 
-1. **TypePriority**:  
-   - **Binary Variables:** \(3\)  
-   - **Integer Variables:** \(2\)  
-   - **Continuous Variables:** \(1\)  
+### **Final Tuple for Each Variable**
 
-2. **SumCoeffs**:  
-   \[
-   \sum_{j}\log(1 + |\delta_{ij}|)
-   \]  
-   Sum of log-scaled absolute constraint coefficients for variable \(i\).
+Each variable \(i\) ends up with a tuple:
 
-3. **ObjCoeff**:  
-   \[
-   \log(1 + |\text{Obj}_i|)
-   \]  
-   Log-scaled absolute objective coefficient for variable \(i\).
-
-4. **Occurrences**:  
-   \[
-   \#\text{occurrences}
-   \]  
-   Number of constraints where variable \(i\) is non-zero.
-
----
-
-### **Row (Constraint) Ordering**
-
-Constraints are ordered using **lexicographical tuples** of the form:  
 \[
-\text{Score}_j = \bigl(\text{SensePriority}, \text{SumCoeffs}, \text{RHS}, \text{Range}\bigr)
-\]  
+\underbrace{(\text{BlockLabel1}, \;\text{BlockLabel2}, \;\dots)}_{\text{Multiple block-rule outputs}},\;
+\underbrace{\text{IntraBlockSum}}_{\text{last element}}.
+\]
 
-1. **SensePriority**:  
-   - **“≥” Constraints:** \(3\)  
-   - **“=” Constraints:** \(2\)  
-   - **“≤” Constraints:** \(1\)  
+- **BlockLabel1** might be from the type-based rule (e.g. 3 for binary).  
+- **BlockLabel2** might be from the bound-based rule (e.g. 4 for nonnegative).  
+- **IntraBlockSum** is a single numeric total from the “coefficient sum,” “objective,” and “occurrences.”
 
-2. **SumCoeffs**:  
-   \[
-   \sum_{i}\log(1 + |\gamma_{ji}|)
-   \]  
-   Sum of log-scaled absolute coefficients in constraint \(j\).
+A **descending lexicographic** sort on these tuples means:
 
-3. **RHS**:  
-   \[
-   \log(1 + |\text{RHS}_j|)
-   \]  
-   Log-scaled absolute RHS value of constraint \(j\).
-
-4. **Range**:  
-   \[
-   \log(1 + \text{Range}_j)
-   \]  
-   Log-scaled range of constraint \(j\) (difference between upper/lower bounds).
+1. All variables with a higher **type-based** label come first.  
+2. If there’s a tie, we compare the **bound-based** label.  
+3. If still tied, we compare the **intra-block** total—highest sum ranks first.
 
 ---
 
-### **Lexicographical Sorting Explained**
-Variables and constraints are sorted by comparing their tuples **element-wise**, starting with the first component. For example:  
+## **Row (Constraint) Ordering**
 
-**Variables**:  
-- Binary variables (\(P=3\)) will **always** appear before integers (\(P=2\)) or continuous (\(P=1\)), regardless of their intra-block scores.  
-- Within binary variables, ties are broken by `SumCoeffs`, then `ObjCoeff`, then `Occurrences`.  
+### **Block Rules (for Constraints)**
 
-**Constraints**:  
-- “≥” constraints (\(P=3\)) come before “=” (\(P=2\)) and “≤” (\(P=1\)).  
-- Within each sense group, constraints are ordered by `SumCoeffs`, `RHS`, and `Range`.
+Similarly, constraints can be partitioned along multiple dimensions. Two examples:
 
----
+1. **Sense-Based Rule**  
+   - Classifies each constraint by sense: “\(\ge\)” => 3, “\(=\)” => 2, “\(\le\)” => 1.
 
-### **Revised Tables**
+2. **Composition-Based Rule**  
+   - Checks if the constraint contains **only** integral/binary variables => 3,  
+   - **Only** continuous => 2,  
+   - A **mix** => 1.
 
-| **Term**               | **Component**      | **Weight** | **Example Value**     |
-|------------------------|--------------------|------------|-----------------------|
-| **TypePriority**       | Tuple Position 1   | Dominant   | 3 (binary), 2 (integer) |
-| **SumCoeffs**          | Tuple Position 2   | Moderate   | 50.2                  |
-| **ObjCoeff**           | Tuple Position 3   | Moderate   | 200.5                 |
-| **Occurrences**        | Tuple Position 4   | Minor      | 5                     |
+Hence, a constraint might have a **two-part** block label \((3,2)\) if it is a “\(\ge\)” constraint that contains **only continuous** variables, for example.
 
-**Table 1:** Variable ordering components and their roles in lexicographical sorting.
+### **Intra-Block Rules (for Constraints)**
 
----
+Within each constraint block, you can order them by:
 
-| **Term**               | **Component**      | **Weight** | **Example Value**     |
-|------------------------|--------------------|------------|-----------------------|
-| **SensePriority**      | Tuple Position 1   | Dominant   | 3 (“≥”), 2 (“=”)     |
-| **SumCoeffs**          | Tuple Position 2   | Moderate   | 30.8                  |
-| **RHS**                | Tuple Position 3   | Moderate   | 150.0                 |
-| **Range**              | Tuple Position 4   | Minor      | 2.0                   |
+1. **Row Coefficients**: \(\sum_i \log\bigl(1 + |\gamma_{ji}|\bigr)\).  
+2. **RHS**: \(\log(1 + |\text{RHS}_j|)\) (scaled by 100).  
+3. **Range**: \(\log\bigl(1 + \text{Range}_j\bigr)\) for ranged constraints.
 
-**Table 2:** Constraint ordering components and their roles.
+Sum these into a single number:
 
----
+\[
+\text{IntraBlockScore}_j
+= \sum_i \log(1 + |\gamma_{ji}|)
+\;+\;
+100\,\log(1 + |\text{RHS}_j|)
+\;+\;
+\log\bigl(1 + \text{Range}_j\bigr).
+\]
 
-### **Example**
+### **Final Tuple for Each Constraint**
 
-#### **Variables**  
-| Variable | Type      | TypePriority | SumCoeffs | ObjCoeff | Occurrences |  
-|----------|-----------|--------------|-----------|----------|-------------|  
-| x7       | Integer   | 2            | 50.2      | 200.5    | 5           |  
-| x1       | Continuous| 1            | 100.0     | 500.0    | 10          |  
+\[
+(\text{SenseLabel}, \;\text{CompositionLabel}, \;\dots,\; \text{IntraBlockSum}).
+\]
 
-**Order**:  
-1. x7 (TypePriority=2)  
-2. x1 (TypePriority=1)  
+Sorted **descending lexicographically**:
 
-Even though x1 has higher `SumCoeffs`, `ObjCoeff`, and `Occurrences`, x7 appears first because its `TypePriority` is higher.
+1. Compare sense label first.  
+2. If there’s a tie, compare composition label.  
+3. If still tied, compare the intra-block sum.
 
 ---
 
-### **Why Lexicographical Sorting?**
-- **No Large Multipliers**: The order is enforced by tuple structure, not arbitrary scaling.  
-- **Transparency**: The priority hierarchy is explicit in the tuple order.  
-- **Flexibility**: Add/remove block rules by extending or reducing the tuple.  
+## **Why Tuples with the Last Element as Intra-Score?**
+
+1. **Absolute Hierarchy**: Each block rule label is a separate **position** in the tuple. If any item differs in an earlier position, it outranks or is outranked, regardless of the subsequent positions.  
+2. **Simple Summation**: By combining the multiple “intra-block” factors (e.g., objective, coefficient sums) into **one** numeric total, you get a **single** final comparison for tie-breaking.  
+3. **No Need for Large Multipliers**: You don’t have to multiply each block label by a huge constant. The **lexicographic** ordering ensures earlier positions in the tuple always dominate over later ones.
+
+---
+
+## **Example Ordering Flow**
+
+1. **Variables**:
+   - Variable \(x_3\) has block label \((3,4)\) → (binary, nonnegative).  
+   - Variable \(x_7\) has block label \((2,4)\) → (integer, nonnegative).  
+   - Their **intra-block** scores might be 150 vs. 300.  
+
+   In lexicographic order, \((3,4,*)\) (i.e., binary + nonnegative) ranks above \((2,4,*)\), so \(x_3\) is placed before \(x_7\) **regardless** of their 150 vs. 300. If two variables share the same block label, then the one with the **higher** intra-score (e.g., 300) comes first.
+
+2. **Constraints**:
+   - Constraint \(c_5\) might have sense label = 3 (“\(\ge\)”) and composition label = 3 (only integer variables), plus an intra score of 200.  
+   - Constraint \(c_2\) might have sense label = 3 (“\(\ge\)”) and composition label = 2 (only continuous variables), plus an intra score of 500.  
+
+   Even though \(c_2\) has a bigger **intra** score (500 vs. 200), it has composition label 2 vs. 3 → \((3,3,200)\) outranks \((3,2,500)\) in descending lexicographic order.
+
+---
+
+## **Conclusion**
+
+By creating **tuples** whose **first components** come from **block classifications** (type vs. bound, sense vs. composition, etc.) and whose **last component** is a **single intra-block sum**, you get a **strict multi-level** ordering:
+
+1. **Major** separation by block rule results (type, sense, etc.).  
+2. **Minor** sorting within each block by the combined “intra-score.”  
+
+This ensures an intuitive, transparent hierarchy without juggling large numeric multipliers. The final ordering is simply a **descending lexicographic** comparison of tuples—**blocking** first, **intra** tie-breaks last.
