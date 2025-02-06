@@ -12,17 +12,17 @@ class HierarchicalRuleComposition(OrderingRule):
     # ==========================
     # Variable Scoring
     # ==========================
-    def score_variables(self, vars, obj_coeffs, A, bounds):
+    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # 1. Compute block identifiers from block rules
         block_components = [
-            rule.score_variables(vars, obj_coeffs, A, bounds)
+            rule.score_variables(vars, obj_coeffs, bounds, A, constraints, rhs)
             for rule in self.var_block_rules
         ]
 
         # 2. Compute intra-block scores
         intra_scores = np.zeros(len(vars))
         for rule in self.var_intra_rules:
-            intra_scores += rule.score_variables(vars, obj_coeffs, A, bounds)
+            intra_scores += rule.score_variables(vars, obj_coeffs, bounds, A, constraints, rhs)
 
         # 3. Combine into tuples: (block1, block2, ..., intra_score)
         var_scores = []
@@ -35,16 +35,16 @@ class HierarchicalRuleComposition(OrderingRule):
     # ==========================
     # Constraint Scoring
     # ==========================
-    def score_constraints(self, constraints, A, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # Similar logic for constraints
         block_components = [
-            rule.score_constraints(constraints, A, rhs)
+            rule.score_constraints(vars, obj_coeffs, bounds, A, constraints, rhs)
             for rule in self.constr_block_rules
         ]
 
         intra_scores = np.zeros(len(constraints))
         for rule in self.constr_intra_rules:
-            intra_scores += rule.score_constraints(constraints, A, rhs)
+            intra_scores += rule.score_constraints(vars, obj_coeffs, bounds, A, constraints, rhs)
 
         constr_scores = []
         for i in range(len(constraints)):
