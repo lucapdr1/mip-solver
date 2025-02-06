@@ -13,15 +13,10 @@ from core.ordering.constr_composition_rule import ConstraintCompositionRule
 from core.ordering.rhs_value_rule import RHSValueRule
 from core.ordering.row_coefficient_rule import RowCoefficientRule
 from core.ordering.constraint_range_rule import ConstraintRangeRule
+from utils.gurobi_utils import init_gurobi_env
 from utils.config import INPUT_PROBLEM, NUMBER_OF_PERMUATATIONS
 
-<<<<<<< HEAD
-from utils.gurobi_utils import init_gurobi_env
 
-rules = [
-    #cols
-    VariableTypeRule(1e5),
-=======
 var_block_rules = [
     VariableTypeRule(1),  # e.g., BINARY->3, INTEGER->2, CONTINUOUS->1
     BoundCategoryRule(1)
@@ -29,7 +24,6 @@ var_block_rules = [
 ]
 
 var_intra_rules = [
->>>>>>> 560e2f90cee529dda4d73666c4ac1c88efb38abc
     ColumnsCoefficientRule(1),
     ObjectiveCoefficientRule(100),
     VariableOccurrenceRule(1)
