@@ -1,12 +1,15 @@
+FILENAME="dummy.mps"
+JOB_NAME="mip-solver-job-1-${FILENAME%.*}"
+
 aws batch submit-job \
-  --job-name "mip-solver-job-1" \
+  --job-name "$JOB_NAME" \
   --job-queue mip-solver-queue \
   --job-definition mip-solver-job-definition \
   --container-overrides '{
     "environment": [
       {
         "name": "INPUT_PROBLEM",
-        "value": "dummy.mps"
+        "value": "'$FILENAME'"
       }
     ]
   }'
