@@ -16,6 +16,7 @@ def init_gurobi_env():
 
     # Initialize the Gurobi environment with parameters
     env = gp.Env(params=params)
+    env.start()
     return env
 
 def get_Input_problem():

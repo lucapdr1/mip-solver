@@ -155,7 +155,7 @@ class OptimizationExperiment:
                     temp_file_path = temp_file.name
                 
                 # Load model from the temporary file
-                model = gp.read(temp_file_path)
+                model = gp.read(temp_file_path, env=self.gp_env)
                 self.logger.info(f"Successfully loaded problem from S3: s3://{bucket_name}/{key}")
                 
                 # Clean up the temporary file
@@ -172,7 +172,7 @@ class OptimizationExperiment:
             if not os.path.exists(self.file_path):
                 raise FileNotFoundError(f"The file {self.file_path} does not exist locally")
                 
-            model = gp.read(self.file_path)
+            model = gp.read(self.file_path, env=self.gp_env)
             self.logger.info(f"Successfully loaded local problem from {self.file_path}")
             return model
         

@@ -3,7 +3,7 @@
 # Usage: ./submit_jobs.sh <input_directory> <num_permutations>
 
 INPUT_DIR="$1"
-NUM_PERMUTATIONS="${2:-}"  # Default to empty if not provided
+NUM_PERMUTATIONS="${2:5}"  # Default to empty if not provided
 
 # Verify input directory exists
 if [ ! -d "$INPUT_DIR" ]; then
