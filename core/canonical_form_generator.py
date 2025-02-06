@@ -45,7 +45,13 @@ class CanonicalFormGenerator:
             self.logger.debug(f"Var {i} score: {score}")
         
         var_types = np.array([var.VType for var in self.vars])
-        var_order = np.argsort(var_scores)
+
+        var_order_indices = sorted(
+            range(len(var_scores)),
+            key=lambda i: var_scores[i],
+            reverse=False # Adjust based on your block scoring logic
+        )
+        var_order = np.array(var_order_indices)
         
         self.logger.debug("Variable ordering:")
         self.logger.debug(f"Order: {var_order}")
@@ -66,7 +72,12 @@ class CanonicalFormGenerator:
         for i, score in enumerate(constraint_scores):
             self.logger.debug(f"Constr {i}: Score: {score}")
 
-        constr_order = np.argsort(constraint_scores)
+        constr_order_indices = sorted(
+            range(len(constraint_scores)),
+            key=lambda i: constraint_scores[i],
+            reverse=False
+        )
+        constr_order = np.array(constr_order_indices)
 
         self.logger.debug("Constraint ordering:")
         self.logger.debug(f"Order: {constr_order}")

@@ -39,8 +39,7 @@ ordering_rule = HierarchicalRuleComposition(
     var_block_rules=var_block_rules,
     var_intra_rules=var_intra_rules,
     constr_block_rules=constr_block_rules,
-    constr_intra_rules=constr_intra_rules,
-    block_rank_factor=1e6
+    constr_intra_rules=constr_intra_rules
 )
 
 
