@@ -29,7 +29,7 @@ class OptimizationExperiment:
         self.logger.info(f"- Constraints: {self.original_model.NumConstrs}")
         self.logger.info(f"- Objective Sense: {'Minimize' if self.original_model.ModelSense == 1 else 'Maximize'}")
         
-        self.permutator = ProblemPermutator(gp_env, file_path)
+        self.permutator = ProblemPermutator(gp_env, self.original_model)
         self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule, self.normalizer)
 
     def run_single_iteration(self, original_result, canonical_from_original_result, original_canonical):
