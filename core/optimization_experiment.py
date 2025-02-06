@@ -12,7 +12,7 @@ from core.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
 from core.problem_normalizer import Normalizer
 from utils.problem_printer import ProblemPrinter
-from utils.config import LOG_MODEL_COMPARISON, PRODUCTION
+from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -139,7 +139,7 @@ class OptimizationExperiment:
             
             # Construct the full S3 key by prepending "input/"
             key = f"{self.file_path}"
-            bucket_name = "lucapolimi-experiments"  # Your bucket name
+            bucket_name = BUCKET_NAME  # Your bucket name
             
             try:
                 # Create S3 client

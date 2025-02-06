@@ -10,10 +10,10 @@ LICENSEID = os.getenv('LICENSEID')
 LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
 INPUT_DIR = os.getenv('INPUT_DIR', "input/")
 
-INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', INPUT_DIR + "dummy.mps")
-#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', INPUT_DIR + "example-min.mps")
-#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', INPUT_DIR + "30n20b8.mps")
-#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', INPUT_DIR + "neos-4306827-ravan.mps")
+INPUT_PROBLEM = INPUT_DIR + os.getenv('INPUT_PROBLEM', "dummy.mps")
+#INPUT_PROBLEM = INPUT_DIR + os.getenv('INPUT_PROBLEM', "example-min.mps")
+#INPUT_PROBLEM = INPUT_DIR + os.getenv('INPUT_PROBLEM', "30n20b8.mps")
+#INPUT_PROBLEM = INPUT_DIR + os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 
 NUMBER_OF_PERMUATATIONS = int(os.getenv('NUMBER_OF_PERMUATATIONS', 1))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
@@ -21,7 +21,10 @@ NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'tr
 MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
 LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'
 LOG_MODEL_COMPARISON = os.getenv('LOG_MODEL_COMPARISON', 'False').lower() == 'true'
-PRODUCTION = os.getenv('PRODUCTION', 'True').lower() == 'true'
+PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
+
+#AWS
+BUCKET_NAME = os.getenv('BUCKET_NAME', 'lucapolimi-experiments')
 
 # Example of setting up logging
 logging.basicConfig(level=LOG_LEVEL)

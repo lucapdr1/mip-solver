@@ -6,7 +6,7 @@ import boto3
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from utils.config import LOG_LEVEL, PRODUCTION, MATRICES_TO_CSV, LOG_MATRIX
+from utils.config import LOG_LEVEL, PRODUCTION, BUCKET_NAME, MATRICES_TO_CSV, LOG_MATRIX
 
 class LoggingHandler:
     _instance = None  # Singleton instance tracker
@@ -96,7 +96,7 @@ class LoggingHandler:
             return
 
         s3 = boto3.client('s3')
-        bucket_name = "lucapolimi-experiments"
+        bucket_name = BUCKET_NAME
         s3_path = f"experiments/{os.path.basename(self.log_file)}"
 
         with open(self.log_file, 'rb') as f:

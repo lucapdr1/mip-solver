@@ -6,7 +6,7 @@ aws batch submit-job \
     "environment": [
       {
         "name": "INPUT_PROBLEM",
-        "value": "input/dummy.mps"
+        "value": "dummy.mps"
       }
     ]
   }'

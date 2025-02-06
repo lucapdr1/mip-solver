@@ -43,7 +43,7 @@ for file in "$INPUT_DIR"/*.mps; do
   CMD+="
         {
           \"name\": \"INPUT_PROBLEM\",
-          \"value\": \"$file\"
+          \"value\": \"$FILENAME\"
         }
       ]
     }'"
