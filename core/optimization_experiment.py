@@ -121,7 +121,7 @@ class OptimizationExperiment:
                 raise
 
         # Compute and log solve-time variability metrics
-        self.compute_solve_time_variability(results)
+        self.compute_solve_time_variability_std(results)   # Solve times
         return results
 
     def load_problem(self):
@@ -276,4 +276,45 @@ class OptimizationExperiment:
         else:
             self.logger.warning("Canonical form still exhibits significant solve-time variability.")
 
+    def compute_solve_time_variability_std(self, results):
+        """
+        Computes and logs two key standard deviation metrics:
+        1. Variability of permuted solve times including the original solve time.
+        2. Variability of canonical solve times including the canonical-from-original solve time.
+        """
+        import numpy as np
+
+        # If you have fewer than 2 runs, std is not well-defined (ddof=1 leads to zero-division).
+        if len(results) < 2:
+            self.logger.warning("Not enough runs to compute standard deviation of solve times.")
+            return
+
+        # Extract original solve time (constant across runs)
+        original_solve_time = results[0]['original_solve_time']
+        canonical_from_original_solve_time = results[0]['canonical_from_original_solve_time']
+
+        # Extract all permuted solve times and canonical-from-permuted solve times
+        permuted_solve_times = [r['permuted_solve_time'] for r in results]
+        canonical_from_permuted_solve_times = [r['canonical_from_permuted_solve_time'] for r in results]
+
+        # Append original solve time to permuted list
+        permuted_solve_times.append(original_solve_time)
+        
+        # Append canonical-from-original solve time to canonical list
+        canonical_from_permuted_solve_times.append(canonical_from_original_solve_time)
+
+        # Compute standard deviation
+        std_permuted = np.std(permuted_solve_times, ddof=1)
+        std_canon_perm = np.std(canonical_from_permuted_solve_times, ddof=1)
+
+        # Log results
+        self.logger.info("Solve-Time Variability (Standard Deviation):")
+        self.logger.info(f" - Std(Original + Permuted Solve Times): {std_permuted:.6f}")
+        self.logger.info(f" - Std(Canonical-from-Original + Canonical-from-Permuted Solve Times): {std_canon_perm:.6f}")
+
+        # Comparison
+        if std_canon_perm < std_permuted:
+            self.logger.info("Canonical form reduces solve-time variability across permutations.")
+        else:
+            self.logger.warning("Canonical form does NOT sufficiently reduce solve-time variability across permutations.")
 
