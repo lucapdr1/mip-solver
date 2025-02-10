@@ -56,8 +56,8 @@ class ProblemPermutator:
         constr_permutation = np.random.permutation(num_constrs)
 
         # --- Build permutation matrices (sparse by default) ---
-        P_col = self.permutation_matrix(var_permutation, sparse=True)   # For columns
-        P_row = self.permutation_matrix(constr_permutation, sparse=True)  # For rows
+        P_col = self.permutation_matrix(var_permutation, sparse=True)   # For columns - Q
+        P_row = self.permutation_matrix(constr_permutation, sparse=True)  # For rows - P
 
         # Make sure A is in CSC (or CSR) for easy slicing
         A_csc = A.tocsc()
@@ -130,5 +130,54 @@ class ProblemPermutator:
         # Return everything needed to analyze or reconstruct
         # ------------------------------------------------------
         return permuted_model, var_permutation, constr_permutation, P_col, P_row
+    
+    def permutation_distance(self, row_perm1, col_perm1, row_perm2, col_perm2,
+                             row_dist_method="kendall_tau",
+                             col_dist_method="kendall_tau",
+                             alpha=1.0, beta=1.0):
+        """
+        Compute a combined distance between two pairs of permutations.
+        row_dist_method and col_dist_method can be 'kendall_tau', 'hamming', etc.
+        """
+        # pick the actual function to use for rows
+        if row_dist_method == "kendall_tau":
+            dist_fn_rows = self.kendall_tau_distance
+        else:
+            dist_fn_rows = self.hamming_distance  # or others
+
+        # pick the actual function for columns
+        if col_dist_method == "kendall_tau":
+            dist_fn_cols = self.kendall_tau_distance
+        else:
+            dist_fn_cols = self.hamming_distance
+
+        d_rows = dist_fn_rows(row_perm1, row_perm2)
+        d_cols = dist_fn_cols(col_perm1, col_perm2)
+        return alpha * d_rows + beta * d_cols
+    
+
+    def hamming_distance(perm1, perm2):
+        if len(perm1) != len(perm2):
+            raise ValueError("Permutations must be the same length.")
+        return np.sum(np.array(perm1) != np.array(perm2))
+
+    def kendall_tau_distance(perm1, perm2):
+        n = len(perm1)
+        if len(perm2) != n:
+            raise ValueError("Permutations must be the same length.")
+
+        # Map elements in perm2 to their positions
+        pos_in_perm2 = [0]*n
+        for i, val in enumerate(perm2):
+            pos_in_perm2[val] = i
+
+        # Count inversions
+        distance = 0
+        for i in range(n):
+            for j in range(i+1, n):
+                if pos_in_perm2[perm1[i]] > pos_in_perm2[perm1[j]]:
+                    distance += 1
+        return distance
+
 
 
