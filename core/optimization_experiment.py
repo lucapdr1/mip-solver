@@ -32,16 +32,38 @@ class OptimizationExperiment:
         self.permutator = ProblemPermutator(gp_env, self.original_model)
         self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule, self.normalizer)
 
-    def run_single_iteration(self, original_result, canonical_from_original_result, original_canonical):
+    def run_single_iteration(self, original_result, canonical_from_original_result, original_canonical, original_canonical_var_order, original_canonical_constr_order):
         """Run a single iteration of the experiment with solving and detailed logging"""
         try:
             self.logger.debug("Starting new iteration...")
 
             # Create permuted problem
             self.logger.info("Creating Permuted Problem")
-            permuted_model, _, _, _, _ = self.permutator.create_permuted_problem()
+            permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem()
 
             ProblemPrinter.log_model(permuted_model, self.logger, level="DEBUG")
+
+            # Compute permutation distance BEFORE canonicalization
+            self.logger.info("Computing Permutation Distance before Canonicalization...")
+
+            original_var_order = list(range(self.original_model.NumVars))
+            original_constr_order = list(range(self.original_model.NumConstrs))
+
+            self.logger.debug(f"Original Constraint Order: {original_constr_order}")
+            self.logger.debug(f"Permuted Constraint Order: {constr_permutation}")
+            self.logger.debug(f"Original Variable Order: {original_var_order}")
+            self.logger.debug(f"Permuted Variable Order: {var_permutation}")
+          
+            permuted_distance = self.permutator.permutation_distance(
+                original_constr_order,  original_var_order,
+                constr_permutation, var_permutation,
+                row_dist_method="kendall_tau",
+                col_dist_method="kendall_tau",
+                alpha=1.0, 
+                beta=1.0
+            )
+
+            self.logger.info(f"Permutation Distance Before Canonicalization: {permuted_distance}")
 
             # Solve the permuted problem
             self.logger.info("Solving Permuted Problem")
@@ -56,15 +78,47 @@ class OptimizationExperiment:
 
             # Generate canonical form for the permuted model
             self.logger.debug("Generating canonical form for permuted model...")
-            permuted_canonical = CanonicalFormGenerator(self.gp_env, permuted_model, self.ordering_rule, self.normalizer).get_canonical_form()
+            permuted_canonical, permuted_canonical_var_order, permuted_canonical_constr_order = (
+                CanonicalFormGenerator(self.gp_env, permuted_model, self.ordering_rule, self.normalizer)
+                .get_canonical_form()
+            )
+
             ProblemPrinter.log_model(permuted_canonical, self.logger, level="DEBUG")
 
             self.logger.info("Solving Canonical Form from Permuted Model")
             canonical_from_permuted_result = self.solve_problem(permuted_canonical)
 
+            # Compute COMPOSED permutation order
+            self.logger.info("Computing Adjusted Permuted Canonical Order...")
+            
+            # Correct permutation composition: π_final = π_perm ∘ π_canon (applied on original)
+            final_var_order = var_permutation[permuted_canonical_var_order]
+            final_constr_order = constr_permutation[permuted_canonical_constr_order]
+
+
+            # Compute permutation distance AFTER canonicalization
+            self.logger.info("Computing Permutation Distance after Canonicalization...")
+
+            self.logger.debug(f"Original Canonical Constraint Order: {original_canonical_constr_order}")
+            self.logger.debug(f"Permuted Canonical Constraint Order: {final_constr_order}")
+            self.logger.debug(f"Original Canonical Variable Order: {original_canonical_var_order}")
+            self.logger.debug(f"Permuted Canonical Variable Order: {final_var_order}")
+
+            canonical_distance = self.permutator.permutation_distance(
+                original_canonical_constr_order, original_canonical_var_order,
+                final_constr_order, final_var_order,
+                row_dist_method="kendall_tau",
+                col_dist_method="kendall_tau",
+                alpha=1.0, 
+                beta=1.0
+            )
+
+            self.logger.info(f"Permutation Distance After Canonicalization: {canonical_distance}")
+
             # Validate equivalence
             are_equivalent = self.canonical_generator.validate(original_canonical, permuted_canonical)
 
+            # Store results, including permutation distances
             result = {
                 'equivalent': are_equivalent,
                 'original_vars': original_canonical.NumVars,
@@ -79,6 +133,8 @@ class OptimizationExperiment:
                 'canonical_from_permuted_objective': canonical_from_permuted_result['objective_value'],
                 'canonical_from_original_solve_time': canonical_from_original_result['solve_time'],
                 'canonical_from_permuted_solve_time': canonical_from_permuted_result['solve_time'],
+                'permutation_distance_before_canonicalization': permuted_distance,
+                'permutation_distance_after_canonicalization': canonical_distance
             }
 
             # Log detailed differences if not equivalent
@@ -103,7 +159,7 @@ class OptimizationExperiment:
 
         # Generate the canonical form of the original model once
         self.logger.debug("Generating canonical form for the original model...")
-        original_canonical = self.canonical_generator.get_canonical_form()
+        original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
         ProblemPrinter.log_model(original_canonical, self.logger, level="DEBUG")
 
         # Solve the Canonical from original once
@@ -113,7 +169,7 @@ class OptimizationExperiment:
         for i in range(num_iterations):
             self.logger.info(f"Running iteration {i+1}/{num_iterations}")
             try:
-                iteration_result = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical)
+                iteration_result = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical, original_canonical_var_order, original_canonical_constr_order)
                 results.append(iteration_result)
                 self.log_iteration_results(i + 1, iteration_result)
 
@@ -236,6 +292,8 @@ class OptimizationExperiment:
         self.logger.info(f"- Permuted Solve Time: {iteration_result['permuted_solve_time']:.10f} seconds")
         self.logger.info(f"- Canonical from Original Solve Time: {iteration_result['canonical_from_original_solve_time']:.10f} seconds")
         self.logger.info(f"- Canonical from Permuted Solve Time: {iteration_result['canonical_from_permuted_solve_time']:.10f} seconds")
+        self.logger.info(f"- Permutation Distance Before Canonicalization: {iteration_result['permutation_distance_before_canonicalization']}")
+        self.logger.info(f"- Permutation Distance After Canonicalization: {iteration_result['permutation_distance_after_canonicalization']}")
 
     def compute_solve_time_variability(self, results):
         """

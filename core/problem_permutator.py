@@ -85,7 +85,7 @@ class ProblemPermutator:
                 ub=old_var.UB,
                 obj=old_var.Obj,
                 vtype=old_var.VType,
-                name=f"x{new_idx}"
+                name=f"x{new_idx+1}"
             )
             new_vars.append(new_var)
 
@@ -156,12 +156,12 @@ class ProblemPermutator:
         return alpha * d_rows + beta * d_cols
     
 
-    def hamming_distance(perm1, perm2):
+    def hamming_distance(self, perm1, perm2):
         if len(perm1) != len(perm2):
             raise ValueError("Permutations must be the same length.")
         return np.sum(np.array(perm1) != np.array(perm2))
 
-    def kendall_tau_distance(perm1, perm2):
+    def kendall_tau_distance(self, perm1, perm2):
         n = len(perm1)
         if len(perm2) != n:
             raise ValueError("Permutations must be the same length.")

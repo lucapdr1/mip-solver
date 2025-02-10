@@ -145,7 +145,7 @@ class CanonicalFormGenerator:
 
         canonical_model.ModelSense = self.sense
         canonical_model.update()
-        return canonical_model
+        return canonical_model, var_order, constr_order
 
     def _models_equivalent(self, model1, model2, tol=1e-6):
         """Check if two models are equivalent within tolerance with detailed logging"""
