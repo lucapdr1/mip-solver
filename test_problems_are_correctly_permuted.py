@@ -7,7 +7,8 @@ from utils.gurobi_utils import get_Input_problem
 input_problem = get_Input_problem()
 original = gp.read(input_problem)
 permutator = ProblemPermutator(input_problem)
-permuted = permutator.create_permuted_problem()
+permuted, _, _, _, _ = permutator.create_permuted_problem()
+
 
 # Should print True for valid permutations
 print(original.NumVars == permuted.NumVars)

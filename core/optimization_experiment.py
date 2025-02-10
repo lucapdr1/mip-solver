@@ -39,7 +39,8 @@ class OptimizationExperiment:
 
             # Create permuted problem
             self.logger.info("Creating Permuted Problem")
-            permuted_model = self.permutator.create_permuted_problem()
+            permuted_model, _, _, _, _ = self.permutator.create_permuted_problem()
+
             ProblemPrinter.log_model(permuted_model, self.logger, level="DEBUG")
 
             # Solve the permuted problem
