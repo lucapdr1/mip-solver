@@ -1,3 +1,5 @@
 /collection*
 /miplib*
 *__pycache__*
+*gurobi_license*
+/batch*

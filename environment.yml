@@ -1,0 +1,15 @@
+name: mip
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pandas
+  - scipy
+  - boto3
+  - botocore
+  - pip
+  - pip:
+    - gurobipy
+
+prefix: /home/p2001/miniconda3/envs/mip

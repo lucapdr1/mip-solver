@@ -1,8 +1,12 @@
 import gurobipy as gp
 from gurobipy import GRB
 
+from utils.gurobi_utils import init_gurobi_env
+
+#env
+gp_env = init_gurobi_env()
 # Create a new Gurobi model
-model = gp.Model("dummy")
+model = gp.Model("dummy", env=gp_env)
 
 # Define variables
 x1 = model.addVar(vtype=GRB.INTEGER, name="x1")
