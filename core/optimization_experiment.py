@@ -179,6 +179,7 @@ class OptimizationExperiment:
 
         # Compute and log solve-time variability metrics
         self.compute_solve_time_variability_std(results)   # Solve times
+        self.compute_distance_variability_std(results) # Distances
         return results
 
     def load_problem(self):
@@ -295,7 +296,7 @@ class OptimizationExperiment:
         self.logger.info(f"- Permutation Distance Before Canonicalization: {iteration_result['permutation_distance_before_canonicalization']}")
         self.logger.info(f"- Permutation Distance After Canonicalization: {iteration_result['permutation_distance_after_canonicalization']}")
 
-    def compute_solve_time_variability(self, results):
+    def compute_solve_time_variability(self, results): #Old pairwise not used now
         """
         Computes and logs the variability in solve times for:
         - Original vs Permuted model
@@ -376,4 +377,38 @@ class OptimizationExperiment:
             self.logger.info("Canonical form reduces solve-time variability across permutations.")
         else:
             self.logger.warning("Canonical form does NOT sufficiently reduce solve-time variability across permutations.")
+
+    def compute_distance_variability_std(self, results):
+        """
+        Computes and logs the standard deviation of permutation distances across all iterations.
+        The distance is always pairwise, so we measure:
+        1. Variability of permutation distances BEFORE canonicalization.
+        2. Variability of permutation distances AFTER canonicalization.
+        """
+        import numpy as np
+
+        # If you have fewer than 2 runs, std is not well-defined
+        if len(results) < 2:
+            self.logger.warning("Not enough runs to compute standard deviation of permutation distances.")
+            return
+
+        # Extract permutation distances
+        distances_before = [r['permutation_distance_before_canonicalization'] for r in results]
+        distances_after = [r['permutation_distance_after_canonicalization'] for r in results]
+
+        # Compute sample standard deviation
+        std_before = np.std(distances_before, ddof=1)
+        std_after = np.std(distances_after, ddof=1)
+
+        # Log results
+        self.logger.info("Permutation Distance Variability (Standard Deviation):")
+        self.logger.info(f" - Std(Permutation Distance Before Canonicalization): {std_before:.6f}")
+        self.logger.info(f" - Std(Permutation Distance After Canonicalization): {std_after:.6f}")
+
+        # Compare if canonicalization stabilizes permutation distances
+        if std_after < std_before:
+            self.logger.info("Canonicalization reduces permutation distance variability across permutations.")
+        else:
+            self.logger.warning("Canonicalization does NOT sufficiently reduce permutation distance variability.")
+
 
