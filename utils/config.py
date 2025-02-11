@@ -7,7 +7,7 @@ WLSSECRET = os.getenv('WLSSECRET')
 LICENSEID = os.getenv('LICENSEID')
 
 # Read values from environment variables or use hardcoded defaults
-LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
+LOG_LEVEL = os.getenv('LOG_LEVEL', logging.DEBUG)
 INPUT_DIR = os.getenv('INPUT_DIR', "input/")
 OUTPUT_DIR = os.getenv('INPUT_DIR', "experiments/")
 
@@ -17,7 +17,7 @@ INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")
 
-NUMBER_OF_PERMUATATIONS = int(os.getenv('NUMBER_OF_PERMUATATIONS', 1))
+NUMBER_OF_PERMUATATIONS = int(os.getenv('NUMBER_OF_PERMUATATIONS', 3))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
 
 MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
