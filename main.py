@@ -17,6 +17,7 @@ from core.ordering.constraints.constraint_range_rule import ConstraintRangeRule
 from core.ordering.recursive.cardinality_rule import CardinalityRule
 from core.ordering.recursive.sign_pattern_rule import SignPatternRule
 from core.ordering.recursive.scale_Invariant_rules import MaxMinRatioRule, ConstraintIntegerCountRule, ConstraintContinuousCountRule, ObjectiveToColumnSumRatioRule, RHSToRowSumRatioRule
+from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.config import NUMBER_OF_PERMUATATIONS
 
@@ -65,15 +66,20 @@ ordering_rule = HierarchicalRuleComposition(
 )
 """
 matrix_block_rules =  [
-    VariableTypeRule(),
-    BoundCategoryRule(),
+    #VariableTypeRule(),
+    #BoundCategoryRule(),
+]
+
+matrix_repatable_rules = [
     ConstraintCompositionRule(),
-    CardinalityRule(),
-    SignPatternRule()
+    #CardinalityRule(),
+    #SignPatternRule(),
+    #NormalizedOccurrenceCountRule()
 ]
 
 ordering_rule = RecursiveHierarchicalRuleComposition(
-    matrix_block_rules=matrix_block_rules,
+    matrix_block_rules_parent=matrix_block_rules,
+    matrix_block_rules_child=matrix_repatable_rules,
     max_depth=50  # limit recursion depth
 )
 

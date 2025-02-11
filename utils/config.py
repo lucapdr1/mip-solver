@@ -7,12 +7,13 @@ WLSSECRET = os.getenv('WLSSECRET')
 LICENSEID = os.getenv('LICENSEID')
 
 # Read values from environment variables or use hardcoded defaults
-LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
+LOG_LEVEL = os.getenv('LOG_LEVEL', logging.DEBUG)
 INPUT_DIR = os.getenv('INPUT_DIR', "input/")
 OUTPUT_DIR = os.getenv('INPUT_DIR', "experiments/")
 
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
-INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
+INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_constrT.mps")
+#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "30n20b8.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")

@@ -1,71 +1,78 @@
 from core.ordering.ordering_rule_interface import OrderingRule
-from collections import defaultdict
 import numpy as np
+from collections import defaultdict
 
 class CardinalityRule(OrderingRule):
     """
     Assigns scores based on the number of nonzero coefficients (cardinality of
-    each column/row). Scale-invariant because it does not consider the magnitudes
-    of coefficients.
+    each column/row). The rule is scale-invariant because it considers only
+    the count of nonzero entries rather than their magnitudes.
 
-    - score_variables(...) returns #nonzero in the column of each variable.
-    - score_constraints(...) returns #nonzero in the row of each constraint.
+    - score_variables(...) returns the number of nonzeros in the column of each variable.
+    - score_constraints(...) returns the number of nonzeros in the row of each constraint.
     """
     
-    def __init__(self, scaling=1):
-        self.scaling = scaling  # optional; if you want to uniformly rescale
+    def __init__(self, scaling=1, tol=1e-12):
+        """
+        :param scaling: A scaling factor applied to the count.
+        :param tol: A tolerance below which a value is considered zero.
+        """
+        self.scaling = scaling  
+        self.tol = tol
 
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Calculate #nonzero coefficients in each variable's column.
+        Calculate the number of nonzero coefficients in each variable's column.
         Handles both dense and sparse matrices.
         """
         num_constraints, num_vars = A.shape  # Get dimensions
-        scores = np.zeros(num_vars, dtype=int)  # Preallocate array
-
-        # Convert sparse matrix to CSC format for fast column-wise operations
+        scores = np.zeros(num_vars, dtype=int)
+        
+        # Use CSC for fast column access if available
         if hasattr(A, "tocsc"):
             A = A.tocsc()
-
+        
         for j in range(num_vars):
-            column = A[:, j]  # Extract column
+            column = A[:, j]
             if hasattr(column, "toarray"):
-                column = column.toarray().flatten()  # Convert sparse to dense
-            nonzero_count = np.count_nonzero(column)  # Count nonzeros
+                column = column.toarray().flatten()
+            # Use tolerance to determine nonzero entries
+            nonzero_count = np.count_nonzero(np.abs(column) > self.tol)
             scores[j] = nonzero_count * self.scaling
-
-        return scores.tolist()  # Return as a list
+        
+        return scores.tolist()
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Calculate #nonzero coefficients in each constraint's row.
+        Calculate the number of nonzero coefficients in each constraint's row.
         Handles both dense and sparse matrices.
         """
         num_constraints, num_vars = A.shape
         scores = np.zeros(num_constraints, dtype=int)
+        
+        # If A is sparse and supports getnnz, use it:
+        if hasattr(A, "getnnz"):
+            # getnnz(axis=1) returns the nonzero count for each row.
+            scores = A.getnnz(axis=1) * self.scaling
+            return scores.tolist()
+        else:
+            # Otherwise, convert to CSR for fast row access if possible.
+            if hasattr(A, "tocsr"):
+                A = A.tocsr()
+            for i in range(num_constraints):
+                row = A[i, :]
+                if hasattr(row, "toarray"):
+                    row = row.toarray().flatten()
+                nonzero_count = np.count_nonzero(np.abs(row) > self.tol)
+                scores[i] = nonzero_count * self.scaling
+            return scores.tolist()
 
-        # Convert sparse matrix to CSR format for fast row-wise operations
-        if hasattr(A, "tocsr"):
-            A = A.tocsr()
-
-        for i in range(num_constraints):
-            row = A[i, :]  # Extract row
-            if hasattr(row, "toarray"):
-                row = row.toarray().flatten()  # Convert sparse to dense
-            nonzero_count = np.count_nonzero(row)  # Count nonzeros
-            scores[i] = nonzero_count * self.scaling
-
-        return scores.tolist()
-
-    # === New methods for rectangular block ordering ===
+    # --- Methods for Rectangular Block Ordering ---
 
     def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Provides a score for a single variable (column) that is compatible with
-        a rectangular block ordering scheme.
-        
-        This method wraps the existing score_variables method by passing a list
-        containing the single variable.
+        Wraps the variable scoring method to return a single score as a tuple,
+        so that it can be used in lexicographic ordering.
         """
         return self.score_variables([vars[idx]],
                                     obj_coeffs[idx:idx+1],
@@ -74,51 +81,61 @@ class CardinalityRule(OrderingRule):
 
     def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Provides a score for a single constraint (row) that is compatible with
-        a rectangular block ordering scheme.
-        
-        This method wraps the existing score_constraints method by passing a list
-        containing the single constraint.
+        Wraps the constraint scoring method to return a single score as a tuple,
+        so that it can be used in lexicographic ordering.
         """
-        # Prepare rhs as a single-element array if rhs is provided.
         rhs_single = np.array([rhs[idx]]) if rhs is not None else None
         return self.score_constraints(vars, obj_coeffs, bounds,
                                       A, [constraints[idx]], rhs_single)[0]
 
     def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Partitions the block using natural groupings based on cardinality scores.
-
-        - Variables with the same nonzero count are grouped together.
-        - Constraints with the same nonzero count are grouped together.
-        - Forms rectangular sub-blocks by intersecting these groups.
-
-        Returns a dictionary:
-            {label: (list_of_var_indices, list_of_constr_indices)}
+        Partitions the block defined by the indices (var_indices, constr_indices) using
+        the cardinality scores computed on the submatrix.
+        
+        This method reuses the existing score_variables and score_constraints methods by:
+          1. Constructing sub-lists for variables, bounds, constraints, and rhs corresponding to
+             the given indices.
+          2. Extracting the submatrix from A.
+          3. Calling score_variables and score_constraints on the submatrix and sub-lists.
+          4. Grouping the original indices by the computed scores.
+          
+        Returns a dictionary mapping labels to tuples:
+            { label: (list_of_variable_indices, list_of_constraint_indices) }
         """
+        # Construct sub-lists corresponding to the current block.
+        vars_sub = [vars[i] for i in var_indices]
+        bounds_sub = [bounds[i] for i in var_indices]
+        constraints_sub = [constraints[i] for i in constr_indices]
+        if rhs is not None:
+            rhs_sub = [rhs[i] for i in constr_indices]
+        else:
+            rhs_sub = None
 
-        # Compute scores for variables (columns) and constraints (rows)
-        var_scores = {var_idx: self.score_matrix_for_variable(var_idx, vars, obj_coeffs, bounds, A, constraints, rhs)
-                    for var_idx in var_indices}
-        constr_scores = {constr_idx: self.score_matrix_for_constraint(constr_idx, vars, obj_coeffs, bounds, A, constraints, rhs)
-                        for constr_idx in constr_indices}
-
-        # Group variables by their cardinality scores
+        # Extract the submatrix corresponding to the block.
+        # First slice rows, then columns.
+        submatrix = A[constr_indices, :][:, var_indices]
+        
+        # Compute variable scores on the submatrix.
+        sub_var_scores = self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constraints_sub, rhs_sub)
+        # Compute constraint scores on the submatrix.
+        sub_constr_scores = self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constraints_sub, rhs_sub)
+        
+        # Group original indices by their scores.
         var_partitions = defaultdict(list)
-        for var_idx, score in var_scores.items():
-            var_partitions[score].append(var_idx)
-
-        # Group constraints by their cardinality scores
+        for idx, score in zip(var_indices, sub_var_scores):
+            var_partitions[score].append(idx)
+            
         constr_partitions = defaultdict(list)
-        for constr_idx, score in constr_scores.items():
-            constr_partitions[score].append(constr_idx)
-
-        # Generate sub-blocks based on the intersection of variable and constraint groups
+        for idx, score in zip(constr_indices, sub_constr_scores):
+            constr_partitions[score].append(idx)
+            
+        # Form subblocks via Cartesian product.
         partition_map = {}
         label = 0
-        for var_score, var_group in var_partitions.items():
-            for constr_score, constr_group in constr_partitions.items():
+        for score_v, var_group in var_partitions.items():
+            for score_c, constr_group in constr_partitions.items():
                 partition_map[label] = (var_group, constr_group)
                 label += 1
-
+                
         return partition_map

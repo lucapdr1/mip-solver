@@ -5,17 +5,17 @@ from collections import defaultdict
 class SignPatternRule(OrderingRule):
     """
     Classifies the sign pattern of the nonzero coefficients:
-      - For columns (variables): are coefficients all >= 0, all <= 0, or mixed?
-      - For rows (constraints): same check across that row.
-
+      - For columns (variables): whether all coefficients are >= 0, all <= 0, or mixed.
+      - For rows (constraints): the same check for each row.
+    
     Returns integer 'pattern codes':
       - 2 => all nonnegative
       - 1 => all nonpositive
-      - 0 => mixed
+      - 0 => mixed (or all zero)
     """
 
     def __init__(self):
-        pass  # No need for a scaling parameter here
+        pass  # No scaling parameter needed
 
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
@@ -25,8 +25,7 @@ class SignPatternRule(OrderingRule):
         scores = np.zeros(num_vars, dtype=int)
 
         for j in range(num_vars):
-            column = A[:, j]  
-
+            column = A[:, j]
             if hasattr(column, "toarray"):
                 column = column.toarray().flatten()  # Convert sparse to dense
 
@@ -51,10 +50,9 @@ class SignPatternRule(OrderingRule):
 
         for i in range(num_constraints):
             row = A[i, :]
-
             if hasattr(row, "toarray"):
                 row = row.toarray().flatten()
-
+            
             has_pos = np.any(row > 1e-15)
             has_neg = np.any(row < -1e-15)
 
@@ -67,55 +65,75 @@ class SignPatternRule(OrderingRule):
 
         return scores.tolist()
 
-    # === New Methods for Rectangular Block Reordering ===
+    # --- Methods for Rectangular Block Reordering ---
 
     def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Computes the sign pattern for a **single variable column**.
+        Computes the sign pattern for a single variable (column) and returns it as a tuple.
         """
-        return self.score_variables([vars[idx]], obj_coeffs[idx:idx+1], [bounds[idx]], A, constraints, rhs)[0]
+        score = self.score_variables([vars[idx]],
+                                     obj_coeffs[idx:idx+1],
+                                     [bounds[idx]],
+                                     A, constraints, rhs)[0]
+        return (score,)
 
     def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Computes the sign pattern for a **single constraint row**.
+        Computes the sign pattern for a single constraint (row) and returns it as a tuple.
         """
         rhs_single = np.array([rhs[idx]]) if rhs is not None else None
-        return self.score_constraints(vars, obj_coeffs, bounds, A, [constraints[idx]], rhs_single)[0]
+        score = self.score_constraints(vars,
+                                       obj_coeffs,
+                                       bounds,
+                                       A,
+                                       [constraints[idx]],
+                                       rhs_single)[0]
+        return (score,)
 
     def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Partitions the block using **sign pattern-based grouping**.
-
-        - Variables with the same sign pattern are grouped together.
-        - Constraints with the same sign pattern are grouped together.
-        - Forms rectangular sub-blocks by intersecting these groups.
-
-        Returns a dictionary:
-            {label: (list_of_var_indices, list_of_constr_indices)}
+        Partitions the block (defined by var_indices and constr_indices) using sign pattern-based grouping.
+        
+        The process is:
+          1. Construct sub-lists for variables, bounds, and constraints corresponding to the block.
+          2. Extract the submatrix corresponding to these indices.
+          3. Compute variable scores on the submatrix by calling score_variables.
+          4. Compute constraint scores on the submatrix by calling score_constraints.
+          5. Group the original indices by these computed scores.
+          6. Form the partition as the Cartesian product of the variable groups and constraint groups.
+        
+        Returns a dictionary mapping block labels to tuples:
+            { label: (list_of_variable_indices, list_of_constraint_indices) }
         """
+        # Construct sub-lists for the current block.
+        vars_sub = [vars[i] for i in var_indices]
+        bounds_sub = [bounds[i] for i in var_indices]
+        constr_sub = [constraints[i] for i in constr_indices]
+        rhs_sub = [rhs[i] for i in constr_indices] if rhs is not None else None
 
-        # Compute sign pattern scores for variables (columns) and constraints (rows)
-        var_scores = {var_idx: self.score_matrix_for_variable(var_idx, vars, obj_coeffs, bounds, A, constraints, rhs)
-                      for var_idx in var_indices}
-        constr_scores = {constr_idx: self.score_matrix_for_constraint(constr_idx, vars, obj_coeffs, bounds, A, constraints, rhs)
-                         for constr_idx in constr_indices}
+        # Extract the submatrix corresponding to the current block.
+        submatrix = A[constr_indices, :][:, var_indices]
 
-        # Group variables based on their sign pattern scores
-        var_partitions = defaultdict(list)
-        for var_idx, score in var_scores.items():
-            var_partitions[score].append(var_idx)
+        # Compute scores on the submatrix using existing methods.
+        sub_var_scores = self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
+        sub_constr_scores = self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
 
-        # Group constraints based on their sign pattern scores
-        constr_partitions = defaultdict(list)
-        for constr_idx, score in constr_scores.items():
-            constr_partitions[score].append(constr_idx)
+        # Group original variable indices by their computed scores.
+        var_groups = defaultdict(list)
+        for idx, score in zip(var_indices, sub_var_scores):
+            var_groups[score].append(idx)
 
-        # Generate sub-blocks by intersecting the variable and constraint partitions
+        # Group constraints similarly.
+        constr_groups = defaultdict(list)
+        for idx, score in zip(constr_indices, sub_constr_scores):
+            constr_groups[score].append(idx)
+
+        # Form the partition map as the Cartesian product of the groups.
         partition_map = {}
         label = 0
-        for var_score, var_group in var_partitions.items():
-            for constr_score, constr_group in constr_partitions.items():
-                partition_map[label] = (var_group, constr_group)
+        for score_v, vgroup in var_groups.items():
+            for score_c, cgroup in constr_groups.items():
+                partition_map[label] = (vgroup, cgroup)
                 label += 1
 
         return partition_map
