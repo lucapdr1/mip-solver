@@ -1,7 +1,3 @@
-Below is a documentation-style explanation that describes the mathematical ideas behind the recursive hierarchical reordering procedure implemented in your code. You can include this in your project documentation to explain both the high‐level intuition and the formal structure of the algorithm.
-
----
-
 # Mathematical Explanation of the Recursive Hierarchical Reordering Algorithm
 
 The goal of the **RecursiveHierarchicalRuleComposition** is to compute a permutation of the variable (and constraint) indices that reflects a hierarchical (block‐wise) ordering of the matrix. The ordering is computed by recursively partitioning the matrix into “blocks” based on one or more block rules, and—if available—refining the order within each block using intra rules. Mathematically, the algorithm is a divide-and-conquer procedure that constructs a permutation σ (for variables) and a corresponding ordering for constraints.
