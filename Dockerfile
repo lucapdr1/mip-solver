@@ -1,5 +1,5 @@
 # Use the official Miniconda image as the base
-FROM public.ecr.aws/y0o4y9o3/miniconda3:latest
+FROM public.ecr.aws/u7h0g2s9/continuumio/miniconda3:23.5.2-0
 
 # Set the working directory
 WORKDIR /app
