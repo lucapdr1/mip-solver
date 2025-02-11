@@ -22,9 +22,9 @@ from utils.config import NUMBER_OF_PERMUATATIONS
 
 
 var_block_rules = [
-    VariableTypeRule(1),  # e.g., BINARY->3, INTEGER->2, CONTINUOUS->1
-    BoundCategoryRule(1),
-    SignPatternRule(),
+    #VariableTypeRule(1),  # e.g., BINARY->3, INTEGER->2, CONTINUOUS->1
+    #BoundCategoryRule(1),
+    #SignPatternRule(),
     CardinalityRule(),
     #MaxMinRatioRule(),
     #ObjectiveToColumnSumRatioRule()
@@ -39,8 +39,8 @@ var_intra_rules = [
 
 constr_block_rules = [
     #ConstraintSenseRule(1),
-    ConstraintCompositionRule(1),
-    SignPatternRule(),
+    #ConstraintCompositionRule(1),
+    #SignPatternRule(),
     CardinalityRule(),
     #MaxMinRatioRule(),
     #ConstraintIntegerCountRule(),
@@ -64,12 +64,16 @@ ordering_rule = HierarchicalRuleComposition(
     constr_intra_rules=constr_intra_rules
 )
 """
+matrix_block_rules =  [
+    VariableTypeRule(),
+    BoundCategoryRule(),
+    ConstraintCompositionRule(),
+    CardinalityRule(),
+    SignPatternRule()
+]
 
 ordering_rule = RecursiveHierarchicalRuleComposition(
-    var_block_rules=var_block_rules,    # e.g., partition by type, then sign pattern
-    var_intra_rules=var_intra_rules, # once partitioning is done
-    constr_block_rules=constr_block_rules,
-    constr_intra_rules=constr_intra_rules,
+    matrix_block_rules=matrix_block_rules,
     max_depth=50  # limit recursion depth
 )
 

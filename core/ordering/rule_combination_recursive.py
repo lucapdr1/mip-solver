@@ -1,190 +1,138 @@
+from core.ordering.ordering_rule_interface import OrderingRule
 import numpy as np
 from collections import defaultdict
-from core.ordering.ordering_rule_interface import OrderingRule
 
 class RecursiveHierarchicalRuleComposition(OrderingRule):
     """
-    Recursively applies block rules, prioritizing larger sub-blocks, until no further partitioning occurs.
-    Applies intra-block rules for final ranking.
+    Recursively applies rectangular block rules to partition the entire (row, column) space,
+    prioritizing larger sub-blocks, until no further partitioning occurs.
+    
+    The computed order is cached to avoid redundant recomputation when calling
+    `score_variables` and `score_constraints`.
     """
+    
+    def __init__(self, matrix_block_rules=None, matrix_intra_rules=None, max_depth=10):
+        """
+        :param matrix_block_rules: List of block rules for rectangular blocks.
+        :param matrix_intra_rules: List of intra rules to order indices when no block partitioning occurs.
+        :param max_depth: Maximum recursion depth (to prevent infinite recursion).
+        """
+        self.matrix_block_rules = matrix_block_rules or []
+        self.matrix_intra_rules = matrix_intra_rules or []
+        self.max_depth = max_depth
+        
+        # Caching the computed order
+        self.cached_var_order = None
+        self.cached_constr_order = None
 
-    def __init__(self, var_block_rules=None, var_intra_rules=None,
-                       constr_block_rules=None, constr_intra_rules=None,
-                       max_depth=10):
-        self.var_block_rules = var_block_rules or []
-        self.var_intra_rules = var_intra_rules or []
-        self.constr_block_rules = constr_block_rules or []
-        self.constr_intra_rules = constr_intra_rules or []
-        self.max_depth = max_depth  # Prevents infinite recursion
+    def _compute_ordering(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+        """
+        Computes the ordering for both variables and constraints once and stores the results.
+        """
+        if self.cached_var_order is None or self.cached_constr_order is None:
+            self.cached_var_order, self.cached_constr_order = self._recursive_block_matrix(
+                level=0,
+                var_indices=np.arange(len(vars)),
+                constr_indices=np.arange(len(constraints)),
+                vars=vars,
+                obj_coeffs=obj_coeffs,
+                bounds=bounds,
+                A=A,
+                constraints=constraints,
+                rhs=rhs,
+                block_rules=self.matrix_block_rules,
+                intra_rules=self.matrix_intra_rules
+            )
 
-    # ----------------------------------------------------------------
-    # Variable Scoring
-    # ----------------------------------------------------------------
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
-        all_var_indices = np.arange(len(vars))
-        results = self._recursive_block_vars(
-            level=0,
-            var_indices=all_var_indices,
-            vars=vars,
-            obj_coeffs=obj_coeffs,
-            bounds=bounds,
-            A=A,
-            constraints=constraints,
-            rhs=rhs,
-            block_rules=self.var_block_rules,
-            intra_rules=self.var_intra_rules
-        )
+        """
+        Returns a scoring based on the computed variable ordering.
+        """
+        self._compute_ordering(vars, obj_coeffs, bounds, A, constraints, rhs)
+        scores = [0] * len(vars)
+        for pos, var_idx in enumerate(self.cached_var_order):
+            scores[var_idx] = pos  # Assign position as score
+        return scores
 
-        results.sort(key=lambda x: x[0])
-        return [score for (_, score) in results]
-
-    def _recursive_block_vars(self, level, var_indices,
-                              vars, obj_coeffs, bounds, A, constraints, rhs,
-                              block_rules, intra_rules):
-        if level >= self.max_depth or not block_rules:
-            return self._apply_intra_rules_vars(var_indices, vars, obj_coeffs,
-                                                bounds, A, constraints, rhs, intra_rules)
-
-        current_block_rule = block_rules[0]
-        partition_map = self._partition_by_rule_vars(
-            current_block_rule, var_indices, vars, obj_coeffs, bounds, A, constraints, rhs
-        )
-
-        if len(partition_map) == 1:
-            return self._recursive_block_vars(
-                level+1, var_indices, vars, obj_coeffs, bounds, A, constraints, rhs,
-                block_rules[1:], intra_rules
-            )
-
-        results = []
-        # Sort sub-blocks by size (descending) to prioritize larger blocks
-        sorted_blocks = sorted(partition_map.items(), key=lambda x: len(x[1]), reverse=True)
-        for label, sub_indices_list in sorted_blocks:
-            sub_indices = np.array(sub_indices_list)
-            sub_results = self._recursive_block_vars(
-                level+1, sub_indices, vars, obj_coeffs, bounds, A, constraints, rhs,
-                block_rules[1:], intra_rules
-            )
-            adjusted_sub_results = [(vidx, (label,) + score_tuple) for vidx, score_tuple in sub_results]
-            results.extend(adjusted_sub_results)
-
-        return results
-
-    def _partition_by_rule_vars(self, rule, var_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
-        block_labels = rule.score_variables(
-            [vars[i] for i in var_indices],
-            obj_coeffs[var_indices] if obj_coeffs is not None else None,
-            [bounds[i] for i in var_indices],
-            A, constraints, rhs
-        )
-        block_labels = np.array(block_labels)
-
-        partition_map = defaultdict(list)
-        for idx, lbl in zip(var_indices, block_labels):
-            partition_map[lbl].append(idx)  # Use lbl as key without casting to int
-
-        return partition_map
-
-    def _apply_intra_rules_vars(self, var_indices, vars, obj_coeffs, bounds, A, constraints, rhs, intra_rules):
-        if not intra_rules:
-            return [(idx, (0.0,)) for idx in var_indices]
-
-        results = []
-        for idx in var_indices:
-            rule_scores = [
-                rule.score_variables([vars[idx]], obj_coeffs[idx:idx+1], [bounds[idx]],
-                                    A, constraints, rhs)[0]
-                for rule in intra_rules
-            ]
-            final_score_tuple = tuple(rule_scores)
-            results.append((idx, final_score_tuple))
-
-        return results
-
-    # ----------------------------------------------------------------
-    # Constraint Scoring (similar corrections applied)
-    # ----------------------------------------------------------------
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
-        all_constr_indices = np.arange(len(constraints))
-        results = self._recursive_block_constraints(
-            level=0,
-            constr_indices=all_constr_indices,
-            vars=vars,
-            obj_coeffs=obj_coeffs,
-            bounds=bounds,
-            A=A,
-            constraints=constraints,
-            rhs=rhs,
-            block_rules=self.constr_block_rules,
-            intra_rules=self.constr_intra_rules
-        )
+        """
+        Returns a scoring based on the computed constraint ordering.
+        """
+        self._compute_ordering(vars, obj_coeffs, bounds, A, constraints, rhs)
+        scores = [0] * len(constraints)
+        for pos, constr_idx in enumerate(self.cached_constr_order):
+            scores[constr_idx] = pos  # Assign position as score
+        return scores
 
-        results.sort(key=lambda x: x[0])
-        return [score for (_, score) in results]
-
-    def _recursive_block_constraints(self, level, constr_indices,
-                                     vars, obj_coeffs, bounds, A, constraints, rhs,
-                                     block_rules, intra_rules):
+    def _recursive_block_matrix(self, level, var_indices, constr_indices,
+                                vars, obj_coeffs, bounds, A, constraints, rhs,
+                                block_rules, intra_rules):
+        """
+        Recursively partitions the matrix block defined by (var_indices, constr_indices)
+        using the available block rules.
+        """
         if level >= self.max_depth or not block_rules:
-            return self._apply_intra_rules_constraints(constr_indices, vars, obj_coeffs,
-                                                       bounds, A, constraints, rhs, intra_rules)
-
-        current_block_rule = block_rules[0]
-        partition_map = self._partition_by_rule_constraints(
-            current_block_rule, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs
+            return self._apply_intra_rules_matrix(var_indices, constr_indices,
+                                                  vars, obj_coeffs, bounds, A, constraints, rhs,
+                                                  intra_rules)
+        current_rule = block_rules[0]
+        partition_map = self._partition_by_rule_matrix(
+            current_rule, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs
         )
 
         if len(partition_map) == 1:
-            return self._recursive_block_constraints(
-                level+1, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs,
+            return self._recursive_block_matrix(
+                level + 1, var_indices, constr_indices,
+                vars, obj_coeffs, bounds, A, constraints, rhs,
                 block_rules[1:], intra_rules
             )
 
-        results = []
-        sorted_blocks = sorted(partition_map.items(), key=lambda x: len(x[1]), reverse=True)
-        for label, sub_indices_list in sorted_blocks:
-            sub_indices = np.array(sub_indices_list)
-            sub_results = self._recursive_block_constraints(
-                level+1, sub_indices, vars, obj_coeffs, bounds, A, constraints, rhs,
+        sorted_blocks = sorted(partition_map.items(),
+                               key=lambda x: (len(x[1][0]) + len(x[1][1])),
+                               reverse=True)
+
+        ordered_vars = []
+        ordered_constr = []
+        for label, (sub_var_indices, sub_constr_indices) in sorted_blocks:
+            sub_ordered_vars, sub_ordered_constr = self._recursive_block_matrix(
+                level + 1,
+                np.array(sub_var_indices),
+                np.array(sub_constr_indices),
+                vars, obj_coeffs, bounds, A, constraints, rhs,
                 block_rules[1:], intra_rules
             )
-            adjusted_sub_results = [(cidx, (label,) + score_tuple) for cidx, score_tuple in sub_results]
-            results.extend(adjusted_sub_results)
+            ordered_vars.extend(sub_ordered_vars)
+            ordered_constr.extend(sub_ordered_constr)
 
-        return results
+        return ordered_vars, ordered_constr
 
-    def _partition_by_rule_constraints(self, rule, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
-        block_labels = rule.score_constraints(
-            vars,
-            obj_coeffs,
-            bounds,
-            A,
-            [constraints[i] for i in constr_indices],
-            rhs[constr_indices] if rhs is not None else None
-        )
-        block_labels = np.array(block_labels)
+    def _partition_by_rule_matrix(self, rule, var_indices, constr_indices,
+                                  vars, obj_coeffs, bounds, A, constraints, rhs):
+        """
+        Uses the given rectangular block rule to partition the current block.
+        """
+        return rule.score_matrix(var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs)
 
-        partition_map = defaultdict(list)
-        for i, lbl in zip(constr_indices, block_labels):
-            partition_map[lbl].append(i)
-
-        return partition_map
-
-    def _apply_intra_rules_constraints(self, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs, intra_rules):
+    def _apply_intra_rules_matrix(self, var_indices, constr_indices,
+                                  vars, obj_coeffs, bounds, A, constraints, rhs, intra_rules):
+        """
+        When no further partitioning is possible, apply the intra rules to order the indices.
+        """
         if not intra_rules:
-            return [(i, (0.0,)) for i in constr_indices]
+            return list(var_indices), list(constr_indices)
 
-        results = []
+        var_scores = []
+        for idx in var_indices:
+            scores = tuple(rule.score_matrix_for_variable(idx, vars, obj_coeffs, bounds, A, constraints, rhs)
+                           for rule in intra_rules)
+            var_scores.append((idx, scores))
+        ordered_vars = [idx for idx, _ in sorted(var_scores, key=lambda x: x[1])]
+
+        constr_scores = []
         for i in constr_indices:
-            rule_scores = [rule.score_constraints(
-                vars,
-                obj_coeffs,
-                bounds,
-                A,
-                [constraints[i]],
-                np.array([rhs[i]]) if rhs is not None else None
-            )[0] for rule in intra_rules]
-            final_score_tuple = tuple(rule_scores)
-            results.append((i, final_score_tuple))
+            scores = tuple(rule.score_matrix_for_constraint(i, vars, obj_coeffs, bounds, A, constraints, rhs)
+                           for rule in intra_rules)
+            constr_scores.append((i, scores))
+        ordered_constr = [i for i, _ in sorted(constr_scores, key=lambda x: x[1])]
 
-        return results
+        return ordered_vars, ordered_constr

@@ -1,4 +1,5 @@
 import math
+from collections import defaultdict
 from core.ordering.ordering_rule_interface import OrderingRule
 
 class BoundCategoryRule(OrderingRule):
@@ -49,3 +50,56 @@ class BoundCategoryRule(OrderingRule):
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         return [0] * len(constraints)
+    
+    # --- Methods for Rectangular Block Partitioning ---
+
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+        """
+        Returns the bound-category score for a single variable as a one-element tuple.
+        This is used for lexicographic ordering within a block.
+        """
+        score = self.score_variables([vars[idx]],
+                                     obj_coeffs[idx:idx+1],
+                                     [bounds[idx]],
+                                     A, constraints, rhs)[0]
+        return (score,)
+
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+        """
+        Since bound category does not affect constraints, we return a fixed tuple.
+        """
+        return (0,)
+
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+        """
+        Partitions the block based on bound categories.
+        
+        - Computes a score for each variable in var_indices using this rule.
+        - Groups variables into partitions according to their unique bound-category scores.
+        - Since all constraints score 0, they are grouped into a single block.
+        
+        Returns a dictionary mapping block labels to tuples:
+            { label: (list_of_variable_indices, list_of_constraint_indices) }
+        """
+        # Compute the score (as an integer) for each variable in var_indices.
+        var_scores = {
+            i: self.score_matrix_for_variable(i, vars, obj_coeffs, bounds, A, constraints, rhs)[0]
+            for i in var_indices
+        }
+        
+        # Group variables by their bound-category score.
+        var_groups = defaultdict(list)
+        for i, score in var_scores.items():
+            var_groups[score].append(i)
+        
+        # For constraints, since all score 0, group them into a single group.
+        constr_groups = {0: list(constr_indices)}
+        
+        # Create a partition map as the Cartesian product of variable groups and constraint groups.
+        partition_map = {}
+        label = 0
+        for vscore, vgroup in var_groups.items():
+            for cscore, cgroup in constr_groups.items():
+                partition_map[label] = (vgroup, cgroup)
+                label += 1
+        return partition_map
