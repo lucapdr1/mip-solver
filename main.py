@@ -66,14 +66,14 @@ ordering_rule = HierarchicalRuleComposition(
 )
 """
 matrix_block_rules =  [
-    #VariableTypeRule(),
-    #BoundCategoryRule(),
+    VariableTypeRule(),
+    BoundCategoryRule(),
 ]
 
 matrix_repatable_rules = [
     ConstraintCompositionRule(),
-    #CardinalityRule(),
-    #SignPatternRule(),
+    CardinalityRule(),
+    SignPatternRule(),
     #NormalizedOccurrenceCountRule()
 ]
 
