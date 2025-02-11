@@ -126,3 +126,92 @@ class ConstraintContinuousCountRule(OrderingRule):
 
         return scores
 
+class ObjectiveToColumnSumRatioRule(OrderingRule):
+    """
+    For each variable j, computes:
+        ratio_j = |obj_coeff_j| / ( sum_i |A[i,j]| + eps )
+
+    This is scale-invariant if the objective and the matrix A
+    are scaled by the same factor.
+    """
+
+    def __init__(self, epsilon=1e-12):
+        self.epsilon = epsilon
+
+    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+        # Ensure we can handle sparse matrices
+        A = A.tocsc() if hasattr(A, "tocsc") else A
+
+        num_vars = A.shape[1]
+        scores = np.zeros(num_vars, dtype=float)
+
+        for j in range(num_vars):
+            # Objective coefficient for variable j
+            if obj_coeffs is not None:
+                obj_coeffs = np.ravel(obj_coeffs)  # Ensures obj_coeffs is 1D
+                obj_val = abs(obj_coeffs[j]) if j < len(obj_coeffs) else 0.0
+            else:
+                obj_val = 0.0
+
+
+            # Sum of absolute values in the column
+            column = A[:, j]
+            if hasattr(column, "toarray"):
+                column = column.toarray().flatten()
+            col_sum = np.sum(np.abs(column))
+
+            scores[j] = obj_val / (col_sum + self.epsilon)
+
+        return scores.tolist()
+
+    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+        # This rule is only for variables -> return 0 for constraints
+        return [0.0]*len(constraints)
+
+class RHSToRowSumRatioRule(OrderingRule):
+    """
+    For each constraint i, computes:
+        ratio_i = |rhs_i| / ( sum_j |A[i,j]| + eps )
+
+    This is scale-invariant if the RHS and matrix A are scaled uniformly.
+    """
+
+    def __init__(self, epsilon=1e-12):
+        self.epsilon = epsilon
+
+    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+        """
+        This rule is only applicable to constraints, so it returns 0 for all variables.
+        """
+        return [0.0] * len(vars)
+
+    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+        """
+        Computes the RHS-to-row-sum ratio for each constraint.
+        """
+        num_constraints = A.shape[0]
+        scores = np.zeros(num_constraints, dtype=float)
+
+        # Ensure sparse matrix compatibility
+        A = A.tocsr() if hasattr(A, "tocsr") else A
+
+        # Ensure RHS is a 1D array
+        if rhs is not None:
+            rhs = np.ravel(rhs)  # Convert to 1D array
+        else:
+            rhs = np.zeros(num_constraints)
+
+        for i in range(num_constraints):
+            # Absolute value of RHS
+            rhs_val = abs(rhs[i]) if i < len(rhs) else 0.0
+
+            # Sum of absolute values in the row
+            row = A[i, :]
+            if hasattr(row, "toarray"):
+                row = row.toarray().flatten()
+            row_sum = np.sum(np.abs(row))
+
+            # Compute the ratio
+            scores[i] = rhs_val / (row_sum + self.epsilon)
+
+        return scores.tolist()

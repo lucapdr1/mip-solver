@@ -16,7 +16,7 @@ from core.ordering.constraints.row_coefficient_rule import RowCoefficientRule
 from core.ordering.constraints.constraint_range_rule import ConstraintRangeRule
 from core.ordering.recursive.cardinality_rule import CardinalityRule
 from core.ordering.recursive.sign_pattern_rule import SignPatternRule
-from core.ordering.recursive.scale_Invariant_rules import MaxMinRatioRule, ConstraintIntegerCountRule, ConstraintContinuousCountRule
+from core.ordering.recursive.scale_Invariant_rules import MaxMinRatioRule, ConstraintIntegerCountRule, ConstraintContinuousCountRule, ObjectiveToColumnSumRatioRule, RHSToRowSumRatioRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.config import NUMBER_OF_PERMUATATIONS
 
@@ -26,7 +26,8 @@ var_block_rules = [
     BoundCategoryRule(1),
     SignPatternRule(),
     CardinalityRule(),
-    MaxMinRatioRule(),
+    #MaxMinRatioRule(),
+    #ObjectiveToColumnSumRatioRule()
     # You could add more block rules here
 ]
 
@@ -41,9 +42,10 @@ constr_block_rules = [
     ConstraintCompositionRule(1),
     SignPatternRule(),
     CardinalityRule(),
-    MaxMinRatioRule(),
-    ConstraintIntegerCountRule(),
-    ConstraintContinuousCountRule()
+    #MaxMinRatioRule(),
+    #ConstraintIntegerCountRule(),
+    #ConstraintContinuousCountRule(),
+    #RHSToRowSumRatioRule()
     # Possibly more block rules
 ]
 
