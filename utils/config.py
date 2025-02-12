@@ -13,6 +13,7 @@ OUTPUT_DIR = os.getenv('INPUT_DIR', "experiments/")
 
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_constrT.mps")
+#INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_with_bounds.mps")
 INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "30n20b8.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")

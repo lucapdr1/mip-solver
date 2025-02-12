@@ -2,7 +2,7 @@ from core.ordering.ordering_rule_interface import OrderingRule
 import numpy as np
 from collections import defaultdict
 
-class CardinalityRule(OrderingRule):
+class NonZeroCountRule(OrderingRule):
     """
     Assigns scores based on the number of nonzero coefficients (cardinality of
     each column/row). The rule is scale-invariant because it considers only
@@ -10,13 +10,10 @@ class CardinalityRule(OrderingRule):
 
     - score_variables(...) returns the number of nonzeros in the column of each variable.
     - score_constraints(...) returns the number of nonzeros in the row of each constraint.
+    
     """
     
     def __init__(self, scaling=1, tol=1e-12):
-        """
-        :param scaling: A scaling factor applied to the count.
-        :param tol: A tolerance below which a value is considered zero.
-        """
         self.scaling = scaling  
         self.tol = tol
 
