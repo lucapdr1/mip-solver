@@ -1,9 +1,11 @@
+from utils.logging_handler import LoggingHandler
+
 class IterationLogger:
-    def __init__(self, logger):
+    def __init__(self):
         """
         Initialize with a logger instance.
         """
-        self.logger = logger
+        self.logger = LoggingHandler().get_logger()
 
     def log_model_info(self, model, file_path):
         self.logger.info(f"Successfully loaded problem from {file_path}")

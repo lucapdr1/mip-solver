@@ -1,9 +1,10 @@
 # utils/performance_evaluator.py
 import numpy as np
+from utils.logging_handler import LoggingHandler
 
 class PerformanceEvaluator:
-    def __init__(self, logger):
-        self.logger = logger
+    def __init__(self):
+        self.logger = LoggingHandler().get_logger()
 
     def compute_solve_time_variability_std(self, results):
         """

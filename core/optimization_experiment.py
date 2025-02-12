@@ -26,19 +26,14 @@ class OptimizationExperiment:
         self.gp_env = gp_env
         self.file_path = file_path
         self.logger = LoggingHandler().get_logger()
-        
-        # Create helper objects
-        self.iter_logger = IterationLogger(self.logger)
-        self.performance_evaluator = PerformanceEvaluator(self.logger)
-        
-        self.normalizer = Normalizer()
+    
         self.original_model = self.load_problem()
         self.ordering_rule = ordering_rule
 
-        self.iter_logger.log_model_info(self.original_model, file_path)
+        IterationLogger().log_model_info(self.original_model, file_path)
 
         self.permutator = ProblemPermutator(gp_env, self.original_model)
-        self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule, self.normalizer)
+        self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule, Normalizer())
     
     def run_experiment(self, num_iterations):
             """Run multiple iterations with detailed logging and solving functionality"""
@@ -63,15 +58,15 @@ class OptimizationExperiment:
                 try:
                     iteration_result = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical, original_canonical_var_order, original_canonical_constr_order)
                     results.append(iteration_result)
-                    self.iter_logger.log_iteration_results(i + 1, iteration_result)
+                    IterationLogger().log_iteration_results(i + 1, iteration_result)
 
                 except Exception as e:
                     self.logger.error(f"Error in iteration {i+1}: {str(e)}")
                     raise
 
             # Compute and log solve-time variability metrics
-            self.performance_evaluator.compute_solve_time_variability_std(results)   # Solve times
-            self.performance_evaluator.compute_distance_variability_std(results) # Distances
+            PerformanceEvaluator().compute_solve_time_variability_std(results)   # Solve times
+            PerformanceEvaluator().compute_distance_variability_std(results) # Distances
             return results
 
 
@@ -124,12 +119,12 @@ class OptimizationExperiment:
                 
                 # Generate canonical form from the scaled (permuted) model.
                 self.logger.debug("Generating canonical form for scaled (permuted) model...")
-                canon_gen = CanonicalFormGenerator(self.gp_env, scaled_model, self.ordering_rule, self.normalizer)
+                canon_gen = CanonicalFormGenerator(self.gp_env, scaled_model, self.ordering_rule, Normalizer())
                 permuted_canonical, permuted_canonical_var_order, permuted_canonical_constr_order = canon_gen.get_canonical_form()
             else:
                 self.logger.info("Scaling is disabled. Using unscaled permuted model for canonical form.")
                 # Generate canonical form directly from the unscaled permuted model.
-                canon_gen = CanonicalFormGenerator(self.gp_env, permuted_model, self.ordering_rule, self.normalizer)
+                canon_gen = CanonicalFormGenerator(self.gp_env, permuted_model, self.ordering_rule, Normalizer())
                 permuted_canonical, permuted_canonical_var_order, permuted_canonical_constr_order = canon_gen.get_canonical_form()
                 # For consistency, define dummy scaling factors.
                 used_row_scales = None
@@ -187,7 +182,7 @@ class OptimizationExperiment:
             }
 
             if LOG_MODEL_COMPARISON and not are_equivalent:
-                self.iter_logger.log_model_comparison(original_canonical, permuted_canonical)
+                IterationLogger().log_model_comparison(original_canonical, permuted_canonical)
 
             return result
 
