@@ -1,4 +1,4 @@
-from core.problem_permutator import ProblemPermutator
+from core.problem_transform.problem_permutator import ProblemPermutator
 import gurobipy as gp
 import numpy as np
 from utils.gurobi_utils import get_Input_problem, init_gurobi_env

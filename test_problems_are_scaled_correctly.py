@@ -1,6 +1,6 @@
 # test_problem_scaler_negative.py
 
-from core.problem_scaler import ProblemScaler
+from core.problem_transform.problem_scaler import ProblemScaler
 import gurobipy as gp
 import numpy as np
 from utils.gurobi_utils import get_Input_problem, init_gurobi_env
