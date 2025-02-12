@@ -7,11 +7,10 @@ from utils.config import NORMALIZATION_ACTIVE
 
 
 class CanonicalFormGenerator:
-    def __init__(self, gp_env, model, ordering_rule, normalizer=None):
+    def __init__(self, gp_env, model, ordering_rule):
         self.original_model = model
         self.model = model.copy()
         self.ordering_rule = ordering_rule
-        self.normalizer = normalizer
         self.logger = LoggingHandler().get_logger()
         self._initialize_structures()
         self.gp_env = gp_env
@@ -107,8 +106,6 @@ class CanonicalFormGenerator:
 
     def get_canonical_form(self):
         """Generate canonical model"""
-        if NORMALIZATION_ACTIVE:
-            self.normalize()
         var_order, var_types, constr_order = self.generate_ordering()
 
         # Create a new model
@@ -239,11 +236,3 @@ class CanonicalFormGenerator:
         except Exception as e:
             self.logger.error(f"Validation error: {str(e)}")
             return False
-        
-    def normalize(self):
-        """Normalize the model using the Normalizer class, if provided."""
-        if self.normalizer:
-            self.logger.debug("Delegating normalization to the Normalizer class...")
-            self.A, self.obj_coeffs, self.rhs, self.original_bounds = self.normalizer.normalize(
-                self.A, self.obj_coeffs, self.rhs, self.original_bounds
-            )
