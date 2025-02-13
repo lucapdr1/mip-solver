@@ -1,104 +1,160 @@
+# core/optimization_experiment.py
+
 import os
 import time
 import gurobipy as gp
 from gurobipy import GRB
-import pandas as pd
 import numpy as np
 import boto3
-from botocore.exceptions import ClientError
 import tempfile
+from botocore.exceptions import ClientError
+
 from utils.logging_handler import LoggingHandler
-from core.problem_permutator import ProblemPermutator
+from core.problem_transform.problem_permutator import ProblemPermutator
 from core.canonical_form_generator import CanonicalFormGenerator
-from core.problem_normalizer import Normalizer
+from utils.iteration_logger import IterationLogger
+from core.post_processing.performance_evaluator import PerformanceEvaluator
+from core.problem_transform.problem_scaler import ProblemScaler
+from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
-from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME
+from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
         self.gp_env = gp_env
         self.file_path = file_path
         self.logger = LoggingHandler().get_logger()
-        self.normalizer = Normalizer()
+    
         self.original_model = self.load_problem()
         self.ordering_rule = ordering_rule
-        
-        self.logger.info(f"Successfully loaded problem from {file_path}")
-        self.logger.info("Problem Details:")
-        self.logger.info(f"- Variables: {self.original_model.NumVars}")
-        self.logger.info(f"- Constraints: {self.original_model.NumConstrs}")
-        self.logger.info(f"- Objective Sense: {'Minimize' if self.original_model.ModelSense == 1 else 'Maximize'}")
-        
-        self.permutator = ProblemPermutator(gp_env, self.original_model)
-        self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule, self.normalizer)
 
-    def run_single_iteration(self, original_result, canonical_from_original_result, original_canonical, original_canonical_var_order, original_canonical_constr_order):
-        """Run a single iteration of the experiment with solving and detailed logging"""
+        IterationLogger().log_model_info(self.original_model, file_path)
+
+        self.permutator = ProblemPermutator(gp_env, self.original_model)
+        self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule)
+    
+    def run_experiment(self, num_iterations):
+            """Run multiple iterations with detailed logging and solving functionality"""
+            ProblemPrinter.log_model(self.original_model, self.logger, level="DEBUG")
+            results = []
+
+            # Solve the original problem once
+            self.logger.info("Solving Original Problem")
+            original_result = self.solve_problem(self.original_model)
+
+            # Generate the canonical form of the original model once
+            self.logger.debug("Generating canonical form for the original model...")
+            original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
+            ProblemPrinter.log_model(original_canonical, self.logger, level="DEBUG")
+
+            # Solve the Canonical from original once
+            self.logger.info("Solving Canonical from Original Problem")
+            canonical_from_original_result  = self.solve_problem(original_canonical)
+
+            for i in range(num_iterations):
+                self.logger.info(f"Running iteration {i+1}/{num_iterations}")
+                try:
+                    iteration_result = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical, original_canonical_var_order, original_canonical_constr_order)
+                    results.append(iteration_result)
+                    IterationLogger().log_iteration_results(i + 1, iteration_result)
+
+                except Exception as e:
+                    self.logger.error(f"Error in iteration {i+1}: {str(e)}")
+                    raise
+
+            # Compute and log solve-time variability metrics
+            PerformanceEvaluator().compute_solve_time_variability_std(results)   # Solve times
+            PerformanceEvaluator().compute_distance_variability_std(results) # Distances
+            return results
+
+
+    def run_single_iteration(self, original_result, canonical_from_original_result, 
+                             original_canonical, original_canonical_var_order, original_canonical_constr_order):
         try:
             self.logger.debug("Starting new iteration...")
 
-            # Create permuted problem
+            # === 1. Create the permuted problem (unscaled) ===
             self.logger.info("Creating Permuted Problem")
             permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem()
-
             ProblemPrinter.log_model(permuted_model, self.logger, level="DEBUG")
 
-            # Compute permutation distance BEFORE canonicalization
+            # Compute permutation distance BEFORE canonicalization (using unscaled permuted model)
             self.logger.info("Computing Permutation Distance before Canonicalization...")
-
             original_var_order = list(range(self.original_model.NumVars))
             original_constr_order = list(range(self.original_model.NumConstrs))
-
             self.logger.debug(f"Original Constraint Order: {original_constr_order}")
             self.logger.debug(f"Permuted Constraint Order: {constr_permutation}")
             self.logger.debug(f"Original Variable Order: {original_var_order}")
             self.logger.debug(f"Permuted Variable Order: {var_permutation}")
-          
+
             permuted_distance = self.permutator.permutation_distance(
-                original_constr_order,  original_var_order,
+                original_constr_order, original_var_order,
                 constr_permutation, var_permutation,
                 row_dist_method="kendall_tau",
                 col_dist_method="kendall_tau",
                 alpha=1.0, 
                 beta=1.0
             )
-
             self.logger.info(f"Permutation Distance Before Canonicalization: {permuted_distance}")
 
-            # Solve the permuted problem
+            # Solve the unscaled permuted problem (for metric purposes)
             self.logger.info("Solving Permuted Problem")
             permuted_result = self.solve_problem(permuted_model)
 
-            # Compare original and permuted before canonicalization
-            self.logger.debug("Before canonicalization:")
-            A_orig = self.original_model.getA()
-            A_perm = permuted_model.getA()
-            self.logger.debug(f"Original matrix: shape={A_orig.shape}, nnz={A_orig.nnz}")
-            self.logger.debug(f"Permuted matrix: shape={A_perm.shape}, nnz={A_perm.nnz}")
+            # === 2. Apply scaling if requested ===
+            if SCALING_ACTIVE:
+                self.logger.info("Scaling is enabled. Scaling the Permuted Problem.")
+                scaler = ProblemScaler(self.gp_env, permuted_model)
+           
+                scaled_model, used_row_scales, used_col_scales, D_row, D_col = scaler.create_scaled_problem_random(
+                    n_rows_to_scale=2,
+                    n_cols_to_scale=2,
+                    row_scale_bounds=(1.2, 1.9),
+                    col_scale_bounds=(1.2, 1.9),
+                    row_allow_negative=False,
+                    col_allow_negative=False
+                )
+                
+                """
+                 # Example: Only scale the first constraint by a factor of 2.
+                row_scales = [1, 1]       # Only the first constraint is scaled by 2.
+                col_scales = [2, 1]    # All columns remain unchanged.
 
-            # Generate canonical form for the permuted model
-            self.logger.debug("Generating canonical form for permuted model...")
-            permuted_canonical, permuted_canonical_var_order, permuted_canonical_constr_order = (
-                CanonicalFormGenerator(self.gp_env, permuted_model, self.ordering_rule, self.normalizer)
-                .get_canonical_form()
-            )
+                # Assuming 'scaler' is an instance of ProblemScaler:
+                scaled_model, used_row_scales, used_col_scales, D_row, D_col = scaler.create_scaled_problem_with_scales(row_scales, col_scales)
+                """
+                ProblemPrinter.log_model(scaled_model, self.logger, level="DEBUG")
+                intermediate_model = scaled_model
+            else:
+                self.logger.info("Scaling is disabled. Using unscaled permuted model.")
+                intermediate_model = permuted_model
+                used_row_scales = None
+                used_col_scales = None
 
-            ProblemPrinter.log_model(permuted_canonical, self.logger, level="DEBUG")
+            # === 3. Apply normalization if requested ===
+            if NORMALIZATION_ACTIVE:
+                self.logger.info("Normalization is enabled. Normalizing the problem.")
+                normalizer = ProblemNormalizer()
+                normalized_model = normalizer.normalize_model(intermediate_model)
+                ProblemPrinter.log_model(normalized_model, self.logger, level="DEBUG")
+            else:
+                self.logger.info("Normalization is disabled. Using the intermediate model as is.")
+                normalized_model = intermediate_model
 
-            self.logger.info("Solving Canonical Form from Permuted Model")
-            canonical_from_permuted_result = self.solve_problem(permuted_canonical)
+            # === 4. Generate canonical form from the final model ===
+            self.logger.debug("Generating canonical form for the final model...")
+            # Note: You may want to pass a Normalizer() instance to CanonicalFormGenerator
+            # if canonicalization itself makes use of normalization.
+            canon_gen = CanonicalFormGenerator(self.gp_env, normalized_model, self.ordering_rule)
+            permuted_canonical, permuted_canonical_var_order, permuted_canonical_constr_order = canon_gen.get_canonical_form()
 
-            # Compute COMPOSED permutation order
-            self.logger.info("Computing Adjusted Permuted Canonical Order...")
-            
-            # Correct permutation composition: π_final = π_perm ∘ π_canon (applied on original)
+
+            # === 5. Compose final ordering ===
+            # Final ordering is the composition of the original permutation with the canonical ordering.
             final_var_order = var_permutation[permuted_canonical_var_order]
             final_constr_order = constr_permutation[permuted_canonical_constr_order]
 
-
-            # Compute permutation distance AFTER canonicalization
             self.logger.info("Computing Permutation Distance after Canonicalization...")
-
             self.logger.debug(f"Original Canonical Constraint Order: {original_canonical_constr_order}")
             self.logger.debug(f"Permuted Canonical Constraint Order: {final_constr_order}")
             self.logger.debug(f"Original Canonical Variable Order: {original_canonical_var_order}")
@@ -112,13 +168,18 @@ class OptimizationExperiment:
                 alpha=1.0, 
                 beta=1.0
             )
-
             self.logger.info(f"Permutation Distance After Canonicalization: {canonical_distance}")
 
-            # Validate equivalence
+            # === 4. Apply final canonical ordering to the unscaled permuted model and solve it ===
+            self.logger.info("Applying final canonical ordering to permuted model and solving it")
+            ordered_permuted_model = self.permutator.apply_permutation(permuted_model, permuted_canonical_var_order, permuted_canonical_constr_order)
+            self.logger.info("Solving Reordering Form from Permuted Model")
+            final_ordered_result = self.solve_problem(ordered_permuted_model)
+            ProblemPrinter.log_model(ordered_permuted_model, self.logger, level="DEBUG")
+
+            # Validate equivalence between canonical forms (from original and from permuted)
             are_equivalent = self.canonical_generator.validate(original_canonical, permuted_canonical)
 
-            # Store results, including permutation distances
             result = {
                 'equivalent': are_equivalent,
                 'original_vars': original_canonical.NumVars,
@@ -130,17 +191,17 @@ class OptimizationExperiment:
                 'original_solve_time': original_result['solve_time'],
                 'permuted_solve_time': permuted_result['solve_time'],
                 'canonical_from_original_objective': canonical_from_original_result['objective_value'],
-                'canonical_from_permuted_objective': canonical_from_permuted_result['objective_value'],
+                'canonical_from_permuted_objective': final_ordered_result['objective_value'],
                 'canonical_from_original_solve_time': canonical_from_original_result['solve_time'],
-                'canonical_from_permuted_solve_time': canonical_from_permuted_result['solve_time'],
+                'canonical_from_permuted_solve_time': final_ordered_result['solve_time'],
                 'permutation_distance_before_canonicalization': permuted_distance,
-                'permutation_distance_after_canonicalization': canonical_distance
+                'permutation_distance_after_canonicalization': canonical_distance,
+                'used_row_scales': used_row_scales,
+                'used_col_scales': used_col_scales
             }
 
-            # Log detailed differences if not equivalent
             if LOG_MODEL_COMPARISON and not are_equivalent:
-                self.logger.debug("Detailed model comparison:")
-                LoggingHandler().log_model_differences(self.logger, original_canonical, permuted_canonical)
+                IterationLogger().log_model_comparison(original_canonical, permuted_canonical)
 
             return result
 
@@ -148,110 +209,46 @@ class OptimizationExperiment:
             self.logger.error(f"Error in single iteration: {str(e)}")
             raise
 
-    def run_experiment(self, num_iterations):
-        """Run multiple iterations with detailed logging and solving functionality"""
-        ProblemPrinter.log_model(self.original_model, self.logger, level="DEBUG")
-        results = []
-
-        # Solve the original problem once
-        self.logger.info("Solving Original Problem")
-        original_result = self.solve_problem(self.original_model)
-
-        # Generate the canonical form of the original model once
-        self.logger.debug("Generating canonical form for the original model...")
-        original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
-        ProblemPrinter.log_model(original_canonical, self.logger, level="DEBUG")
-
-        # Solve the Canonical from original once
-        self.logger.info("Solving Canonical from Original Problem")
-        canonical_from_original_result  = self.solve_problem(original_canonical)
-
-        for i in range(num_iterations):
-            self.logger.info(f"Running iteration {i+1}/{num_iterations}")
-            try:
-                iteration_result = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical, original_canonical_var_order, original_canonical_constr_order)
-                results.append(iteration_result)
-                self.log_iteration_results(i + 1, iteration_result)
-
-            except Exception as e:
-                self.logger.error(f"Error in iteration {i+1}: {str(e)}")
-                raise
-
-        # Compute and log solve-time variability metrics
-        self.compute_solve_time_variability_std(results)   # Solve times
-        self.compute_distance_variability_std(results) # Distances
-        return results
-
     def load_problem(self):
         """
-        Load the optimization problem from LP/MPS file, either locally or from S3
-        based on production flag.
-
-        Returns:
-            gurobipy.Model: Loaded Gurobi model
+        Load the optimization problem from LP/MPS file, either locally or from S3.
         """
         if PRODUCTION:
-            # Handle S3 path (self.file_path is the part after input/)
             if not self.file_path:
                 raise ValueError("File path cannot be empty in production mode.")
-            
-            # Construct the full S3 key by prepending "input/"
             key = f"{self.file_path}"
-            bucket_name = BUCKET_NAME  # Your bucket name
-            
+            bucket_name = BUCKET_NAME
             try:
-                # Create S3 client
                 s3 = boto3.client('s3')
-                
-                # Get object from S3
                 response = s3.get_object(Bucket=bucket_name, Key=key)
                 file_content = response['Body'].read()
-                
-                ## Save the content to a temporary file
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".mps") as temp_file:
                     temp_file.write(file_content)
                     temp_file_path = temp_file.name
-                
-                # Load model from the temporary file
                 model = gp.read(temp_file_path, env=self.gp_env)
                 self.logger.info(f"Successfully loaded problem from S3: s3://{bucket_name}/{key}")
-                
-                # Clean up the temporary file
                 os.remove(temp_file_path)
                 return model
-                
             except ClientError as e:
                 if e.response['Error']['Code'] == "404":
                     raise FileNotFoundError(f"The file s3://{bucket_name}/{key} does not exist in S3")
                 raise
-                
         else:
-            # Local file handling
             if not os.path.exists(self.file_path):
                 raise FileNotFoundError(f"The file {self.file_path} does not exist locally")
-                
             model = gp.read(self.file_path, env=self.gp_env)
             self.logger.info(f"Successfully loaded local problem from {self.file_path}")
             return model
-        
+
     def solve_problem(self, model):
         """
         Solve the given optimization problem.
-
-        Args:
-            model (gurobipy.Model): Gurobi model to solve
-
-        Returns:
-            dict: Solving results
         """
         try:
-            start_time = time.time()  # Start the timer
+            start_time = time.time()
             model.optimize()
-            elapsed_time = time.time() - start_time  # Calculate elapsed time
-
+            elapsed_time = time.time() - start_time
             status = model.Status
-
-            # Comprehensive status handling
             status_map = {
                 GRB.OPTIMAL: "Optimal solution found",
                 GRB.INFEASIBLE: "Problem is infeasible",
@@ -259,156 +256,18 @@ class OptimizationExperiment:
                 GRB.INF_OR_UNBD: "Problem is infeasible or unbounded",
                 GRB.INTERRUPTED: "Optimization was interrupted",
             }
-
             result = {
                 "solve_status": status,
                 "status_message": status_map.get(status, "Unknown status"),
                 "objective_value": model.ObjVal if status == GRB.OPTIMAL else None,
                 "solution": model.getAttr('X', model.getVars()) if status == GRB.OPTIMAL else None,
-                "solve_time": elapsed_time,  # Include the solve time
+                "solve_time": elapsed_time,
             }
-
             self.logger.info(f"Solve Status: {result['status_message']}")
-            self.logger.info(f"Solve Time: {elapsed_time:.4f} seconds")  # Log the solve time
+            self.logger.info(f"Solve Time: {elapsed_time:.4f} seconds")
             if status == GRB.OPTIMAL:
                 self.logger.info(f"Objective Value: {result['objective_value']}")
-
             return result
-
         except gp.GurobiError as e:
             self.logger.error(f"Gurobi Error: {e}")
             raise
-
-    def log_iteration_results(self, iteration_num, iteration_result):
-        """Logs the results of a single iteration"""
-        self.logger.info(f"Iteration {iteration_num} Results:")
-        self.logger.info(f"- Models equivalent: {iteration_result['equivalent']}")
-        self.logger.info(f"- Variable counts match: {iteration_result['original_vars'] == iteration_result['permuted_vars']}")
-        self.logger.info(f"- Constraint counts match: {iteration_result['original_constrs'] == iteration_result['permuted_constrs']}")
-        self.logger.info(f"- Original Objective Value: {iteration_result['original_objective']}")
-        self.logger.info(f"- Permuted Objective Value: {iteration_result['permuted_objective']}")
-        self.logger.info(f"- Canonical from Original Objective Value: {iteration_result['canonical_from_original_objective']}")
-        self.logger.info(f"- Canonical from Permuted Objective Value: {iteration_result['canonical_from_permuted_objective']}")
-        self.logger.info(f"- Original Solve Time: {iteration_result['original_solve_time']:.10f} seconds")
-        self.logger.info(f"- Permuted Solve Time: {iteration_result['permuted_solve_time']:.10f} seconds")
-        self.logger.info(f"- Canonical from Original Solve Time: {iteration_result['canonical_from_original_solve_time']:.10f} seconds")
-        self.logger.info(f"- Canonical from Permuted Solve Time: {iteration_result['canonical_from_permuted_solve_time']:.10f} seconds")
-        self.logger.info(f"- Permutation Distance Before Canonicalization: {iteration_result['permutation_distance_before_canonicalization']}")
-        self.logger.info(f"- Permutation Distance After Canonicalization: {iteration_result['permutation_distance_after_canonicalization']}")
-
-    def compute_solve_time_variability(self, results): #Old pairwise not used now
-        """
-        Computes and logs the variability in solve times for:
-        - Original vs Permuted model
-        - Canonical (from Original) vs Canonical (from Permuted)
-        """
-        import numpy as np
-
-        def relative_difference(x, y):
-            # Small epsilon to avoid division by zero
-            return abs(x - y) / max(abs(x), abs(y), 1e-12)
-
-        # Collect the relative differences in solve times
-        original_vs_permuted_diffs = []
-        canonical_vs_canonical_diffs = []
-
-        for res in results:
-            original_vs_permuted_diffs.append(
-                relative_difference(res["original_solve_time"], res["permuted_solve_time"])
-            )
-            canonical_vs_canonical_diffs.append(
-                relative_difference(
-                    res["canonical_from_original_solve_time"],
-                    res["canonical_from_permuted_solve_time"]
-                )
-            )
-
-        # Compute mean solve-time variability
-        mean_orig_perm_var = np.mean(original_vs_permuted_diffs) if original_vs_permuted_diffs else 0.0
-        mean_canon_var = np.mean(canonical_vs_canonical_diffs) if canonical_vs_canonical_diffs else 0.0
-
-        self.logger.info("Solve-Time Variability Metrics:")
-        self.logger.info(f"- Mean Solve-Time Variability (Original vs Permuted): {mean_orig_perm_var:.6f}")
-        self.logger.info(f"- Mean Solve-Time Variability (Canonical vs Canonical): {mean_canon_var:.6f}")
-
-        if mean_canon_var < mean_orig_perm_var:
-            self.logger.info("Canonical form has improved solve-time consistency across permutations.")
-        else:
-            self.logger.warning("Canonical form still exhibits significant solve-time variability.")
-
-    def compute_solve_time_variability_std(self, results):
-        """
-        Computes and logs two key standard deviation metrics:
-        1. Variability of permuted solve times including the original solve time.
-        2. Variability of canonical solve times including the canonical-from-original solve time.
-        """
-        import numpy as np
-
-        # If you have fewer than 2 runs, std is not well-defined (ddof=1 leads to zero-division).
-        if len(results) < 2:
-            self.logger.warning("Not enough runs to compute standard deviation of solve times.")
-            return
-
-        # Extract original solve time (constant across runs)
-        original_solve_time = results[0]['original_solve_time']
-        canonical_from_original_solve_time = results[0]['canonical_from_original_solve_time']
-
-        # Extract all permuted solve times and canonical-from-permuted solve times
-        permuted_solve_times = [r['permuted_solve_time'] for r in results]
-        canonical_from_permuted_solve_times = [r['canonical_from_permuted_solve_time'] for r in results]
-
-        # Append original solve time to permuted list
-        permuted_solve_times.append(original_solve_time)
-        
-        # Append canonical-from-original solve time to canonical list
-        canonical_from_permuted_solve_times.append(canonical_from_original_solve_time)
-
-        # Compute standard deviation
-        std_permuted = np.std(permuted_solve_times, ddof=1)
-        std_canon_perm = np.std(canonical_from_permuted_solve_times, ddof=1)
-
-        # Log results
-        self.logger.info("Solve-Time Variability (Standard Deviation):")
-        self.logger.info(f" - Std(Original + Permuted Solve Times): {std_permuted:.6f}")
-        self.logger.info(f" - Std(Canonical-from-Original + Canonical-from-Permuted Solve Times): {std_canon_perm:.6f}")
-
-        # Comparison
-        if std_canon_perm < std_permuted:
-            self.logger.info("Canonical form reduces solve-time variability across permutations.")
-        else:
-            self.logger.warning("Canonical form does NOT sufficiently reduce solve-time variability across permutations.")
-
-    def compute_distance_variability_std(self, results):
-        """
-        Computes and logs the standard deviation of permutation distances across all iterations.
-        The distance is always pairwise, so we measure:
-        1. Variability of permutation distances BEFORE canonicalization.
-        2. Variability of permutation distances AFTER canonicalization.
-        """
-        import numpy as np
-
-        # If you have fewer than 2 runs, std is not well-defined
-        if len(results) < 2:
-            self.logger.warning("Not enough runs to compute standard deviation of permutation distances.")
-            return
-
-        # Extract permutation distances
-        distances_before = [r['permutation_distance_before_canonicalization'] for r in results]
-        distances_after = [r['permutation_distance_after_canonicalization'] for r in results]
-
-        # Compute sample standard deviation
-        std_before = np.std(distances_before, ddof=1)
-        std_after = np.std(distances_after, ddof=1)
-
-        # Log results
-        self.logger.info("Permutation Distance Variability (Standard Deviation):")
-        self.logger.info(f" - Std(Permutation Distance Before Canonicalization): {std_before:.6f}")
-        self.logger.info(f" - Std(Permutation Distance After Canonicalization): {std_after:.6f}")
-
-        # Compare if canonicalization stabilizes permutation distances
-        if std_after < std_before:
-            self.logger.info("Canonicalization reduces permutation distance variability across permutations.")
-        else:
-            self.logger.warning("Canonicalization does NOT sufficiently reduce permutation distance variability.")
-
-
