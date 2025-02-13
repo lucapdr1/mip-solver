@@ -7,7 +7,7 @@ WLSSECRET = os.getenv('WLSSECRET')
 LICENSEID = os.getenv('LICENSEID')
 
 # Read values from environment variables or use hardcoded defaults
-LOG_LEVEL = os.getenv('LOG_LEVEL', logging.DEBUG)
+LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
 INPUT_DIR = os.getenv('INPUT_DIR', "input/")
 OUTPUT_DIR = os.getenv('INPUT_DIR', "experiments/")
 
