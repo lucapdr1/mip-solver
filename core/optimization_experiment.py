@@ -105,6 +105,7 @@ class OptimizationExperiment:
             if SCALING_ACTIVE:
                 self.logger.info("Scaling is enabled. Scaling the Permuted Problem.")
                 scaler = ProblemScaler(self.gp_env, permuted_model)
+           
                 scaled_model, used_row_scales, used_col_scales, D_row, D_col = scaler.create_scaled_problem_random(
                     n_rows_to_scale=2,
                     n_cols_to_scale=2,
@@ -113,6 +114,15 @@ class OptimizationExperiment:
                     row_allow_negative=False,
                     col_allow_negative=False
                 )
+                
+                """
+                 # Example: Only scale the first constraint by a factor of 2.
+                row_scales = [1, 1]       # Only the first constraint is scaled by 2.
+                col_scales = [2, 1]    # All columns remain unchanged.
+
+                # Assuming 'scaler' is an instance of ProblemScaler:
+                scaled_model, used_row_scales, used_col_scales, D_row, D_col = scaler.create_scaled_problem_with_scales(row_scales, col_scales)
+                """
                 ProblemPrinter.log_model(scaled_model, self.logger, level="DEBUG")
                 intermediate_model = scaled_model
             else:

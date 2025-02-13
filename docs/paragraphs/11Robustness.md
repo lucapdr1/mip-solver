@@ -168,11 +168,6 @@
 
 ---
 
+**Limitations of L₂ Normalization**
 
-
-### **Validation**
-- **Permuted Problem**: After normalization, scoring, and sorting, the permuted variables/constraints match the original order.
-- **Sparsity & Blocks**: Identical block decomposition confirms invariance.
-
-This process ensures **any permutation/scaling** of the problem maps to the same canonical form, eliminating solver variability.
-
+Using L₂ normalization to achieve a canonical form for MILO problems presents two significant issues. First, applying L₂ normalization involves scaling each column by its Euclidean norm, which typically yields non-integer factors. This poses a problem for integer or binary variables since multiplying them by non-integer scaling factors disrupts their discrete nature—integer variables must remain integer, and binary variables must remain in \(\{0,1\}\). Second, if the same underlying problem is subjected to different arbitrary scalings, the computed L₂ norms will differ, and consequently, the normalization procedure will produce numerically distinct canonical forms. In other words, two mathematically equivalent formulations may normalize to different forms, defeating the purpose of achieving a unique canonical representation.
