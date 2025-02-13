@@ -90,6 +90,8 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         for pos, constr_idx in enumerate(self.cached_constr_order):
             scores[constr_idx] = pos
         logger.debug("Final constraint ordering (positions): %s", scores)
+        #reset chaches before ending this iteration
+        self.reset_cache()
         return scores
 
     def _recursive_block_matrix(self, level, var_indices, constr_indices,
