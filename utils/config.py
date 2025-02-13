@@ -18,8 +18,8 @@ INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")
 
 NUMBER_OF_PERMUATATIONS = int(os.getenv('NUMBER_OF_PERMUATATIONS', 3))
-NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'True').lower() == 'true'
-SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'True').lower() == 'true' 
+NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
+SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
 
 MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
 LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'

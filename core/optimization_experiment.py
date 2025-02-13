@@ -109,8 +109,8 @@ class OptimizationExperiment:
                 scaled_model, used_row_scales, used_col_scales, D_row, D_col = scaler.create_scaled_problem_random(
                     n_rows_to_scale=2,
                     n_cols_to_scale=2,
-                    row_scale_bounds=(2.0, 2.0),
-                    col_scale_bounds=(2.0, 2.0),
+                    row_scale_bounds=(1.2, 1.9),
+                    col_scale_bounds=(1.2, 1.9),
                     row_allow_negative=False,
                     col_allow_negative=False
                 )

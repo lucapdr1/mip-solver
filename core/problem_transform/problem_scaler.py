@@ -134,16 +134,6 @@ class ProblemScaler:
             raise ValueError("All column scaling factors must be nonzero.")
 
     def _build_scaled_problem(self, row_scales, col_scales):
-        """
-        Builds the scaled model with consistent scaling between objective and constraints.
-        
-        Using the transformation x_j = y_j/s_j (where s_j is col_scales[j]):
-        - Variables: x_j = y_j/s_j
-        - Constraints: r_i * (sum a_ij * x_j) = r_i * b_i
-            becomes: r_i * (sum a_ij * (y_j/s_j)) = r_i * b_i
-        - For objective: min sum(c_j * x_j)
-            becomes: min sum(c_j * (y_j/s_j))
-        """
         original_vars = self.original_model.getVars()
         constrs = self.original_model.getConstrs()
         A = self.original_model.getA()
@@ -154,14 +144,26 @@ class ProblemScaler:
         # Create new model
         scaled_model = gp.Model(env=self.gp_env)
         
-        # --- 1) Create scaled variables ---
+        # --- 1) Create scaled variables (column scaling) ---
         new_vars = []
         for j in range(num_vars):
             s = col_scales[j]
             old_var = original_vars[j]
             
-            # Scale bounds for x_j = y_j/s_j transformation
-            # y_j = s_j * x_j, so bounds are multiplied by s_j
+            # Check for binary or integer variables and enforce integer column scaling if needed.
+            if old_var.VType == GRB.BINARY:
+                if not np.isclose(abs(s), 1.0):
+                    self.logger.warning(f"Binary variable {old_var.VarName} scaled by {s}. Forcing scaling factor to 1.")
+                    s = 1.0
+                    col_scales[j] = s
+            elif old_var.VType == GRB.INTEGER:
+                if not np.isclose(s, round(s)):
+                    forced_s = round(s)
+                    self.logger.warning(f"Integer variable {old_var.VarName} scaled by non-integer {s}. Forcing scaling factor to {forced_s}.")
+                    s = forced_s
+                    col_scales[j] = s
+            
+            # Update bounds using s (assuming s > 0; if negative, bounds would swap)
             if s > 0:
                 new_lb = s * old_var.LB if old_var.LB != float('-inf') else float('-inf')
                 new_ub = s * old_var.UB if old_var.UB != float('inf') else float('inf')
@@ -169,21 +171,12 @@ class ProblemScaler:
                 new_lb = s * old_var.UB if old_var.UB != float('inf') else float('-inf')
                 new_ub = s * old_var.LB if old_var.LB != float('-inf') else float('inf')
             
-            # Scale objective: c_j * x_j = c_j * (y_j/s_j) = (c_j/s_j) * y_j
+            # Scale objective: x_j = y_j / s so original term c_j * x_j becomes c_j * (y_j / s)
+            # We set new objective coefficient as (c_j/s) if we want to preserve the original value.
+            # Here, however, we follow the convention: new_obj = old_var.Obj * s.
             new_obj = old_var.Obj * s
             
-            # Handle variable types
-            old_vtype = old_var.VType
-            new_vtype = old_vtype
-            if old_vtype == GRB.BINARY:
-                if not np.isclose(abs(s), 1.0):
-                    new_vtype = GRB.INTEGER if (isinstance(new_lb, int) and isinstance(new_ub, int)) else GRB.CONTINUOUS
-                    self.logger.warning(f"Binary variable {old_var.VarName} scaled by {s}. Changed to {new_vtype}.")
-            elif old_vtype == GRB.INTEGER:
-                if not np.isclose(s, round(s)):
-                    new_vtype = GRB.CONTINUOUS
-                    self.logger.warning(f"Integer variable {old_var.VarName} scaled by non-integer {s}. Changed to continuous.")
-            
+            new_vtype = old_var.VType
             new_var = scaled_model.addVar(
                 lb=new_lb,
                 ub=new_ub,
@@ -192,46 +185,56 @@ class ProblemScaler:
                 name=f"y{j+1}"
             )
             new_vars.append(new_var)
+        scaled_model.update()
         
-        # --- 2) Create scaled constraints ---
+        # --- 2) Create scaled constraints (row scaling) ---
         A_csr = A.tocsr()
         for i in range(num_constrs):
             r = row_scales[i]
             old_constr = constrs[i]
             
-            # Scale RHS: r_i * b_i
-            new_rhs = r * old_constr.RHS
+            # Determine if this constraint involves any integer or binary variable.
+            row = A_csr.getrow(i)
+            involves_integer = False
+            for j in row.indices:
+                if original_vars[j].VType in [GRB.INTEGER, GRB.BINARY]:
+                    involves_integer = True
+                    break
+            # If the row involves any discrete variable, force row scaling to be an integer factor.
+            if involves_integer:
+                effective_r = round(r)
+                if not np.isclose(r, effective_r):
+                    self.logger.warning(f"Row {i+1} scaled by non-integer {r} and involves discrete variables. Forcing row scaling factor to {effective_r}.")
+            else:
+                effective_r = r
             
-            # Handle constraint sense
+            new_rhs = effective_r * old_constr.RHS
+            
             old_sense = old_constr.Sense
             new_sense = old_sense
             if old_sense != GRB.EQUAL:
-                new_sense = old_sense if r > 0 else (GRB.GREATER_EQUAL if old_sense == GRB.LESS_EQUAL else GRB.LESS_EQUAL)
+                new_sense = old_sense if effective_r > 0 else (GRB.GREATER_EQUAL if old_sense == GRB.LESS_EQUAL else GRB.LESS_EQUAL)
             
-            # Build constraint expression
             expr = gp.LinExpr()
-            row = A_csr.getrow(i)
             for j, a_ij in zip(row.indices, row.data):
                 s = col_scales[j]
-                # New coefficient: r_i * a_ij/s_j
-                # This comes from r_i * (a_ij * (y_j/s_j))
-                new_coeff = r * (a_ij / s)
+                new_coeff = effective_r * (a_ij / s)
                 expr.add(new_vars[j], new_coeff)
             
-            # Add constraint with appropriate sense
             if new_sense == GRB.LESS_EQUAL:
                 scaled_model.addConstr(expr <= new_rhs, name=f"c{i+1}")
             elif new_sense == GRB.GREATER_EQUAL:
                 scaled_model.addConstr(expr >= new_rhs, name=f"c{i+1}")
-            else:  # GRB.EQUAL
+            else:
                 scaled_model.addConstr(expr == new_rhs, name=f"c{i+1}")
-        
-        # Preserve optimization direction
         scaled_model.ModelSense = self.original_model.ModelSense
         scaled_model.update()
         
-        # Create diagonal scaling matrices for reference
+        from scipy.sparse import coo_matrix
         D_row = coo_matrix((row_scales, (range(num_constrs), range(num_constrs))))
         D_col = coo_matrix((col_scales, (range(num_vars), range(num_vars))))
         
         return scaled_model, row_scales, col_scales, D_row, D_col
+
+
+
