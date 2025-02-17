@@ -6,6 +6,48 @@ class PerformanceEvaluator:
     def __init__(self):
         self.logger = LoggingHandler().get_logger()
 
+    def compute_work_unit_variability_std(self, results):
+        """
+        Computes and logs the standard deviation of work units from the experiment results.
+        """
+        if len(results) < 2:
+            self.logger.warning("Not enough runs to compute standard deviation of work units.")
+            return
+
+        # Use the original work units from the first run (assumed constant)
+        original_work_units = results[0].get('original_work_units', None)
+        canonical_from_original_work_units = results[0].get('canonical_from_original_work_units', None)
+
+        if original_work_units is None or canonical_from_original_work_units is None:
+            self.logger.warning("Work unit data missing in some results. Skipping analysis.")
+            return
+
+        # Collect work units from permuted and canonical solve processes
+        permuted_work_units = [r.get('permuted_work_units', None) for r in results] + [original_work_units]
+        canonical_from_permuted_work_units = [r.get('canonical_from_permuted_work_units', None) for r in results] + [canonical_from_original_work_units]
+
+        # Remove any None values in case work units were missing in some iterations
+        permuted_work_units = [wu for wu in permuted_work_units if wu is not None]
+        canonical_from_permuted_work_units = [wu for wu in canonical_from_permuted_work_units if wu is not None]
+
+        if len(permuted_work_units) < 2 or len(canonical_from_permuted_work_units) < 2:
+            self.logger.warning("Not enough valid work unit data to compute standard deviation.")
+            return
+
+        # Compute standard deviations
+        std_permuted = np.std(permuted_work_units, ddof=1)
+        std_canon_perm = np.std(canonical_from_permuted_work_units, ddof=1)
+
+        # Log results
+        self.logger.info("Work Unit Variability (Standard Deviation):")
+        self.logger.info(f" - Std(Original + Permuted Work Units): {std_permuted:.10f}")
+        self.logger.info(f" - Std(Canonical-from-Original + Canonical-from-Permuted Work Units): {std_canon_perm:.10f}")
+
+        if std_canon_perm < std_permuted:
+            self.logger.info("Canonical form reduces work unit variability across permutations.")
+        else:
+            self.logger.warning("Canonical form does NOT sufficiently reduce work unit variability across permutations.")
+
     def compute_solve_time_variability_std(self, results):
         """
         Computes and logs the standard deviation of solve times from the experiment results.

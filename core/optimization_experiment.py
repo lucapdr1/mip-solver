@@ -54,7 +54,8 @@ class OptimizationExperiment:
             for i in range(num_iterations):
                 self.logger.info(f"Running iteration {i+1}/{num_iterations}")
                 try:
-                    iteration_result = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical, original_canonical_var_order, original_canonical_constr_order)
+                    permuted_canonical, permuted_result, final_ordered_result, permuted_distance, canonical_distance = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical, original_canonical_var_order, original_canonical_constr_order)
+                    iteration_result = self.build_iteration_result(original_canonical, permuted_canonical, original_result, permuted_result, canonical_from_original_result, final_ordered_result, permuted_distance, canonical_distance)
                     results.append(iteration_result)
                     IterationLogger().log_iteration_results(i + 1, iteration_result)
 
@@ -63,7 +64,8 @@ class OptimizationExperiment:
                     raise
 
             # Compute and log solve-time variability metrics
-            PerformanceEvaluator().compute_solve_time_variability_std(results)   # Solve times
+            PerformanceEvaluator().compute_solve_time_variability_std(results) # Solve times
+            PerformanceEvaluator().compute_work_unit_variability_std(results) # WorkUnits
             PerformanceEvaluator().compute_distance_variability_std(results) # Distances
             return results
 
@@ -177,37 +179,44 @@ class OptimizationExperiment:
             final_ordered_result = self.solve_problem(ordered_permuted_model)
             ProblemPrinter.log_model(ordered_permuted_model, self.logger, level="DEBUG")
 
-            # Validate equivalence between canonical forms (from original and from permuted)
-            are_equivalent = self.canonical_generator.validate(original_canonical, permuted_canonical)
-
-            result = {
-                'equivalent': are_equivalent,
-                'original_vars': original_canonical.NumVars,
-                'permuted_vars': permuted_canonical.NumVars,
-                'original_constrs': original_canonical.NumConstrs,
-                'permuted_constrs': permuted_canonical.NumConstrs,
-                'original_objective': original_result['objective_value'],
-                'permuted_objective': permuted_result['objective_value'],
-                'original_solve_time': original_result['solve_time'],
-                'permuted_solve_time': permuted_result['solve_time'],
-                'canonical_from_original_objective': canonical_from_original_result['objective_value'],
-                'canonical_from_permuted_objective': final_ordered_result['objective_value'],
-                'canonical_from_original_solve_time': canonical_from_original_result['solve_time'],
-                'canonical_from_permuted_solve_time': final_ordered_result['solve_time'],
-                'permutation_distance_before_canonicalization': permuted_distance,
-                'permutation_distance_after_canonicalization': canonical_distance,
-                'used_row_scales': used_row_scales,
-                'used_col_scales': used_col_scales
-            }
-
-            if LOG_MODEL_COMPARISON and not are_equivalent:
-                IterationLogger().log_model_comparison(original_canonical, permuted_canonical)
-
-            return result
+            return permuted_canonical, permuted_result, final_ordered_result, permuted_distance, canonical_distance
 
         except Exception as e:
             self.logger.error(f"Error in single iteration: {str(e)}")
             raise
+    
+    def build_iteration_result(self, original_canonical, permuted_canonical, original_result, permuted_result, canonical_from_original_result, final_ordered_result, permuted_distance, canonical_distance):
+        """
+        Constructs the iteration result dictionary from the solved models.
+        """
+        # Validate equivalence between canonical forms (from original and from permuted)
+        are_equivalent = self.canonical_generator.validate(original_canonical, permuted_canonical)
+
+        if LOG_MODEL_COMPARISON and not are_equivalent:
+            IterationLogger().log_model_comparison(original_canonical, permuted_canonical)
+
+        return {
+            'equivalent': are_equivalent,
+            'original_vars': original_canonical.NumVars,
+            'permuted_vars': permuted_canonical.NumVars,
+            'original_constrs': original_canonical.NumConstrs,
+            'permuted_constrs': permuted_canonical.NumConstrs,
+            'original_objective': original_result['objective_value'],
+            'permuted_objective': permuted_result['objective_value'],
+            'original_solve_time': original_result['solve_time'],
+            'permuted_solve_time': permuted_result['solve_time'],
+            'original_work_units': original_result['work_units'],
+            'permuted_work_units': permuted_result['work_units'],
+            'canonical_from_original_objective': canonical_from_original_result['objective_value'],
+            'canonical_from_permuted_objective': final_ordered_result['objective_value'],
+            'canonical_from_original_solve_time': canonical_from_original_result['solve_time'],
+            'canonical_from_permuted_solve_time': final_ordered_result['solve_time'],
+            'canonical_from_original_work_units': canonical_from_original_result['work_units'],
+            'canonical_from_permuted_work_units': final_ordered_result['work_units'],
+            'permutation_distance_before_canonicalization': permuted_distance,
+            'permutation_distance_after_canonicalization': canonical_distance,
+        }
+            
 
     def load_problem(self):
         """
@@ -262,6 +271,7 @@ class OptimizationExperiment:
                 "objective_value": model.ObjVal if status == GRB.OPTIMAL else None,
                 "solution": model.getAttr('X', model.getVars()) if status == GRB.OPTIMAL else None,
                 "solve_time": elapsed_time,
+                "work_units" : model.work
             }
             self.logger.info(f"Solve Status: {result['status_message']}")
             self.logger.info(f"Solve Time: {elapsed_time:.4f} seconds")
