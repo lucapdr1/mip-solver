@@ -28,6 +28,10 @@ class IterationLogger:
         self.logger.info(f"- Permuted Solve Time: {iteration_result['permuted_solve_time']:.10f} seconds")
         self.logger.info(f"- Canonical from Original Solve Time: {iteration_result['canonical_from_original_solve_time']:.10f} seconds")
         self.logger.info(f"- Canonical from Permuted Solve Time: {iteration_result['canonical_from_permuted_solve_time']:.10f} seconds")
+        self.logger.info(f"- Original Work Units: {iteration_result['original_work_units']:.10f}")
+        self.logger.info(f"- Permuted Work Units: {iteration_result['permuted_work_units']:.10f}")
+        self.logger.info(f"- Canonical from Original Work Units: {iteration_result['canonical_from_original_work_units']:.10f}")
+        self.logger.info(f"- Canonical from Permuted Work Units: {iteration_result['canonical_from_permuted_work_units']:.10f}")
         self.logger.info(f"- Permutation Distance Before Canonicalization: {iteration_result['permutation_distance_before_canonicalization']}")
         self.logger.info(f"- Permutation Distance After Canonicalization: {iteration_result['permutation_distance_after_canonicalization']}")
 
