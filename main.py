@@ -83,7 +83,7 @@ if __name__ == "__main__":
         gp_env = init_gurobi_env()
         input_problem = get_Input_problem()
 
-        ordering_rule = create_hierarchical_ordering()
+        ordering_rule = create_recursive_hierarchical_ordering()
 
         experiment = OptimizationExperiment(gp_env, input_problem, ordering_rule)
         results = experiment.run_experiment(NUMBER_OF_PERMUATATIONS)
