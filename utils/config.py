@@ -7,7 +7,7 @@ WLSSECRET = os.getenv('WLSSECRET')
 LICENSEID = os.getenv('LICENSEID')
 
 # Read values from environment variables or use hardcoded defaults
-LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
+LOG_LEVEL = os.getenv('LOG_LEVEL', logging.DEBUG)
 INPUT_DIR = os.getenv('INPUT_DIR', "input/")
 OUTPUT_DIR = os.getenv('INPUT_DIR', "experiments/")
 
@@ -27,6 +27,7 @@ MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
 LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'
 LOG_MODEL_COMPARISON = os.getenv('LOG_MODEL_COMPARISON', 'False').lower() == 'true'
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
+RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'False').lower() == 'true'
 
 #AWS
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'lucapolimi-experiments')
