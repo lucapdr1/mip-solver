@@ -18,7 +18,7 @@ from core.ordering.recursive.sign_pattern_rule import SignPatternRule
 from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCountRule, ConstraintContinuousCountRule, BothBoundsFiniteCountRule, BothBoundsInfiniteCountRule, OneBoundFiniteCountRule
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
-from utils.config import NUMBER_OF_PERMUATATIONS
+from utils.config import NUMBER_OF_PERMUTATIONS
 
 
 def create_hierarchical_ordering():
@@ -86,6 +86,6 @@ if __name__ == "__main__":
         ordering_rule = create_hierarchical_ordering()
 
         experiment = OptimizationExperiment(gp_env, input_problem, ordering_rule)
-        results = experiment.run_experiment(NUMBER_OF_PERMUATATIONS)
+        results = experiment.run_experiment(NUMBER_OF_PERMUTATIONS)
     except Exception as e:
         print(f"Experiment failed: {e}")
