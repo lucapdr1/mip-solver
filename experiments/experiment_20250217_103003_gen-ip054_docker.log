@@ -1,0 +1,201 @@
+2025-02-17 10:30:04,273 - INFO: Successfully loaded problem from S3: s3://lucapolimi-experiments/input/gen-ip054.mps
+2025-02-17 10:30:04,274 - INFO: Successfully loaded problem from input/gen-ip054.mps
+2025-02-17 10:30:04,274 - INFO: Problem Details:
+2025-02-17 10:30:04,274 - INFO: - Variables: 30
+2025-02-17 10:30:04,274 - INFO: - Constraints: 27
+2025-02-17 10:30:04,274 - INFO: - Objective Sense: Minimize
+2025-02-17 10:30:04,277 - INFO: Solving Original Problem
+2025-02-17 10:39:06,025 - INFO: Solve Status: Optimal solution found
+2025-02-17 10:39:06,025 - INFO: Solve Time: 541.7476 seconds
+2025-02-17 10:39:06,025 - INFO: Objective Value: 6840.965641792
+2025-02-17 10:39:06,037 - INFO: Solving Canonical from Original Problem
+2025-02-17 10:47:36,450 - INFO: Solve Status: Optimal solution found
+2025-02-17 10:47:36,450 - INFO: Solve Time: 510.4128 seconds
+2025-02-17 10:47:36,450 - INFO: Objective Value: 6840.965641792001
+2025-02-17 10:47:36,450 - INFO: Running iteration 1/5
+2025-02-17 10:47:36,450 - INFO: Creating Permuted Problem
+2025-02-17 10:47:36,456 - INFO: Computing Permutation Distance before Canonicalization...
+2025-02-17 10:47:36,456 - INFO: Permutation Distance Before Canonicalization: 347.0
+2025-02-17 10:47:36,456 - INFO: Solving Permuted Problem
+2025-02-17 10:56:35,249 - INFO: Solve Status: Optimal solution found
+2025-02-17 10:56:35,249 - INFO: Solve Time: 538.7925 seconds
+2025-02-17 10:56:35,249 - INFO: Objective Value: 6840.9656417920005
+2025-02-17 10:56:35,249 - INFO: Scaling is disabled. Using unscaled permuted model.
+2025-02-17 10:56:35,250 - INFO: Normalization is disabled. Using the intermediate model as is.
+2025-02-17 10:56:35,259 - INFO: Computing Permutation Distance after Canonicalization...
+2025-02-17 10:56:35,260 - INFO: Permutation Distance After Canonicalization: 0.0
+2025-02-17 10:56:35,260 - INFO: Applying final canonical ordering to permuted model and solving it
+2025-02-17 10:56:35,263 - INFO: Solving Reordering Form from Permuted Model
+2025-02-17 11:04:55,828 - INFO: Solve Status: Optimal solution found
+2025-02-17 11:04:55,828 - INFO: Solve Time: 500.5645 seconds
+2025-02-17 11:04:55,828 - INFO: Objective Value: 6840.965641792001
+2025-02-17 11:04:55,973 - INFO: Iteration 1 Results:
+2025-02-17 11:04:55,974 - INFO: - Models equivalent: True
+2025-02-17 11:04:55,974 - INFO: - Variable counts match: True
+2025-02-17 11:04:55,974 - INFO: - Constraint counts match: True
+2025-02-17 11:04:55,974 - INFO: - Original Objective Value: 6840.965641792
+2025-02-17 11:04:55,974 - INFO: - Permuted Objective Value: 6840.9656417920005
+2025-02-17 11:04:55,975 - INFO: - Canonical from Original Objective Value: 6840.965641792001
+2025-02-17 11:04:55,975 - INFO: - Canonical from Permuted Objective Value: 6840.965641792001
+2025-02-17 11:04:55,975 - INFO: - Original Solve Time: 541.7475795746 seconds
+2025-02-17 11:04:55,976 - INFO: - Permuted Solve Time: 538.7924964428 seconds
+2025-02-17 11:04:55,976 - INFO: - Canonical from Original Solve Time: 510.4128224850 seconds
+2025-02-17 11:04:55,977 - INFO: - Canonical from Permuted Solve Time: 500.5645084381 seconds
+2025-02-17 11:04:55,977 - INFO: - Original Work Units: 281.2216904737
+2025-02-17 11:04:55,978 - INFO: - Permuted Work Units: 273.1533092565
+2025-02-17 11:04:55,978 - INFO: - Canonical from Original Work Units: 259.8370250015
+2025-02-17 11:04:55,980 - INFO: - Canonical from Permuted Work Units: 259.8370250015
+2025-02-17 11:04:55,980 - INFO: - Permutation Distance Before Canonicalization: 347.0
+2025-02-17 11:04:55,981 - INFO: - Permutation Distance After Canonicalization: 0.0
+2025-02-17 11:04:55,982 - INFO: Running iteration 2/5
+2025-02-17 11:04:55,982 - INFO: Creating Permuted Problem
+2025-02-17 11:04:55,989 - INFO: Computing Permutation Distance before Canonicalization...
+2025-02-17 11:04:55,989 - INFO: Permutation Distance Before Canonicalization: 426.0
+2025-02-17 11:04:55,989 - INFO: Solving Permuted Problem
+2025-02-17 11:12:56,827 - INFO: Solve Status: Optimal solution found
+2025-02-17 11:12:56,827 - INFO: Solve Time: 480.8372 seconds
+2025-02-17 11:12:56,827 - INFO: Objective Value: 6840.965641792
+2025-02-17 11:12:56,827 - INFO: Scaling is disabled. Using unscaled permuted model.
+2025-02-17 11:12:56,827 - INFO: Normalization is disabled. Using the intermediate model as is.
+2025-02-17 11:12:56,836 - INFO: Computing Permutation Distance after Canonicalization...
+2025-02-17 11:12:56,837 - INFO: Permutation Distance After Canonicalization: 0.0
+2025-02-17 11:12:56,837 - INFO: Applying final canonical ordering to permuted model and solving it
+2025-02-17 11:12:56,840 - INFO: Solving Reordering Form from Permuted Model
+2025-02-17 11:21:17,464 - INFO: Solve Status: Optimal solution found
+2025-02-17 11:21:17,464 - INFO: Solve Time: 500.6231 seconds
+2025-02-17 11:21:17,464 - INFO: Objective Value: 6840.965641792001
+2025-02-17 11:21:17,574 - INFO: Iteration 2 Results:
+2025-02-17 11:21:17,575 - INFO: - Models equivalent: True
+2025-02-17 11:21:17,575 - INFO: - Variable counts match: True
+2025-02-17 11:21:17,575 - INFO: - Constraint counts match: True
+2025-02-17 11:21:17,576 - INFO: - Original Objective Value: 6840.965641792
+2025-02-17 11:21:17,577 - INFO: - Permuted Objective Value: 6840.965641792
+2025-02-17 11:21:17,577 - INFO: - Canonical from Original Objective Value: 6840.965641792001
+2025-02-17 11:21:17,578 - INFO: - Canonical from Permuted Objective Value: 6840.965641792001
+2025-02-17 11:21:17,578 - INFO: - Original Solve Time: 541.7475795746 seconds
+2025-02-17 11:21:17,578 - INFO: - Permuted Solve Time: 480.8371853828 seconds
+2025-02-17 11:21:17,578 - INFO: - Canonical from Original Solve Time: 510.4128224850 seconds
+2025-02-17 11:21:17,579 - INFO: - Canonical from Permuted Solve Time: 500.6230676174 seconds
+2025-02-17 11:21:17,579 - INFO: - Original Work Units: 281.2216904737
+2025-02-17 11:21:17,580 - INFO: - Permuted Work Units: 243.0741017797
+2025-02-17 11:21:17,580 - INFO: - Canonical from Original Work Units: 259.8370250015
+2025-02-17 11:21:17,580 - INFO: - Canonical from Permuted Work Units: 259.8370250015
+2025-02-17 11:21:17,580 - INFO: - Permutation Distance Before Canonicalization: 426.0
+2025-02-17 11:21:17,581 - INFO: - Permutation Distance After Canonicalization: 0.0
+2025-02-17 11:21:17,581 - INFO: Running iteration 3/5
+2025-02-17 11:21:17,582 - INFO: Creating Permuted Problem
+2025-02-17 11:21:17,589 - INFO: Computing Permutation Distance before Canonicalization...
+2025-02-17 11:21:17,589 - INFO: Permutation Distance Before Canonicalization: 368.0
+2025-02-17 11:21:17,589 - INFO: Solving Permuted Problem
+2025-02-17 11:29:36,920 - INFO: Solve Status: Optimal solution found
+2025-02-17 11:29:36,920 - INFO: Solve Time: 499.3304 seconds
+2025-02-17 11:29:36,920 - INFO: Objective Value: 6840.9656417920005
+2025-02-17 11:29:36,920 - INFO: Scaling is disabled. Using unscaled permuted model.
+2025-02-17 11:29:36,920 - INFO: Normalization is disabled. Using the intermediate model as is.
+2025-02-17 11:29:36,930 - INFO: Computing Permutation Distance after Canonicalization...
+2025-02-17 11:29:36,931 - INFO: Permutation Distance After Canonicalization: 0.0
+2025-02-17 11:29:36,931 - INFO: Applying final canonical ordering to permuted model and solving it
+2025-02-17 11:29:36,934 - INFO: Solving Reordering Form from Permuted Model
+2025-02-17 11:37:59,719 - INFO: Solve Status: Optimal solution found
+2025-02-17 11:37:59,720 - INFO: Solve Time: 502.7851 seconds
+2025-02-17 11:37:59,720 - INFO: Objective Value: 6840.965641792001
+2025-02-17 11:37:59,878 - INFO: Iteration 3 Results:
+2025-02-17 11:37:59,879 - INFO: - Models equivalent: True
+2025-02-17 11:37:59,879 - INFO: - Variable counts match: True
+2025-02-17 11:37:59,880 - INFO: - Constraint counts match: True
+2025-02-17 11:37:59,880 - INFO: - Original Objective Value: 6840.965641792
+2025-02-17 11:37:59,880 - INFO: - Permuted Objective Value: 6840.9656417920005
+2025-02-17 11:37:59,880 - INFO: - Canonical from Original Objective Value: 6840.965641792001
+2025-02-17 11:37:59,881 - INFO: - Canonical from Permuted Objective Value: 6840.965641792001
+2025-02-17 11:37:59,881 - INFO: - Original Solve Time: 541.7475795746 seconds
+2025-02-17 11:37:59,882 - INFO: - Permuted Solve Time: 499.3304114342 seconds
+2025-02-17 11:37:59,882 - INFO: - Canonical from Original Solve Time: 510.4128224850 seconds
+2025-02-17 11:37:59,882 - INFO: - Canonical from Permuted Solve Time: 502.7851450443 seconds
+2025-02-17 11:37:59,883 - INFO: - Original Work Units: 281.2216904737
+2025-02-17 11:37:59,883 - INFO: - Permuted Work Units: 250.1401825377
+2025-02-17 11:37:59,884 - INFO: - Canonical from Original Work Units: 259.8370250015
+2025-02-17 11:37:59,884 - INFO: - Canonical from Permuted Work Units: 259.8370250015
+2025-02-17 11:37:59,884 - INFO: - Permutation Distance Before Canonicalization: 368.0
+2025-02-17 11:37:59,885 - INFO: - Permutation Distance After Canonicalization: 0.0
+2025-02-17 11:37:59,885 - INFO: Running iteration 4/5
+2025-02-17 11:37:59,885 - INFO: Creating Permuted Problem
+2025-02-17 11:37:59,893 - INFO: Computing Permutation Distance before Canonicalization...
+2025-02-17 11:37:59,893 - INFO: Permutation Distance Before Canonicalization: 338.0
+2025-02-17 11:37:59,893 - INFO: Solving Permuted Problem
+2025-02-17 11:47:16,775 - INFO: Solve Status: Optimal solution found
+2025-02-17 11:47:16,775 - INFO: Solve Time: 556.8816 seconds
+2025-02-17 11:47:16,775 - INFO: Objective Value: 6840.9656417920005
+2025-02-17 11:47:16,775 - INFO: Scaling is disabled. Using unscaled permuted model.
+2025-02-17 11:47:16,776 - INFO: Normalization is disabled. Using the intermediate model as is.
+2025-02-17 11:47:16,785 - INFO: Computing Permutation Distance after Canonicalization...
+2025-02-17 11:47:16,786 - INFO: Permutation Distance After Canonicalization: 0.0
+2025-02-17 11:47:16,786 - INFO: Applying final canonical ordering to permuted model and solving it
+2025-02-17 11:47:16,789 - INFO: Solving Reordering Form from Permuted Model
+2025-02-17 11:55:38,951 - INFO: Solve Status: Optimal solution found
+2025-02-17 11:55:38,952 - INFO: Solve Time: 502.1621 seconds
+2025-02-17 11:55:38,952 - INFO: Objective Value: 6840.965641792001
+2025-02-17 11:55:39,097 - INFO: Iteration 4 Results:
+2025-02-17 11:55:39,098 - INFO: - Models equivalent: True
+2025-02-17 11:55:39,098 - INFO: - Variable counts match: True
+2025-02-17 11:55:39,098 - INFO: - Constraint counts match: True
+2025-02-17 11:55:39,099 - INFO: - Original Objective Value: 6840.965641792
+2025-02-17 11:55:39,099 - INFO: - Permuted Objective Value: 6840.9656417920005
+2025-02-17 11:55:39,099 - INFO: - Canonical from Original Objective Value: 6840.965641792001
+2025-02-17 11:55:39,099 - INFO: - Canonical from Permuted Objective Value: 6840.965641792001
+2025-02-17 11:55:39,100 - INFO: - Original Solve Time: 541.7475795746 seconds
+2025-02-17 11:55:39,100 - INFO: - Permuted Solve Time: 556.8815600872 seconds
+2025-02-17 11:55:39,100 - INFO: - Canonical from Original Solve Time: 510.4128224850 seconds
+2025-02-17 11:55:39,101 - INFO: - Canonical from Permuted Solve Time: 502.1620674133 seconds
+2025-02-17 11:55:39,101 - INFO: - Original Work Units: 281.2216904737
+2025-02-17 11:55:39,101 - INFO: - Permuted Work Units: 285.9550930514
+2025-02-17 11:55:39,102 - INFO: - Canonical from Original Work Units: 259.8370250015
+2025-02-17 11:55:39,102 - INFO: - Canonical from Permuted Work Units: 259.8370250015
+2025-02-17 11:55:39,102 - INFO: - Permutation Distance Before Canonicalization: 338.0
+2025-02-17 11:55:39,103 - INFO: - Permutation Distance After Canonicalization: 0.0
+2025-02-17 11:55:39,104 - INFO: Running iteration 5/5
+2025-02-17 11:55:39,104 - INFO: Creating Permuted Problem
+2025-02-17 11:55:39,113 - INFO: Computing Permutation Distance before Canonicalization...
+2025-02-17 11:55:39,113 - INFO: Permutation Distance Before Canonicalization: 359.0
+2025-02-17 11:55:39,113 - INFO: Solving Permuted Problem
+2025-02-17 12:06:13,541 - INFO: Solve Status: Optimal solution found
+2025-02-17 12:06:13,541 - INFO: Solve Time: 634.4274 seconds
+2025-02-17 12:06:13,541 - INFO: Objective Value: 6840.965641792
+2025-02-17 12:06:13,541 - INFO: Scaling is disabled. Using unscaled permuted model.
+2025-02-17 12:06:13,541 - INFO: Normalization is disabled. Using the intermediate model as is.
+2025-02-17 12:06:13,551 - INFO: Computing Permutation Distance after Canonicalization...
+2025-02-17 12:06:13,552 - INFO: Permutation Distance After Canonicalization: 0.0
+2025-02-17 12:06:13,552 - INFO: Applying final canonical ordering to permuted model and solving it
+2025-02-17 12:06:13,555 - INFO: Solving Reordering Form from Permuted Model
+2025-02-17 12:14:42,902 - INFO: Solve Status: Optimal solution found
+2025-02-17 12:14:42,902 - INFO: Solve Time: 509.3471 seconds
+2025-02-17 12:14:42,902 - INFO: Objective Value: 6840.965641792001
+2025-02-17 12:14:43,078 - INFO: Iteration 5 Results:
+2025-02-17 12:14:43,078 - INFO: - Models equivalent: True
+2025-02-17 12:14:43,079 - INFO: - Variable counts match: True
+2025-02-17 12:14:43,079 - INFO: - Constraint counts match: True
+2025-02-17 12:14:43,079 - INFO: - Original Objective Value: 6840.965641792
+2025-02-17 12:14:43,080 - INFO: - Permuted Objective Value: 6840.965641792
+2025-02-17 12:14:43,080 - INFO: - Canonical from Original Objective Value: 6840.965641792001
+2025-02-17 12:14:43,080 - INFO: - Canonical from Permuted Objective Value: 6840.965641792001
+2025-02-17 12:14:43,080 - INFO: - Original Solve Time: 541.7475795746 seconds
+2025-02-17 12:14:43,081 - INFO: - Permuted Solve Time: 634.4274194241 seconds
+2025-02-17 12:14:43,081 - INFO: - Canonical from Original Solve Time: 510.4128224850 seconds
+2025-02-17 12:14:43,081 - INFO: - Canonical from Permuted Solve Time: 509.3470511436 seconds
+2025-02-17 12:14:43,082 - INFO: - Original Work Units: 281.2216904737
+2025-02-17 12:14:43,082 - INFO: - Permuted Work Units: 321.5738770023
+2025-02-17 12:14:43,082 - INFO: - Canonical from Original Work Units: 259.8370250015
+2025-02-17 12:14:43,083 - INFO: - Canonical from Permuted Work Units: 259.8370250015
+2025-02-17 12:14:43,083 - INFO: - Permutation Distance Before Canonicalization: 359.0
+2025-02-17 12:14:43,083 - INFO: - Permutation Distance After Canonicalization: 0.0
+2025-02-17 12:14:43,084 - INFO: Solve-Time Variability (Standard Deviation):
+2025-02-17 12:14:43,084 - INFO:  - Std(Original + Permuted Solve Times): 53.546660
+2025-02-17 12:14:43,085 - INFO:  - Std(Canonical-from-Original + Canonical-from-Permuted Solve Times): 4.408562
+2025-02-17 12:14:43,086 - INFO: Canonical form reduces solve-time variability across permutations.
+2025-02-17 12:14:43,086 - INFO: Work Unit Variability (Standard Deviation):
+2025-02-17 12:14:43,087 - INFO:  - Std(Original + Permuted Work Units): 28.1572981508
+2025-02-17 12:14:43,087 - INFO:  - Std(Canonical-from-Original + Canonical-from-Permuted Work Units): 0.0000000000
+2025-02-17 12:14:43,088 - INFO: Canonical form reduces work unit variability across permutations.
+2025-02-17 12:14:43,089 - INFO: Permutation Distance Variability (Standard Deviation):
+2025-02-17 12:14:43,089 - INFO:  - Std(Permutation Distance Before Canonicalization): 34.587570
+2025-02-17 12:14:43,089 - INFO:  - Std(Permutation Distance After Canonicalization): 0.000000
+2025-02-17 12:14:43,089 - INFO: Canonicalization reduces permutation distance variability across permutations.

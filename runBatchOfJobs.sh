@@ -30,11 +30,11 @@ for file in "$INPUT_DIR"/*.mps; do
     --container-overrides '{
       \"environment\": ["
 
-  # Add NUMBER_OF_PERMUATATIONS if provided
+  # Add NUMBER_OF_PERMUTATIONS if provided
   if [ -n "$NUM_PERMUTATIONS" ]; then
     CMD+="
         {
-          \"name\": \"NUMBER_OF_PERMUATATIONS\",
+          \"name\": \"NUMBER_OF_PERMUTATIONS\",
           \"value\": \"$NUM_PERMUTATIONS\"
         },"
   fi

@@ -17,7 +17,7 @@ from core.post_processing.performance_evaluator import PerformanceEvaluator
 from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
-from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE
+from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -253,6 +253,17 @@ class OptimizationExperiment:
         """
         Solve the given optimization problem.
         """
+        if DISABLE_SOLVING:
+            self.logger.info("Solving is disabled via environment variable. Returning placeholder result.")
+            return {
+                "solve_status": "Solving Disabled",
+                "status_message": "Solving was skipped",
+                "objective_value": None,
+                "solution": None,
+                "solve_time": 0,
+                "work_units": 0
+            }
+
         try:
             start_time = time.time()
             model.optimize()
