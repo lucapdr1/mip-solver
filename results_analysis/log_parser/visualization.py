@@ -83,51 +83,75 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     plt.close()
     print(f"Aggregated comparison plot saved to {output_file}")
 
-
-
-def plot_granularity_average(df: pd.DataFrame, output_file: str = None) -> None:
+def plot_granularity_combined(df: pd.DataFrame, output_file: str = None) -> None:
     """
-    Plots a bar chart showing the average granularity (average items per block) for each instance.
-    The y-axis is set to a logarithmic scale and a horizontal line is drawn at the overall median value.
+    Creates a single image with two vertically-arranged subplots:
+      1. The top subplot displays the average granularity (average items per block)
+         for each instance using a logarithmic y-scale and a horizontal line at the overall median.
+      2. The bottom subplot displays the percentage of total variables that are, on average,
+         contained in a block for each instance, with a horizontal line at the overall median percentage.
+         
+    Both plots use the 'instance' column for labels if available, otherwise 'file_name'.
+    
+    The x-axis tick labels are shown on both subplots and rotated for clarity.
     
     Parameters:
-        df (pd.DataFrame): DataFrame that must include an "avg_block_size" column.
-        output_file (str, optional): If provided, saves the plot to this file.
-                                     Otherwise, displays the plot interactively.
+        df (pd.DataFrame): DataFrame that must include 'avg_block_size' for the top plot,
+                           and both 'avg_block_size' and 'variables' (and 'constraints')
+                           for the bottom plot.
+        output_file (str, optional): If provided, saves the plot to this file;
+                                     otherwise, displays the plot interactively.
     """
-    # Use 'instance' if available; otherwise, use 'file_name' for labels.
-    if 'instance' in df.columns:
-        labels = df['instance']
-    else:
-        labels = df['file_name']
-
-    # Check if the granularity column exists.
+    # Use 'instance' if available; otherwise, use 'file_name'
+    labels = df['instance'] if 'instance' in df.columns else df['file_name']
+    x_positions = np.arange(len(labels))
+    
+    # Create a new figure with two subplots (vertical layout), without sharing the x-axis.
+    fig, axs = plt.subplots(2, 1, figsize=(10, 12), sharex=False)
+    
+    # ----- Top Subplot: Average Granularity (Items per Block) -----
     if 'avg_block_size' not in df.columns:
         print("Column 'avg_block_size' not found in DataFrame. Cannot plot granularity.")
         return
-
     avg_values = df['avg_block_size']
     overall_median = avg_values.median()
-
-    plt.figure(figsize=(10, 6))
-    plt.bar(labels, avg_values, color='skyblue')
-    plt.xlabel("Instance")
-    plt.ylabel("Average Items per Block (log scale)")
-    plt.title("Average Granularity (Items per Block) per Instance")
-    plt.xticks(rotation=45, ha='right')
-
-    # Set the y-axis to a logarithmic scale.
-    plt.yscale("log")
-
-    # Add a horizontal line at the overall median value.
-    plt.axhline(y=overall_median, color='red', linestyle='--', linewidth=2,
-                label=f"Overall Median: {overall_median:.2f}")
-    plt.legend()
-
+    
+    axs[0].bar(x_positions, avg_values, color='skyblue')
+    axs[0].set_ylabel("Average Items per Block\n(log scale)")
+    axs[0].set_title("Average Granularity per Instance")
+    axs[0].set_yscale("log")
+    axs[0].axhline(y=overall_median, color='red', linestyle='--', linewidth=2,
+                   label=f"Overall Median: {overall_median:.2f}")
+    axs[0].legend()
+    axs[0].set_xticks(x_positions)
+    axs[0].set_xticklabels(labels, rotation=45, ha='right')
+    
+    # ----- Bottom Subplot: Average Block Percentage -----
+    if 'variables' not in df.columns or 'constraints' not in df.columns:
+        print("Required columns ('variables' and 'constraints') not found in DataFrame. Cannot plot block percentage.")
+        return
+    # Compute percentage = (avg_block_size / (variables * constraints)) * 100
+    df = df.copy()
+    df['avg_block_percentage'] = (df['avg_block_size'] / (df['variables'] * df['constraints'])) * 100
+    overall_median_percentage = df['avg_block_percentage'].median()
+    
+    axs[1].bar(x_positions, df['avg_block_percentage'], color='skyblue')
+    axs[1].set_xlabel("Instance")
+    axs[1].set_ylabel("Average Block Percentage (%)")
+    axs[1].set_title("Percentage of Total Variables per Block (Average)")
+    axs[1].axhline(y=overall_median_percentage, color='red', linestyle='--', linewidth=2,
+                   label=f"Overall Median: {overall_median_percentage:.2f}%")
+    axs[1].legend()
+    axs[1].set_xticks(x_positions)
+    axs[1].set_xticklabels(labels, rotation=45, ha='right')
+    
     plt.tight_layout()
+    # Adjust bottom margin to prevent overlap (if needed)
+    plt.subplots_adjust(bottom=0.2)
+    
     if output_file:
         plt.savefig(output_file)
         plt.close()
-        print(f"Granularity average plot saved to {output_file}")
+        print(f"Combined granularity plot saved to {output_file}")
     else:
         plt.show()

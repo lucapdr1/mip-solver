@@ -4,7 +4,7 @@ import pandas as pd
 from log_parser.model import LogMetrics
 from log_parser.parsing import parse_model_info, parse_iterations, parse_granularity_stats
 from log_parser.aggregation import compute_aggregated_metrics
-from log_parser.visualization import plot_aggregated_comparisons, plot_granularity_average
+from log_parser.visualization import plot_aggregated_comparisons, plot_granularity_combined
 
 def parse_log_file(file_path: str) -> LogMetrics:
     """Parse a single log file and return a LogMetrics object."""
@@ -65,5 +65,5 @@ if __name__ == "__main__":
     plot_aggregated_comparisons(df, output_file=output_image)
     
     # Create and save the granularity average plot with the folder name prepended.
-    output_granularity_image = os.path.join(log_folder, f"{folder_name}_granularity_average.png")
-    plot_granularity_average(df, output_file=output_granularity_image)
+    output_combined_image = os.path.join(log_folder, f"{folder_name}_granularity_combined.png")
+    plot_granularity_combined(df, output_file=output_combined_image)
