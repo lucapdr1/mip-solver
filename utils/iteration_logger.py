@@ -1,4 +1,5 @@
 from utils.logging_handler import LoggingHandler
+from utils.config import LOG_LEVEL, INPUT_DIR, OUTPUT_DIR, INPUT_PROBLEM, NUMBER_OF_PERMUTATIONS, NORMALIZATION_ACTIVE, MATRICES_TO_CSV, LOG_MATRIX, LOG_MODEL_COMPARISON, PRODUCTION, RECURSIVE_RULES, DISABLE_SOLVING
 
 class IterationLogger:
     def __init__(self):
@@ -6,6 +7,21 @@ class IterationLogger:
         Initialize with a logger instance.
         """
         self.logger = LoggingHandler().get_logger()
+
+    def log_experiment_settings(self):
+        self.logger.info("Experiment Settings:")
+        self.logger.info(f"- INPUT_DIR: {INPUT_DIR}")
+        self.logger.info(f"- LOG_LEVEL: {LOG_LEVEL}")
+        self.logger.info(f"- OUTPUT_DIR: {OUTPUT_DIR}")
+        self.logger.info(f"- INPUT_PROBLEM: {INPUT_PROBLEM}")
+        self.logger.info(f"- NUMBER_OF_PERMUTATIONS: {NUMBER_OF_PERMUTATIONS}")
+        self.logger.info(f"- NORMALIZATION_ACTIVE: {NORMALIZATION_ACTIVE}")
+        self.logger.info(f"- MATRICES_TO_CSV: {MATRICES_TO_CSV}")
+        self.logger.info(f"- LOG_MATRIX: {LOG_MATRIX}")
+        self.logger.info(f"- LOG_MODEL_COMPARISON: {LOG_MODEL_COMPARISON}")
+        self.logger.info(f"- PRODUCTION: {PRODUCTION}")
+        self.logger.info(f"- RECURSIVE_RULES: {RECURSIVE_RULES}")
+        self.logger.info(f"- DISABLE_SOLVING: {DISABLE_SOLVING}")
 
     def log_model_info(self, model, file_path):
         self.logger.info(f"Successfully loaded problem from {file_path}")
