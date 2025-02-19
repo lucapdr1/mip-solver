@@ -4,6 +4,7 @@ import pandas as pd
 from log_parser.model import LogMetrics
 from log_parser.parsing import parse_model_info, parse_iterations, parse_granularity_stats
 from log_parser.aggregation import compute_aggregated_metrics
+from log_parser.visualization import plot_aggregated_comparisons
 
 def parse_log_file(file_path: str) -> LogMetrics:
     """Parse a single log file and return a LogMetrics object."""
@@ -55,3 +56,7 @@ if __name__ == "__main__":
     summary = df.describe(include='all')
     print("\nSummary Statistics:")
     print(summary)
+
+     # Create a single image with all comparisons.
+    output_image = os.path.join(log_folder, 'aggregated_comparison.png')
+    plot_aggregated_comparisons(df, output_file=output_image)
