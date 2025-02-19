@@ -20,7 +20,7 @@ INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")
 
-NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 3))
+NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 5))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
 SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
 
@@ -28,7 +28,7 @@ MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
 LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'
 LOG_MODEL_COMPARISON = os.getenv('LOG_MODEL_COMPARISON', 'False').lower() == 'true'
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
-RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'True').lower() == 'true'
+RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'False').lower() == 'true'
 DISABLE_SOLVING = os.getenv('DISABLE_SOLVING', 'True').lower() == 'true'
 
 #AWS

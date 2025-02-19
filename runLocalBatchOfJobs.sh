@@ -16,11 +16,20 @@ if [ ! -d "$INPUT_DIR" ]; then
     exit 1
 fi
 
-# Run the Python script for every file in the input folder
-for file in "$INPUT_DIR"/*; do
+# Create a temporary file to hold file sizes and paths
+tmpfile=$(mktemp)
+
+# Collect file sizes and paths
+find "$INPUT_DIR" -maxdepth 1 -type f -exec sh -c 'printf "%s %s\n" "$(wc -c < "$1")" "$1"' sh {} \; > "$tmpfile"
+
+# Process files in order of increasing size
+sort -n "$tmpfile" | cut -d ' ' -f 2- | while IFS= read -r file; do
     if [ -f "$file" ]; then
         INPUT_PROBLEM="$(basename "$file")"
         echo "Processing file: $INPUT_PROBLEM"
         env INPUT_PROBLEM="$INPUT_PROBLEM" INPUT_DIR="$INPUT_DIR" OUTPUT_DIR="$OUTPUT_DIR" NUMBER_OF_PERMUTATIONS="$NUMBER_OF_PERMUTATIONS" python main.py
     fi
 done
+
+# Cleanup the temporary file
+rm "$tmpfile"
