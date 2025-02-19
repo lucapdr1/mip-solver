@@ -40,3 +40,16 @@ class IterationLogger:
         # Assuming your LoggingHandler has a log_model_differences method.
         from utils.logging_handler import LoggingHandler
         LoggingHandler().log_model_differences(self.logger, original_canonical, permuted_canonical)
+
+    def log_granularity_stats(self, stats):
+        """Logs granularity statistics for block sizes."""
+        if stats:
+            self.logger.info("Granularity Statistics:")
+            self.logger.info(" - Total Blocks: %d", stats['block_sizes']['total_blocks'])
+            self.logger.info(" - Avg(Block Size): %.4f", stats['block_sizes']['average'])
+            self.logger.info(" - Min(Block Size): %d", stats['block_sizes']['min'])
+            self.logger.info(" - Max(Block Size): %d", stats['block_sizes']['max'])
+            self.logger.info(" - Sum of SubBlocks sizes: %d", stats['block_sizes']['sum_of_block_sizes'])
+            self.logger.info(" - Original matrix size: %d", stats['block_sizes']['original_matrix_size'])
+        else:
+            self.logger.warning("No granularity data collected.")

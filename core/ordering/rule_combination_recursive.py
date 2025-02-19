@@ -42,6 +42,9 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         # Cached computed ordering (if desired, you can disable caching between different problem instances)
         self.cached_var_order = None
         self.cached_constr_order = None
+        self.granularity_data = []  # To track sizes of leaf blocks
+        self.original_var_count = 0
+        self.original_constr_count = 0
 
     def reset_cache(self):
         self.cached_var_order = None
@@ -51,8 +54,11 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         """
         Computes and caches the ordering for variables and constraints.
         """
+        self.original_var_count = len(vars)
+        self.original_constr_count = len(constraints)
         logger.debug("Computing ordering for the entire problem.")
-        if self.cached_var_order is None or self.cached_constr_order is None:
+        if self.cached_var_order is None or self.cached_constr_order is None: 
+            self.granularity_data = []
             self.cached_var_order, self.cached_constr_order = self._recursive_block_matrix(
                 level=0,
                 var_indices=np.arange(len(vars)),
@@ -209,6 +215,11 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         """
         When no further block partitioning is possible, apply intra rules to order the indices.
         """
+        # Append the product of current block dimensions
+        block_size = len(var_indices) * len(constr_indices)
+        self.granularity_data.append(block_size)
+        logger.debug(f"Leaf block size: {block_size} (vars: {len(var_indices)}, constrs: {len(constr_indices)})")
+
         logger.debug("Applying intra rules on var_indices: %s, constr_indices: %s", var_indices, constr_indices)
         if not intra_rules:
             logger.debug("No intra rules provided; returning identity ordering for this block.")
@@ -232,3 +243,24 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
     
         logger.debug("Intra ordering: vars: %s, constr: %s", ordered_vars, ordered_constr)
         return ordered_vars, ordered_constr
+
+    def get_granularity_data(self):
+        """Return the sizes of all leaf blocks as a list of (var_count, constr_count) tuples."""
+        return self.granularity_data.copy()
+
+    def get_granularity_statistics(self):
+        """Compute statistics on block sizes (var x constr products)."""
+        if not self.granularity_data:
+            return None
+        
+        stats = {
+            'block_sizes': {
+                'average': np.mean(self.granularity_data),
+                'min': np.min(self.granularity_data),
+                'max': np.max(self.granularity_data),
+                'total_blocks': len(self.granularity_data),
+                'sum_of_block_sizes': sum(self.granularity_data),
+                'original_matrix_size': self.original_var_count * self.original_constr_count
+            }
+        }
+        return stats
