@@ -14,8 +14,8 @@ OUTPUT_DIR = os.getenv('OUTPUT_DIR', "experiments/")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_constrT.mps")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_with_bounds.mps")
-#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps") gen-ip054.mps
-INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "gen-ip054.mps")
+INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
+#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "gen-ip054.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "30n20b8.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")
@@ -28,7 +28,7 @@ MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
 LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'
 LOG_MODEL_COMPARISON = os.getenv('LOG_MODEL_COMPARISON', 'False').lower() == 'true'
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
-RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'False').lower() == 'true'
+RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'True').lower() == 'true'
 DISABLE_SOLVING = os.getenv('DISABLE_SOLVING', 'True').lower() == 'true'
 
 #AWS
@@ -48,4 +48,5 @@ print(f"MATRICES_TO_CSV: {MATRICES_TO_CSV}")
 print(f"LOG_MATRIX: {LOG_MATRIX}")
 print(f"LOG_MODEL_COMPARISON: {LOG_MODEL_COMPARISON}")
 print(f"PRODUCTION: {PRODUCTION}")
+print(f"RECURSIVE_RULES: {RECURSIVE_RULES}")
 print(f"DISABLE_SOLVING: {DISABLE_SOLVING}")
