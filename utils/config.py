@@ -36,17 +36,3 @@ BUCKET_NAME = os.getenv('BUCKET_NAME', 'lucapolimi-experiments')
 
 # Example of setting up logging
 logging.basicConfig(level=LOG_LEVEL)
-
-# Print or log the values to verify
-print(f"LOG_LEVEL: {LOG_LEVEL}")
-print(f"INPUT_DIR: {INPUT_DIR}")
-print(f"OUTPUT_DIR: {OUTPUT_DIR}")
-print(f"INPUT_PROBLEM: {INPUT_PROBLEM}")
-print(f"NUMBER_OF_PERMUTATIONS: {NUMBER_OF_PERMUTATIONS}")
-print(f"NORMALIZATION_ACTIVE: {NORMALIZATION_ACTIVE}")
-print(f"MATRICES_TO_CSV: {MATRICES_TO_CSV}")
-print(f"LOG_MATRIX: {LOG_MATRIX}")
-print(f"LOG_MODEL_COMPARISON: {LOG_MODEL_COMPARISON}")
-print(f"PRODUCTION: {PRODUCTION}")
-print(f"RECURSIVE_RULES: {RECURSIVE_RULES}")
-print(f"DISABLE_SOLVING: {DISABLE_SOLVING}")

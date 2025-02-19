@@ -28,6 +28,7 @@ class OptimizationExperiment:
         self.original_model = self.load_problem()
         self.ordering_rule = ordering_rule
 
+        IterationLogger().log_experiment_settings()
         IterationLogger().log_model_info(self.original_model, file_path)
 
         self.permutator = ProblemPermutator(gp_env, self.original_model)
