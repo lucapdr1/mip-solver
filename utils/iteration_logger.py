@@ -42,18 +42,14 @@ class IterationLogger:
         LoggingHandler().log_model_differences(self.logger, original_canonical, permuted_canonical)
 
     def log_granularity_stats(self, stats):
+        """Logs granularity statistics for block sizes."""
         if stats:
             self.logger.info("Granularity Statistics:")
-            self.logger.info(" - Variable Blocks: %d", stats['variables']['total_blocks'])
-            self.logger.info(" - Avg(Variables per Block): %.4f", stats['variables']['average'])
-            self.logger.info(" - Min(Variables per Block): %d", stats['variables']['min'])
-            self.logger.info(" - Max(Variables per Block): %d", stats['variables']['max'])
-            self.logger.info(" - Total Variables Processed: %d", stats['variables']['total_vars'])
-
-            self.logger.info(" - Constraint Blocks: %d", stats['constraints']['total_blocks'])
-            self.logger.info(" - Avg(Constraints per Block): %.4f", stats['constraints']['average'])
-            self.logger.info(" - Min(Constraints per Block): %d", stats['constraints']['min'])
-            self.logger.info(" - Max(Constraints per Block): %d", stats['constraints']['max'])
-            self.logger.info(" - Total Constraints Processed: %d", stats['constraints']['total_constrs'])
+            self.logger.info(" - Total Blocks: %d", stats['block_sizes']['total_blocks'])
+            self.logger.info(" - Avg(Block Size): %.4f", stats['block_sizes']['average'])
+            self.logger.info(" - Min(Block Size): %d", stats['block_sizes']['min'])
+            self.logger.info(" - Max(Block Size): %d", stats['block_sizes']['max'])
+            self.logger.info(" - Sum of SubBlocks sizes: %d", stats['block_sizes']['sum_of_block_sizes'])
+            self.logger.info(" - Original matrix size: %d", stats['block_sizes']['original_matrix_size'])
         else:
             self.logger.warning("No granularity data collected.")
