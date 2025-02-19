@@ -4,7 +4,7 @@ import pandas as pd
 from log_parser.model import LogMetrics
 from log_parser.parsing import parse_model_info, parse_iterations, parse_granularity_stats
 from log_parser.aggregation import compute_aggregated_metrics
-from log_parser.visualization import plot_aggregated_comparisons
+from log_parser.visualization import plot_aggregated_comparisons, plot_granularity_average
 
 def parse_log_file(file_path: str) -> LogMetrics:
     """Parse a single log file and return a LogMetrics object."""
@@ -45,18 +45,25 @@ if __name__ == "__main__":
         sys.exit(1)
     
     log_folder = sys.argv[1]
+    # Extract the folder name from the folder path.
+    folder_name = os.path.basename(os.path.normpath(log_folder))
+    
     df = process_logs_folder(log_folder)
     
-    # Save the aggregated results to CSV
-    output_file = os.path.join(log_folder, 'analysis_results.csv')
-    df.to_csv(output_file, index=False)
-    print(f"Analysis complete. Results saved to {output_file}")
+    # Save the aggregated results to CSV with the folder name prepended.
+    output_csv = os.path.join(log_folder, f"{folder_name}_analysis_results.csv")
+    df.to_csv(output_csv, index=False)
+    print(f"Analysis complete. Results saved to {output_csv}")
 
     # Print summary statistics
     summary = df.describe(include='all')
     print("\nSummary Statistics:")
     print(summary)
-
-     # Create a single image with all comparisons.
-    output_image = os.path.join(log_folder, 'aggregated_comparison.png')
+    
+    # Create and save the aggregated comparison plot with the folder name prepended.
+    output_image = os.path.join(log_folder, f"{folder_name}_aggregated_comparison.png")
     plot_aggregated_comparisons(df, output_file=output_image)
+    
+    # Create and save the granularity average plot with the folder name prepended.
+    output_granularity_image = os.path.join(log_folder, f"{folder_name}_granularity_average.png")
+    plot_granularity_average(df, output_file=output_granularity_image)
