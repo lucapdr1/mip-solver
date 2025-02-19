@@ -5,7 +5,10 @@ from log_parser.model import ModelInfo, IterationMetrics, GranularityStats
 def parse_model_info(content: str, file_name: str) -> ModelInfo:
     """Extract general model information from the log content."""
     info = ModelInfo(file_name=file_name)
-    instance_match = re.search(r'Successfully loaded problem from S3: .*/(.*?)\.mps', content)
+    instance_match = re.search(
+    r"Successfully loaded (?:local )?problem from (?:S3:\s*)?(?:\./)?(?:.*[\\/])?([^\\/]+?)\.mps",
+    content)
+    
     if instance_match:
         info.instance = instance_match.group(1)
     

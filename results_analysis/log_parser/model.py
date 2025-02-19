@@ -31,22 +31,14 @@ class IterationMetrics:
 
 @dataclass
 class AggregatedMetrics:
-    avg_original_solve_time: Optional[float] = None
-    std_original_solve_time: Optional[float] = None
-    avg_permuted_solve_time: Optional[float] = None
-    std_permuted_solve_time: Optional[float] = None
-    avg_canonical_original_solve_time: Optional[float] = None
-    std_canonical_original_solve_time: Optional[float] = None
-    avg_canonical_permuted_solve_time: Optional[float] = None
-    std_canonical_permuted_solve_time: Optional[float] = None
-    avg_original_work_units: Optional[float] = None
-    std_original_work_units: Optional[float] = None
-    avg_permuted_work_units: Optional[float] = None
-    std_permuted_work_units: Optional[float] = None
-    perm_distance_before_avg: Optional[float] = None
-    perm_distance_before_std: Optional[float] = None
-    perm_distance_after_avg: Optional[float] = None
-    perm_distance_after_std: Optional[float] = None
+    std_all_permutation_solve_time: Optional[float] = None
+    std_all_canonical_solve_time: Optional[float] = None
+    std_all_permutation_work_units: Optional[float] = None
+    std_all_canonical_work_units: Optional[float] = None
+
+    std_perm_distance_before: Optional[float] = None
+    std_perm_distance_after: Optional[float] = None
+
     models_equivalent_pct: Optional[float] = None
     variable_counts_match_pct: Optional[float] = None
     constraint_counts_match_pct: Optional[float] = None
