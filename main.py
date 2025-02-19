@@ -71,9 +71,19 @@ def create_recursive_hierarchical_ordering():
         OneBoundFiniteCountRule() 
     ]
 
+    matrix_intra_rules = [
+        ColumnsCoefficientRule(1),
+        ObjectiveCoefficientRule(100),
+        VariableOccurrenceRule(1),
+        RowCoefficientRule(1),
+        RHSValueRule(100),
+        ConstraintRangeRule(1)
+    ]
+
     return RecursiveHierarchicalRuleComposition(
         matrix_block_rules_parent=matrix_block_rules,
         matrix_block_rules_child=matrix_repatable_rules,
+        #matrix_intra_rules=matrix_intra_rules,
         max_depth=50
     )
 
