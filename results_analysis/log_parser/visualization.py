@@ -9,6 +9,12 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     for each instance. A logarithmic y-scale is applied for better visualization.
     Each subplot displays its own x-axis labels.
     
+    The left bar (permutation) is plotted in a neutral color ("lightblue").
+    The right bar (canonical) is colored conditionally:
+      - Green if the permutation std is higher than the canonical std.
+      - Red if the permutation std is lower than the canonical std.
+      - Gray if they are equal.
+    
     Parameters:
         df (pd.DataFrame): DataFrame with aggregated metrics.
         output_file (str): Path to save the resulting image.
@@ -23,9 +29,16 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     # Create a figure with three subplots (one row per metric), without sharing the x-axis.
     fig, axs = plt.subplots(3, 1, figsize=(12, 18), sharex=False)
 
-    # Subplot 1: Permutation Distance Variability (Sample STD)
-    axs[0].bar(x - width/2, df['std_perm_distance_before'], width, label='Before Canonicalization')
-    axs[0].bar(x + width/2, df['std_perm_distance_after'], width, label='After Canonicalization')
+    # --- Subplot 1: Permutation Distance Variability (Sample STD) ---
+    left_values = df['std_perm_distance_before']
+    right_values = df['std_perm_distance_after']
+    # Compute colors for the canonical bars
+    right_colors = [
+        'green' if l > r else 'red' if l < r else 'gray'
+        for l, r in zip(left_values, right_values)
+    ]
+    axs[0].bar(x - width/2, left_values, width, label='Before Canonicalization', color='lightblue')
+    axs[0].bar(x + width/2, right_values, width, label='After Canonicalization', color=right_colors)
     axs[0].set_title('Permutation Distance Variability (Sample STD)')
     axs[0].set_ylabel('Standard Deviation')
     axs[0].legend()
@@ -33,9 +46,15 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[0].set_xticks(x)
     axs[0].set_xticklabels(labels, rotation=45, ha='right')
     
-    # Subplot 2: Solve Time Variability
-    axs[1].bar(x - width/2, df['std_all_permutation_solve_time'], width, label='Permutation')
-    axs[1].bar(x + width/2, df['std_all_canonical_solve_time'], width, label='Canonical')
+    # --- Subplot 2: Solve Time Variability ---
+    left_values = df['std_all_permutation_solve_time']
+    right_values = df['std_all_canonical_solve_time']
+    right_colors = [
+        'green' if l > r else 'red' if l < r else 'gray'
+        for l, r in zip(left_values, right_values)
+    ]
+    axs[1].bar(x - width/2, left_values, width, label='Permutation', color='lightblue')
+    axs[1].bar(x + width/2, right_values, width, label='Canonical', color=right_colors)
     axs[1].set_title('Solve Time Variability')
     axs[1].set_ylabel('Standard Deviation (Solve Time)')
     axs[1].legend()
@@ -43,9 +62,15 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[1].set_xticks(x)
     axs[1].set_xticklabels(labels, rotation=45, ha='right')
     
-    # Subplot 3: Work Units Variability
-    axs[2].bar(x - width/2, df['std_all_permutation_work_units'], width, label='Permutation')
-    axs[2].bar(x + width/2, df['std_all_canonical_work_units'], width, label='Canonical')
+    # --- Subplot 3: Work Units Variability ---
+    left_values = df['std_all_permutation_work_units']
+    right_values = df['std_all_canonical_work_units']
+    right_colors = [
+        'green' if l > r else 'red' if l < r else 'gray'
+        for l, r in zip(left_values, right_values)
+    ]
+    axs[2].bar(x - width/2, left_values, width, label='Permutation', color='lightblue')
+    axs[2].bar(x + width/2, right_values, width, label='Canonical', color=right_colors)
     axs[2].set_title('Work Units Variability')
     axs[2].set_ylabel('Standard Deviation (Work Units)')
     axs[2].legend()
@@ -57,6 +82,7 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     plt.savefig(output_file)
     plt.close()
     print(f"Aggregated comparison plot saved to {output_file}")
+
 
 
 def plot_granularity_average(df: pd.DataFrame, output_file: str = None) -> None:
