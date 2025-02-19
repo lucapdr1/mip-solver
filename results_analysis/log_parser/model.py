@@ -52,7 +52,17 @@ class AggregatedMetrics:
     constraint_counts_match_pct: Optional[float] = None
 
 @dataclass
+class GranularityStats:
+    total_blocks: Optional[int] = None
+    avg_block_size: Optional[float] = None
+    min_block_size: Optional[int] = None
+    max_block_size: Optional[int] = None
+    sum_subblocks_sizes: Optional[int] = None
+    original_matrix_size: Optional[int] = None
+
+@dataclass
 class LogMetrics:
     model_info: ModelInfo
     iterations: List[IterationMetrics] = field(default_factory=list)
     aggregated_metrics: AggregatedMetrics = field(default_factory=AggregatedMetrics)
+    granularity_stats: Optional[GranularityStats] = None 

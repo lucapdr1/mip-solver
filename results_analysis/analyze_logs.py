@@ -2,7 +2,7 @@ import os
 import sys
 import pandas as pd
 from log_parser.model import LogMetrics
-from log_parser.parsing import parse_model_info, parse_iterations
+from log_parser.parsing import parse_model_info, parse_iterations, parse_granularity_stats
 from log_parser.aggregation import compute_aggregated_metrics
 
 def parse_log_file(file_path: str) -> LogMetrics:
@@ -14,25 +14,29 @@ def parse_log_file(file_path: str) -> LogMetrics:
     model_info = parse_model_info(content, os.path.basename(file_path))
     iterations = parse_iterations(content)
     aggregated = compute_aggregated_metrics(iterations)
+    granularity_stats = parse_granularity_stats(content)
     
-    return LogMetrics(model_info=model_info, iterations=iterations, aggregated_metrics=aggregated)
+    return LogMetrics(model_info=model_info, iterations=iterations, aggregated_metrics=aggregated, granularity_stats=granularity_stats)
 
 def process_logs_folder(folder_path: str) -> pd.DataFrame:
-    """Process all log files in a folder and return a DataFrame of results."""
     logs = []
     for file_name in os.listdir(folder_path):
         if file_name.endswith('.log'):
             file_path = os.path.join(folder_path, file_name)
             try:
                 log_metrics = parse_log_file(file_path)
-                # Merge our data classes into a single dictionary
+                # Merge model_info and aggregated_metrics
                 log_data = {**log_metrics.model_info.__dict__,
                             **log_metrics.aggregated_metrics.__dict__}
+                # Include granularity stats if available
+                if log_metrics.granularity_stats:
+                    log_data.update(log_metrics.granularity_stats.__dict__)
                 logs.append(log_data)
             except Exception as e:
                 print(f"Error processing {file_name}: {e}")
     
     return pd.DataFrame(logs)
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
