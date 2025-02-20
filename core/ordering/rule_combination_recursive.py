@@ -7,7 +7,8 @@ logger = LoggingHandler().get_logger()
 
 def rotate(lst):
     """Rotate a list by one element: [a, b, c] -> [b, c, a]."""
-    return lst[1:] + lst[:1] if lst else lst
+    return lst
+    #return lst[1:] + lst[:1] if lst else lst
 
 class RecursiveHierarchicalRuleComposition(OrderingRule):
     """

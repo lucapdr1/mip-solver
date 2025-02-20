@@ -17,6 +17,7 @@ from core.ordering.recursive.cardinality_rule import NonZeroCountRule
 from core.ordering.recursive.sign_pattern_rule import SignPatternRule
 from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCountRule, ConstraintContinuousCountRule, BothBoundsFiniteCountRule, BothBoundsInfiniteCountRule, OneBoundFiniteCountRule
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
+from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES
 
@@ -61,6 +62,10 @@ def create_recursive_hierarchical_ordering():
     ]
 
     matrix_repatable_rules = [
+        #Rules that likely are producing blocks only on very few instances
+        AllCoefficientsOneRule(),
+        AllBinaryVariablesRule(),
+        #All the other rules
         ConstraintCompositionRule(),
         NonZeroCountRule(),
         SignPatternRule(),
@@ -68,7 +73,7 @@ def create_recursive_hierarchical_ordering():
         ConstraintContinuousCountRule(),
         BothBoundsFiniteCountRule(),
         BothBoundsInfiniteCountRule(),
-        OneBoundFiniteCountRule() 
+        OneBoundFiniteCountRule()
     ]
 
     matrix_intra_rules = [
