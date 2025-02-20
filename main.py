@@ -59,6 +59,7 @@ def create_recursive_hierarchical_ordering():
     matrix_block_rules = [
         VariableTypeRule(),
         BoundCategoryRule(),
+        ConstraintCompositionRule(),
     ]
 
     matrix_repatable_rules = [
@@ -66,7 +67,6 @@ def create_recursive_hierarchical_ordering():
         AllCoefficientsOneRule(),
         AllBinaryVariablesRule(),
         #All the other rules
-        ConstraintCompositionRule(),
         NonZeroCountRule(),
         SignPatternRule(),
         ConstraintIntegerCountRule(),
