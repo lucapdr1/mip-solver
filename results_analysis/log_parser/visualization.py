@@ -9,11 +9,13 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     for each instance. A logarithmic y-scale is applied for better visualization.
     Each subplot displays its own x-axis labels.
     
-    The left bar (permutation) is plotted in a neutral color ("lightblue").
-    The right bar (canonical) is colored conditionally:
-      - Green if the permutation std is higher than the canonical std.
-      - Red if the permutation std is lower than the canonical std.
-      - Gray if they are equal.
+    For each subplot, the right bar (canonical) is colored conditionally:
+      - Green if the permutation value is higher than the canonical value (improvement)
+      - Red if lower
+      - Gray if equal.
+    
+    The function also computes the percentage of green bars (improvements)
+    and annotates that percentage in each subplot.
     
     Parameters:
         df (pd.DataFrame): DataFrame with aggregated metrics.
@@ -26,7 +28,7 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     x = np.arange(num_instances)  # label locations
     width = 0.35  # width of the bars
 
-    # Create a figure with three subplots (one row per metric), without sharing the x-axis.
+    # Create figure with three subplots (one row per metric), without sharing x-axis.
     fig, axs = plt.subplots(3, 1, figsize=(12, 18), sharex=False)
 
     # --- Subplot 1: Permutation Distance Variability (Sample STD) ---
@@ -45,6 +47,12 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[0].set_yscale("log")  # log scale on y-axis
     axs[0].set_xticks(x)
     axs[0].set_xticklabels(labels, rotation=45, ha='right')
+    # Compute percentage of green bars and annotate
+    num_green = sum(1 for color in right_colors if color == 'green')
+    percentage_green = (num_green / len(right_colors)) * 100
+    axs[0].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[0].transAxes,
+                horizontalalignment='right', verticalalignment='top',
+                bbox=dict(facecolor='white', alpha=0.5))
     
     # --- Subplot 2: Solve Time Variability ---
     left_values = df['std_all_permutation_solve_time']
@@ -61,6 +69,11 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[1].set_yscale("log")
     axs[1].set_xticks(x)
     axs[1].set_xticklabels(labels, rotation=45, ha='right')
+    num_green = sum(1 for color in right_colors if color == 'green')
+    percentage_green = (num_green / len(right_colors)) * 100
+    axs[1].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[1].transAxes,
+                horizontalalignment='right', verticalalignment='top',
+                bbox=dict(facecolor='white', alpha=0.5))
     
     # --- Subplot 3: Work Units Variability ---
     left_values = df['std_all_permutation_work_units']
@@ -77,7 +90,12 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[2].set_yscale("log")
     axs[2].set_xticks(x)
     axs[2].set_xticklabels(labels, rotation=45, ha='right')
-
+    num_green = sum(1 for color in right_colors if color == 'green')
+    percentage_green = (num_green / len(right_colors)) * 100
+    axs[2].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[2].transAxes,
+                horizontalalignment='right', verticalalignment='top',
+                bbox=dict(facecolor='white', alpha=0.5))
+    
     plt.tight_layout()
     plt.savefig(output_file)
     plt.close()

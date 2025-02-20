@@ -49,6 +49,19 @@ if __name__ == "__main__":
     folder_name = os.path.basename(os.path.normpath(log_folder))
     
     df = process_logs_folder(log_folder)
+
+    # Load the benchmark_set.csv
+    print("Appending Benchmark metadata")
+    benchmark_path = os.path.join(os.getcwd(), "benchmark_set.csv")
+    if os.path.exists(benchmark_path):
+        benchmark_df = pd.read_csv(benchmark_path)
+        benchmark_df.rename(columns={'InstanceInst.': 'instance', 'TagsTags.': 'tags'}, inplace=True)
+        # Merge the 'tags' column from benchmark_df with df.
+        # Here we assume both DataFrames share a common key named "instance".
+        df = df.merge(benchmark_df[['instance', 'tags']], on='instance', how='left')
+        print("Tags column appended successfully.")
+    else:
+        print(f"benchmark_set.csv not found in {log_folder}.")
     
     # Save the aggregated results to CSV with the folder name prepended.
     output_csv = os.path.join(log_folder, f"{folder_name}_analysis_results.csv")
