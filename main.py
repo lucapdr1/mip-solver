@@ -1,5 +1,6 @@
 # main.py
 
+import sys
 from core.optimization_experiment import OptimizationExperiment
 from core.ordering.rule_combination_hierarchical import HierarchicalRuleComposition
 from core.ordering.rule_combination_recursive import RecursiveHierarchicalRuleComposition
@@ -17,7 +18,9 @@ from core.ordering.recursive.cardinality_rule import NonZeroCountRule
 from core.ordering.recursive.sign_pattern_rule import SignPatternRule
 from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCountRule, ConstraintContinuousCountRule, BothBoundsFiniteCountRule, BothBoundsInfiniteCountRule, OneBoundFiniteCountRule
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
+from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
+from utils.rulemap import load_rules_from_json
 from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES
 
 
@@ -53,27 +56,45 @@ def create_hierarchical_ordering():
     )
 
 
-def create_recursive_hierarchical_ordering():
+def create_recursive_hierarchical_ordering(json_file=None):
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
         VariableTypeRule(),
         BoundCategoryRule(),
+        ConstraintCompositionRule(),
     ]
 
-    matrix_repatable_rules = [
-        ConstraintCompositionRule(),
-        NonZeroCountRule(),
-        SignPatternRule(),
-        ConstraintIntegerCountRule(),
-        ConstraintContinuousCountRule(),
-        BothBoundsFiniteCountRule(),
-        BothBoundsInfiniteCountRule(),
-        OneBoundFiniteCountRule() 
+    if json_file:
+        print(f"Loading matrix_repeatable_rules from {json_file}...")
+        matrix_repatable_rules = load_rules_from_json(json_file)
+    else:
+        matrix_repatable_rules = [
+            #Rules that likely are producing blocks only on very few instances
+            AllCoefficientsOneRule(),
+            AllBinaryVariablesRule(),
+            #All the other rules
+            NonZeroCountRule(),
+            SignPatternRule(),
+            ConstraintIntegerCountRule(),
+            ConstraintContinuousCountRule(),
+            BothBoundsFiniteCountRule(),
+            BothBoundsInfiniteCountRule(),
+            OneBoundFiniteCountRule()
+        ]
+
+    matrix_intra_rules = [
+        ColumnsCoefficientRule(1),
+        ObjectiveCoefficientRule(100),
+        VariableOccurrenceRule(1),
+        RowCoefficientRule(1),
+        RHSValueRule(100),
+        ConstraintRangeRule(1)
     ]
 
     return RecursiveHierarchicalRuleComposition(
         matrix_block_rules_parent=matrix_block_rules,
         matrix_block_rules_child=matrix_repatable_rules,
+        #matrix_intra_rules=matrix_intra_rules,
         max_depth=50
     )
 
@@ -83,7 +104,10 @@ if __name__ == "__main__":
         gp_env = init_gurobi_env()
         input_problem = get_Input_problem()
 
-        ordering_rule = create_recursive_hierarchical_ordering() if RECURSIVE_RULES else create_hierarchical_ordering()
+        # Check if a JSON file was passed as an argument
+        json_file = sys.argv[1] if len(sys.argv) > 1 else None
+
+        ordering_rule = create_recursive_hierarchical_ordering(json_file) if RECURSIVE_RULES else create_hierarchical_ordering()
 
         experiment = OptimizationExperiment(gp_env, input_problem, ordering_rule)
         results = experiment.run_experiment(NUMBER_OF_PERMUTATIONS)
