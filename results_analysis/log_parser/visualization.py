@@ -1,6 +1,9 @@
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+mpl.rcParams['text.usetex'] = False
 
 def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     """
@@ -32,8 +35,8 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     fig, axs = plt.subplots(3, 1, figsize=(12, 18), sharex=False)
 
     # --- Subplot 1: Permutation Distance Variability (Sample STD) ---
-    left_values = df['std_perm_distance_before']
-    right_values = df['std_perm_distance_after']
+    left_values = df['std_perm_distance_before'].abs()
+    right_values = df['std_perm_distance_after'].abs()
     # Compute colors for the canonical bars
     right_colors = [
         'green' if l > r else 'red' if l < r else 'gray'
@@ -46,7 +49,7 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[0].legend()
     axs[0].set_yscale("log")  # log scale on y-axis
     axs[0].set_xticks(x)
-    axs[0].set_xticklabels(labels, rotation=45, ha='right')
+    axs[0].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     # Compute percentage of green bars and annotate
     num_green = sum(1 for color in right_colors if color == 'green')
     percentage_green = (num_green / len(right_colors)) * 100
@@ -68,7 +71,7 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[1].legend()
     axs[1].set_yscale("log")
     axs[1].set_xticks(x)
-    axs[1].set_xticklabels(labels, rotation=45, ha='right')
+    axs[1].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for color in right_colors if color == 'green')
     percentage_green = (num_green / len(right_colors)) * 100
     axs[1].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[1].transAxes,
@@ -89,7 +92,7 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[2].legend()
     axs[2].set_yscale("log")
     axs[2].set_xticks(x)
-    axs[2].set_xticklabels(labels, rotation=45, ha='right')
+    axs[2].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for color in right_colors if color == 'green')
     percentage_green = (num_green / len(right_colors)) * 100
     axs[2].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[2].transAxes,
@@ -142,7 +145,7 @@ def plot_granularity_combined(df: pd.DataFrame, output_file: str = None) -> None
                    label=f"Overall Median: {overall_median:.2f}")
     axs[0].legend()
     axs[0].set_xticks(x_positions)
-    axs[0].set_xticklabels(labels, rotation=45, ha='right')
+    axs[0].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     
     # ----- Bottom Subplot: Average Block Percentage -----
     if 'variables' not in df.columns or 'constraints' not in df.columns:
@@ -161,7 +164,7 @@ def plot_granularity_combined(df: pd.DataFrame, output_file: str = None) -> None
                    label=f"Overall Median: {overall_median_percentage:.2f}%")
     axs[1].legend()
     axs[1].set_xticks(x_positions)
-    axs[1].set_xticklabels(labels, rotation=45, ha='right')
+    axs[1].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     
     plt.tight_layout()
     # Adjust bottom margin to prevent overlap (if needed)
