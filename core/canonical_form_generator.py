@@ -46,12 +46,7 @@ class CanonicalFormGenerator:
         
         var_types = np.array([var.VType for var in self.vars])
 
-        var_order_indices = sorted(
-            range(len(var_scores)),
-            key=lambda i: var_scores[i],
-            reverse=False # Adjust based on your block scoring logic
-        )
-        var_order = np.array(var_order_indices)
+        var_order = np.argsort(var_scores)
         
         self.logger.debug("Variable ordering:")
         self.logger.debug(f"Order: {var_order}")
@@ -72,12 +67,7 @@ class CanonicalFormGenerator:
         for i, score in enumerate(constraint_scores):
             self.logger.debug(f"Constr {i}: Score: {score}")
 
-        constr_order_indices = sorted(
-            range(len(constraint_scores)),
-            key=lambda i: constraint_scores[i],
-            reverse=False
-        )
-        constr_order = np.array(constr_order_indices)
+        constr_order = np.argsort(constraint_scores)
 
         self.logger.debug("Constraint ordering:")
         self.logger.debug(f"Order: {constr_order}")
@@ -125,17 +115,20 @@ class CanonicalFormGenerator:
             new_vars.append(new_var)
 
         A_csr = self.A.tocsr()
+        indptr = A_csr.indptr
+        indices = A_csr.indices
+        data = A_csr.data
 
-        for i, constr_idx in enumerate(constr_order):
+        for i in range(A_csr.shape[0]):
             expr = gp.LinExpr()
-            row = A_csr.getrow(i)
-
-            for j, val in zip(row.indices, row.data):
-                expr.add(new_vars[j], float(val))
-
-            if self.constrs[constr_idx].Sense == GRB.LESS_EQUAL:
+            for idx in range(indptr[i], indptr[i+1]):
+                j = indices[idx]
+                expr.add(new_vars[j], float(data[idx]))
+            # Use constr_order[i] to index into self.constrs for the sense and RHS
+            constr = self.constrs[constr_order[i]]
+            if constr.Sense == GRB.LESS_EQUAL:
                 canonical_model.addConstr(expr <= self.rhs[i])
-            elif self.constrs[constr_idx].Sense == GRB.GREATER_EQUAL:
+            elif constr.Sense == GRB.GREATER_EQUAL:
                 canonical_model.addConstr(expr >= self.rhs[i])
             else:
                 canonical_model.addConstr(expr == self.rhs[i])

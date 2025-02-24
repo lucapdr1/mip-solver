@@ -102,8 +102,8 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         return scores
 
     def _recursive_block_matrix(self, level, var_indices, constr_indices,
-                                vars, obj_coeffs, bounds, A, constraints, rhs,
-                                parent_rules, child_rules, intra_rules):
+                            vars, obj_coeffs, bounds, A, constraints, rhs,
+                            parent_rules, child_rules, intra_rules):
         """
         Recursively partitions the block (var_indices, constr_indices) using the provided block rules.
         
@@ -114,38 +114,46 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         for that block (intra rules or identity ordering are applied).
         """
         logger.debug("Recursion level %d: var_indices: %s, constr_indices: %s",
-                     level, var_indices, constr_indices)
+                    level, var_indices, constr_indices)
         
         # Stop if max depth reached.
         if level >= self.max_depth:
             logger.debug("Level %d: Maximum depth reached; applying intra rules.", level)
             return self._apply_intra_rules_matrix(var_indices, constr_indices,
-                                                  vars, obj_coeffs, bounds, A, constraints, rhs,
-                                                  intra_rules)
+                                                vars, obj_coeffs, bounds, A, constraints, rhs,
+                                                intra_rules)
         
         # First try parent's rules.
         effective_partition = None
         used_rule = None
         for rule in parent_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
-                                                           vars, obj_coeffs, bounds, A, constraints, rhs)
+                                                        vars, obj_coeffs, bounds, A, constraints, rhs)
             logger.debug("Level %d: Parent rule %s produced partition_map with %d blocks.",
-                         level, rule.__class__.__name__, len(partition_map))
+                        level, rule.__class__.__name__, len(partition_map))
             if len(partition_map) > 1:
                 effective_partition = partition_map
                 used_rule = rule
                 break
         if effective_partition is not None:
-            logger.debug("Level %d: Using parent's rule %s that produced an effective partition.", level, used_rule.__class__.__name__)
-            sorted_blocks = sorted(effective_partition.items(),
-                                   key=lambda x: (len(x[1][0]) + len(x[1][1])),
-                                   reverse=True)
-            ordered_vars = []
-            ordered_constr = []
-            # For each subblock, restart parent's rule list (i.e. parent's rules can be applied again).
+            logger.debug("Level %d: Using parent's rule %s that produced an effective partition.", 
+                        level, used_rule.__class__.__name__)
+            # Convert dictionary items into a NumPy array with dtype=object.
+            blocks = np.array(list(effective_partition.items()), dtype=object)
+            # Compute an array of block sizes.
+            sizes = np.array([len(block[1][0]) + len(block[1][1]) for block in blocks])
+            # Get the indices that sort the sizes in descending order.
+            sorted_indices = np.argsort(sizes)[::-1]
+            # Index the blocks array to obtain a sorted array.
+            sorted_blocks = blocks[sorted_indices]
+
+            # Instead of extending Python lists, accumulate sub-results in a list of NumPy arrays.
+            ordered_vars_list = []
+            ordered_constr_list = []
+            # For each subblock, restart parent's rule list.
             for label, (sub_var_indices, sub_constr_indices) in sorted_blocks:
                 logger.debug("Level %d: Recursing on parent's partition block %s with var_indices: %s, constr_indices: %s",
-                             level, label, sub_var_indices, sub_constr_indices)
+                            level, label, sub_var_indices, sub_constr_indices)
                 sub_ordered_vars, sub_ordered_constr = self._recursive_block_matrix(
                     level + 1,
                     np.array(sub_var_indices),
@@ -153,36 +161,53 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                     vars, obj_coeffs, bounds, A, constraints, rhs,
                     parent_rules, child_rules, intra_rules
                 )
-                ordered_vars.extend(sub_ordered_vars)
-                ordered_constr.extend(sub_ordered_constr)
+                # Convert sub-results to numpy arrays if they aren’t already.
+                ordered_vars_list.append(np.array(sub_ordered_vars))
+                ordered_constr_list.append(np.array(sub_ordered_constr))
+            # Concatenate all sub-results using NumPy's optimized routines.
+            if ordered_vars_list:
+                ordered_vars = np.concatenate(ordered_vars_list)
+                ordered_constr = np.concatenate(ordered_constr_list)
+            else:
+                ordered_vars = np.array([])
+                ordered_constr = np.array([])
             logger.debug("Level %d: Concatenated ordering from parent's partition: vars: %s, constr: %s",
-                         level, ordered_vars, ordered_constr)
+                        level, ordered_vars, ordered_constr)
             return ordered_vars, ordered_constr
-        
+
+        # --- (Child branch would be modified similarly) ---
         # If no parent's rule was effective, try child's rules.
         effective_partition = None
         used_rule = None
         for rule in child_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
-                                                           vars, obj_coeffs, bounds, A, constraints, rhs)
+                                                        vars, obj_coeffs, bounds, A, constraints, rhs)
             logger.debug("Level %d: Child rule %s produced partition_map with %d blocks.",
-                         level, rule.__class__.__name__, len(partition_map))
+                        level, rule.__class__.__name__, len(partition_map))
             if len(partition_map) > 1:
                 effective_partition = partition_map
                 used_rule = rule
                 break
         if effective_partition is not None:
-            logger.debug("Level %d: Using child's rule %s that produced an effective partition.", level, used_rule.__class__.__name__)
-            sorted_blocks = sorted(effective_partition.items(),
-                                   key=lambda x: (len(x[1][0]) + len(x[1][1])),
-                                   reverse=True)
-            ordered_vars = []
-            ordered_constr = []
-            # Rotate the child's rules so that the rule just used is not applied twice in a row.
+            logger.debug("Level %d: Using child's rule %s that produced an effective partition.", 
+                        level, used_rule.__class__.__name__)
+            
+            # Convert dictionary items into a NumPy array with dtype=object.
+            blocks = np.array(list(effective_partition.items()), dtype=object)
+            # Compute an array of block sizes.
+            sizes = np.array([len(block[1][0]) + len(block[1][1]) for block in blocks])
+            # Get the indices that sort the sizes in descending order.
+            sorted_indices = np.argsort(sizes)[::-1]
+            # Index the blocks array to obtain a sorted array.
+            sorted_blocks = blocks[sorted_indices]
+            
+
+            ordered_vars_list = []
+            ordered_constr_list = []
             rotated_child_rules = rotate(child_rules)
             for label, (sub_var_indices, sub_constr_indices) in sorted_blocks:
                 logger.debug("Level %d: Recursing on child's partition block %s with var_indices: %s, constr_indices: %s",
-                             level, label, sub_var_indices, sub_constr_indices)
+                            level, label, sub_var_indices, sub_constr_indices)
                 sub_ordered_vars, sub_ordered_constr = self._recursive_block_matrix(
                     level + 1,
                     np.array(sub_var_indices),
@@ -190,17 +215,24 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                     vars, obj_coeffs, bounds, A, constraints, rhs,
                     rotated_child_rules, rotated_child_rules, intra_rules
                 )
-                ordered_vars.extend(sub_ordered_vars)
-                ordered_constr.extend(sub_ordered_constr)
+                ordered_vars_list.append(np.array(sub_ordered_vars))
+                ordered_constr_list.append(np.array(sub_ordered_constr))
+            if ordered_vars_list:
+                ordered_vars = np.concatenate(ordered_vars_list)
+                ordered_constr = np.concatenate(ordered_constr_list)
+            else:
+                ordered_vars = np.array([])
+                ordered_constr = np.array([])
             logger.debug("Level %d: Concatenated ordering from child's partition: vars: %s, constr: %s",
-                         level, ordered_vars, ordered_constr)
+                        level, ordered_vars, ordered_constr)
             return ordered_vars, ordered_constr
-        
-        # If neither parent's nor child's rules produce an effective partition, stop recursion.
+
+        # If no effective partition from parent's or child's rules, apply intra rules.
         logger.debug("Level %d: No effective partition from parent's or child's rules; applying intra rules.", level)
         return self._apply_intra_rules_matrix(var_indices, constr_indices,
-                                              vars, obj_coeffs, bounds, A, constraints, rhs,
-                                              intra_rules)
+                                            vars, obj_coeffs, bounds, A, constraints, rhs,
+                                            intra_rules)
+
 
     def _partition_by_rule_matrix(self, rule, var_indices, constr_indices,
                                   vars, obj_coeffs, bounds, A, constraints, rhs):
@@ -232,7 +264,16 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                            for rule in intra_rules)
             logger.debug("Variable %s intra scores: %s", idx, scores)
             var_scores.append((idx, scores))
-        ordered_vars = [idx for idx, _ in sorted(var_scores, key=lambda x: x[1])]
+        # Assume var_scores is a list of tuples: (idx, score_tuple)
+        # Extract indices and scores into NumPy arrays.
+        indices = np.array([idx for idx, score in var_scores])
+        # Convert the score tuples into a 2D array.
+        score_array = np.array([score for idx, score in var_scores])
+        # To sort lexicographically in the order of the tuple (first element most significant),
+        # we need to reverse the order of the columns (because np.lexsort uses the last key as primary).
+        order = np.lexsort(tuple(score_array.T[::-1]))
+        # Now get the ordered indices as a NumPy array.
+        ordered_vars = indices[order]
     
         constr_scores = []
         for i in constr_indices:
@@ -240,7 +281,13 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                            for rule in intra_rules)
             logger.debug("Constraint %s intra scores: %s", i, scores)
             constr_scores.append((i, scores))
-        ordered_constr = [i for i, _ in sorted(constr_scores, key=lambda x: x[1])]
+        # Extract indices and score tuples into NumPy arrays.
+        indices = np.array([i for i, score in constr_scores])
+        score_array = np.array([score for i, score in constr_scores])
+        # np.lexsort sorts by the last key first, so reverse the columns
+        order = np.lexsort(tuple(score_array.T[::-1]))
+        # Get the sorted constraint indices as a NumPy array.
+        ordered_constr = indices[order]
     
         logger.debug("Intra ordering: vars: %s, constr: %s", ordered_vars, ordered_constr)
         return ordered_vars, ordered_constr

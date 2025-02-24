@@ -14,13 +14,13 @@ OUTPUT_DIR = os.getenv('OUTPUT_DIR', "experiments/")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_constrT.mps")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_with_bounds.mps")
-#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
-INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "gen-ip054.mps")
+INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
+#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "gen-ip054.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "30n20b8.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")
 
-NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 5))
+NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 1))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
 SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
 
