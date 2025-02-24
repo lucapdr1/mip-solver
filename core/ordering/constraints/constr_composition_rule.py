@@ -83,12 +83,12 @@ class ConstraintCompositionRule(OrderingRule):
     def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block defined by var_indices and constr_indices based on the
-        constraint composition score computed on the corresponding submatrix.
+        constraint composition score computed on the corresponding A.
         
         Steps:
         1. Construct sub-arrays for variables, bounds, constraints, and rhs for the block.
-        2. Extract the submatrix of A corresponding to these indices.
-        3. Call score_constraints on the sub-arrays and submatrix.
+        2. Extract the A of A corresponding to these indices.
+        3. Call score_constraints on the sub-arrays and A.
         4. Group the original constraint indices by these scores using NumPy.
         5. Group all variable indices together (since this rule does not affect variables).
         6. Sort the constraint groups by their score in descending order.
@@ -97,24 +97,9 @@ class ConstraintCompositionRule(OrderingRule):
         Returns a dictionary mapping block labels to tuples of NumPy arrays:
             { label: (var_indices_array, constr_indices_array) }
         """
-        # Ensure var_indices and constr_indices are NumPy arrays.
-        var_indices = np.array(var_indices)
-        constr_indices = np.array(constr_indices)
         
-        # Construct sub-arrays for the current block.
-        vars_sub = np.array(vars)[var_indices]
-        bounds_sub = np.array(bounds)[var_indices]   # For interface consistency.
-        constr_sub = np.array(constraints)[constr_indices]
-        rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
-
-        # Ensure A is in CSR for efficient row slicing:
-        row_slice = A_csr[constr_indices, :]
-        submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix
-        submatrix_csr = submatrix.tocsr()
-        
-        # Compute constraint scores on the submatrix.
-        sub_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        # Compute constraint scores on the A.
+        sub_scores = np.array(self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
         
         # Group the original constraint indices by their computed scores using NumPy.
         unique_scores = np.unique(sub_scores)

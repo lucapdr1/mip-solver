@@ -101,20 +101,10 @@ class VariableTypeRule(OrderingRule):
         
         Returns a dictionary mapping a label to a tuple:
             { label: (list_of_variable_indices, list_of_constraint_indices) }
-        """
-        
-        # Ensure var_indices and constr_indices are NumPy arrays.
-        var_indices = np.array(var_indices)
-        constr_indices = np.array(constr_indices)
-        
-        # Construct sub-arrays for the current block.
-        vars_sub = np.array(vars)[var_indices]
-        bounds_sub = np.array(bounds)[var_indices]   # For interface consistency.
-        constr_sub = np.array(constraints)[constr_indices]
-        rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None    
+        """ 
 
         # We pass the original A; the rule does not depend on A.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
             
         # Group the original variable indices by their computed score.
         unique_scores = np.unique(sub_var_scores)

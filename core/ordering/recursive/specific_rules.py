@@ -97,25 +97,9 @@ class AllCoefficientsOneRule(OrderingRule):
         return (score,)
 
     def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
-        # Ensure var_indices and constr_indices are NumPy arrays.
-        var_indices = np.array(var_indices)
-        constr_indices = np.array(constr_indices)
-        # Construct sub-arrays for the current block.
-        vars_sub = np.array(vars)[var_indices]
-        bounds_sub = np.array(bounds)[var_indices]   # For interface consistency.
-        constr_sub = np.array(constraints)[constr_indices]
-        rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
-        
-        # Ensure A is in CSR for efficient row slicing:
-        
-        row_slice = A_csr[constr_indices, :]
-        submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix
-        submatrix_csr = submatrix.tocsr()
-        
         # Compute scores on the sub-block.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        sub_constr_scores = np.array(self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
         
         # Ensure original indices are numpy arrays.
         var_indices = np.array(var_indices)
@@ -222,25 +206,9 @@ class AllBinaryVariablesRule(OrderingRule):
         return (score,)
 
     def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
-        # Ensure var_indices and constr_indices are NumPy arrays.
-        var_indices = np.array(var_indices)
-        constr_indices = np.array(constr_indices)
-        # Construct sub-arrays for the current block.
-        vars_sub = np.array(vars)[var_indices]
-        bounds_sub = np.array(bounds)[var_indices]   # For interface consistency.
-        constr_sub = np.array(constraints)[constr_indices]
-        rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
-        
-        # Ensure A is in CSR for efficient row slicing:
-        
-        row_slice = A_csr[constr_indices, :]
-        submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix
-        submatrix_csr = submatrix.tocsr()
-        
         # Compute scores on the sub-block.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        sub_constr_scores = np.array(self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
         
         # Group the original variable indices by their computed score using NumPy.
         unique_var_scores = np.unique(sub_var_scores)

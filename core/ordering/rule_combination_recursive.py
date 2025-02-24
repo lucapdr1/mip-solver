@@ -245,7 +245,13 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         """
         Uses the given block rule's score_matrix method to partition the current block.
         """
-        partition_map = rule.score_matrix(var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+
+        (var_indices, constr_indices, vars_sub, bounds_sub,
+        constr_sub, rhs_sub, submatrix_csr, submatrix_csc) = self.extract_block_data(
+            vars, bounds, constraints, rhs, A_csr, var_indices, constr_indices
+        )
+
+        partition_map = rule.score_matrix(var_indices, constr_indices, vars_sub, obj_coeffs, bounds_sub, submatrix_csr, submatrix_csc, submatrix_csr, constr_sub, rhs_sub)
         logger.lazy_debug("Partition by rule %s: partition_map: %s", rule.__class__.__name__, partition_map)
         return partition_map
 
@@ -277,7 +283,8 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         score_array = np.array([score for idx, score in var_scores])
         # To sort lexicographically in the order of the tuple (first element most significant),
         # we need to reverse the order of the columns (because np.lexsort uses the last key as primary).
-        order = np.lexsort(tuple(score_array.T[::-1]))
+        order = np.lexsort(score_array.T)
+        ordered_vars = indices[order[::-1]]  # Reverse after sorting
         # Now get the ordered indices as a NumPy array.
         ordered_vars = indices[order]
     
@@ -291,12 +298,44 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         indices = np.array([i for i, score in constr_scores])
         score_array = np.array([score for i, score in constr_scores])
         # np.lexsort sorts by the last key first, so reverse the columns
-        order = np.lexsort(tuple(score_array.T[::-1]))
+        order = np.lexsort(score_array.T)
+        ordered_vars = indices[order[::-1]]  # Reverse after sorting
         # Get the sorted constraint indices as a NumPy array.
         ordered_constr = indices[order]
     
         logger.lazy_debug("Intra ordering: vars: %s, constr: %s", ordered_vars, ordered_constr)
         return ordered_vars, ordered_constr
+    
+    def extract_block_data(self, vars, bounds, constraints, rhs, A_csr, var_indices, constr_indices):
+        """
+        Prepares block data by converting indices and slicing arrays and submatrix.
+        
+        Returns:
+        - var_indices: NumPy array of variable indices.
+        - constr_indices: NumPy array of constraint indices.
+        - vars_sub: Sliced array of variables.
+        - bounds_sub: Sliced array of bounds.
+        - constr_sub: Sliced array of constraints.
+        - rhs_sub: Sliced array of right-hand sides (or None).
+        - submatrix_csr: Submatrix in CSR format.
+        - submatrix_csc: Submatrix in CSC format (converted once).
+        """
+        # Convert indices to NumPy arrays.
+        var_indices = np.asarray(var_indices)
+        constr_indices = np.asarray(constr_indices)
+        
+        # Slice the arrays.
+        vars_sub = np.asarray(vars)[var_indices]
+        bounds_sub = np.asarray(bounds)[var_indices]
+        constr_sub = np.asarray(constraints)[constr_indices]
+        rhs_sub = np.asarray(rhs)[constr_indices] if rhs is not None else None
+        
+        # Extract the submatrix from A in CSR format and convert to CSC once.
+        submatrix_csr = A_csr[constr_indices, :][:, var_indices]
+        submatrix_csc = submatrix_csr.tocsc()
+        
+        return (var_indices, constr_indices, vars_sub, bounds_sub,
+                constr_sub, rhs_sub, submatrix_csr, submatrix_csc)
 
     def get_granularity_data(self):
         """Return the sizes of all leaf blocks as a list of (var_count, constr_count) tuples."""
