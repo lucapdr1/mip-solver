@@ -20,43 +20,59 @@ class BoundCategoryRule(OrderingRule):
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
         Computes a score for each variable based solely on its bounds.
+        
         The logic is:
-          - If var.VType is SEMICONT or SEMIINT: score = 4
-          - Else if var.VType is BINARY: score = 3
-          - Else if var.VType is INTEGER:
-                if (upper_bound - lower_bound) is approximately 1, score = 3 (treated as binary);
-                otherwise, score = 2.
-          - Else if var.VType is CONTINUOUS: score = 1
-          - Otherwise: score = 0
+        - If both bounds are finite:
+                - If lower bound >= 0 or upper bound <= 0: score = 4
+                - Else if the bounds straddle zero (lb < 0 < ub): score = 3
+                - Otherwise (fallback): score = 2
+        - If exactly one bound is infinite: score = 2
+        - If both bounds are infinite: score = 1
+        - Otherwise: score = 0
+        
+        The final score is multiplied by self.scaling.
+        
+        Returns a NumPy array of scores.
         """
-        scores = []
-        for i, var in enumerate(vars):
-            lb, ub = bounds[i]  # (lower_bound, upper_bound)
-            # Check infinite bounds
-            is_lb_inf = math.isinf(lb)
-            is_ub_inf = math.isinf(ub)
-
-            if (not is_lb_inf) and (not is_ub_inf):
-                # Both bounds finite
-                if lb >= 0 or ub <= 0:
-                    # Entire range is nonnegative or nonpositive
-                    cat = 4
-                elif lb < 0 < ub:
-                    # Straddles zero
-                    cat = 3
-                else:
-                    # Fallback if needed
-                    cat = 2
-            elif (is_lb_inf and not is_ub_inf) or (not is_lb_inf and is_ub_inf):
-                # Exactly one bound is infinite
-                cat = 2
-            elif is_lb_inf and is_ub_inf:
-                # Both bounds infinite
-                cat = 1
-            else:
-                cat = 0
-
-            scores.append(cat * self.scaling)
+        # Convert bounds to a NumPy array of shape (n, 2)
+        bounds_arr = np.array(bounds, dtype=float)
+        lb = bounds_arr[:, 0]
+        ub = bounds_arr[:, 1]
+        n = len(lb)
+        
+        # Determine where the lower or upper bounds are infinite.
+        is_lb_inf = np.isinf(lb)
+        is_ub_inf = np.isinf(ub)
+        
+        # Initialize scores array.
+        scores = np.zeros(n, dtype=float)
+        
+        # Case 1: Both bounds are finite.
+        finite_mask = (~is_lb_inf) & (~is_ub_inf)
+        # For finite bounds, assign 4 if the entire range is nonnegative or nonpositive.
+        mask_nonnegative = lb >= 0
+        mask_nonpositive = ub <= 0
+        mask_condition1 = finite_mask & (mask_nonnegative | mask_nonpositive)
+        scores[mask_condition1] = 4
+        
+        # For finite bounds, assign 3 if they straddle zero.
+        mask_straddle = finite_mask & ((lb < 0) & (ub > 0))
+        scores[mask_straddle] = 3
+        
+        # Fallback for finite bounds (if any remain) to 2.
+        mask_fallback = finite_mask & ~(mask_condition1 | mask_straddle)
+        scores[mask_fallback] = 2
+        
+        # Case 2: Exactly one bound is infinite.
+        one_inf = (is_lb_inf ^ is_ub_inf)
+        scores[one_inf] = 2
+        
+        # Case 3: Both bounds are infinite.
+        both_inf = is_lb_inf & is_ub_inf
+        scores[both_inf] = 1
+        
+        # Multiply by the scaling factor.
+        scores *= self.scaling
         return scores
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
@@ -106,22 +122,26 @@ class BoundCategoryRule(OrderingRule):
         constr_sub = np.array(constraints)[constr_indices]
         rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
 
-        # Compute scores on the sub-block.
-        sub_scores = self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, constr_sub, rhs_sub)
+        # Compute variable scores for this block.
+        sub_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, constr_sub, rhs_sub))
         
-        # Group the original variable indices by their computed score.
-        var_groups = defaultdict(list)
-        for idx, score in zip(var_indices, sub_scores):
-            var_groups[score].append(idx)
-            
-        # All constraints receive a score of 0.
-        constr_groups = {0: list(constr_indices)}
+        # Group the original variable indices by their computed score using vectorized masking.
+        unique_scores = np.unique(sub_scores)
+        var_groups = {}
+        for score in unique_scores:
+            mask = (sub_scores == score)
+            var_groups[score] = var_indices[mask]
         
-        # Form the partition map as the Cartesian product of variable groups and constraint groups.
+        # All constraints are scored 0 by this rule.
+        constr_groups = {0: constr_indices}
+        
+        # Form the partition map as the Cartesian product of the variable groups and constraint groups.
         partition_map = {}
         label = 0
-        for score_v, vgroup in var_groups.items():
+        for score in unique_scores:
+            vgroup = var_groups[score]
             for cscore, cgroup in constr_groups.items():
                 partition_map[label] = (vgroup, cgroup)
                 label += 1
+                    
         return partition_map
