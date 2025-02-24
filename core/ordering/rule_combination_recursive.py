@@ -51,7 +51,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         self.cached_var_order = None
         self.cached_constr_order = None
 
-    def _compute_ordering(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def _compute_ordering(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Computes and caches the ordering for variables and constraints.
         """
@@ -68,6 +68,8 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                 obj_coeffs=obj_coeffs,
                 bounds=bounds,
                 A=A,
+                A_csc=A_csc,
+                A_csr=A_csr,
                 constraints=constraints,
                 rhs=rhs,
                 parent_rules=self.matrix_block_rules_parent,
@@ -77,12 +79,12 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
             logger.lazy_debug("Computed ordering: variables: %s, constraints: %s",
                          self.cached_var_order, self.cached_constr_order)
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns a score for each variable equal to its position in the computed ordering.
         If the cached ordering is partial, only those indices are updated.
         """
-        self._compute_ordering(vars, obj_coeffs, bounds, A, constraints, rhs)
+        self._compute_ordering(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
         n = len(vars)
         scores = np.zeros(n, dtype=int)
         cached_order = np.array(self.cached_var_order, dtype=int)
@@ -91,12 +93,12 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         logger.lazy_debug("Final variable ordering (positions): %s", scores)
         return scores
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns a score for each constraint equal to its position in the computed ordering.
         If the cached ordering is partial, only those indices are updated.
         """
-        self._compute_ordering(vars, obj_coeffs, bounds, A, constraints, rhs)
+        self._compute_ordering(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
         n = len(constraints)
         scores = np.zeros(n, dtype=int)
         cached_order = np.array(self.cached_constr_order, dtype=int)
@@ -106,7 +108,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         return scores
 
     def _recursive_block_matrix(self, level, var_indices, constr_indices,
-                            vars, obj_coeffs, bounds, A, constraints, rhs,
+                            vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
                             parent_rules, child_rules, intra_rules):
         """
         Recursively partitions the block (var_indices, constr_indices) using the provided block rules.
@@ -124,7 +126,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         if level >= self.max_depth:
             logger.lazy_debug("Level %d: Maximum depth reached; applying intra rules.", level)
             return self._apply_intra_rules_matrix(var_indices, constr_indices,
-                                                vars, obj_coeffs, bounds, A, constraints, rhs,
+                                                vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
                                                 intra_rules)
         
         # First try parent's rules.
@@ -132,7 +134,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         used_rule = None
         for rule in parent_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
-                                                        vars, obj_coeffs, bounds, A, constraints, rhs)
+                                                        vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
             logger.lazy_debug("Level %d: Parent rule %s produced partition_map with %d blocks.",
                         level, rule.__class__.__name__, len(partition_map))
             if len(partition_map) > 1:
@@ -162,7 +164,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                     level + 1,
                     np.array(sub_var_indices),
                     np.array(sub_constr_indices),
-                    vars, obj_coeffs, bounds, A, constraints, rhs,
+                    vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
                     parent_rules, child_rules, intra_rules
                 )
                 # Convert sub-results to numpy arrays if they aren’t already.
@@ -185,7 +187,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         used_rule = None
         for rule in child_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
-                                                        vars, obj_coeffs, bounds, A, constraints, rhs)
+                                                        vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
             logger.lazy_debug("Level %d: Child rule %s produced partition_map with %d blocks.",
                         level, rule.__class__.__name__, len(partition_map))
             if len(partition_map) > 1:
@@ -216,7 +218,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                     level + 1,
                     np.array(sub_var_indices),
                     np.array(sub_constr_indices),
-                    vars, obj_coeffs, bounds, A, constraints, rhs,
+                    vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
                     rotated_child_rules, rotated_child_rules, intra_rules
                 )
                 ordered_vars_list.append(np.array(sub_ordered_vars))
@@ -234,21 +236,21 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         # If no effective partition from parent's or child's rules, apply intra rules.
         logger.lazy_debug("Level %d: No effective partition from parent's or child's rules; applying intra rules.", level)
         return self._apply_intra_rules_matrix(var_indices, constr_indices,
-                                            vars, obj_coeffs, bounds, A, constraints, rhs,
+                                            vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
                                             intra_rules)
 
 
     def _partition_by_rule_matrix(self, rule, var_indices, constr_indices,
-                                  vars, obj_coeffs, bounds, A, constraints, rhs):
+                                  vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Uses the given block rule's score_matrix method to partition the current block.
         """
-        partition_map = rule.score_matrix(var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs)
+        partition_map = rule.score_matrix(var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
         logger.lazy_debug("Partition by rule %s: partition_map: %s", rule.__class__.__name__, partition_map)
         return partition_map
 
     def _apply_intra_rules_matrix(self, var_indices, constr_indices,
-                                  vars, obj_coeffs, bounds, A, constraints, rhs, intra_rules):
+                                  vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs, intra_rules):
         """
         When no further block partitioning is possible, apply intra rules to order the indices.
         """
@@ -264,7 +266,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
     
         var_scores = []
         for idx in var_indices:
-            scores = tuple(rule.score_matrix_for_variable(idx, vars, obj_coeffs, bounds, A, constraints, rhs)
+            scores = tuple(rule.score_matrix_for_variable(idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
                            for rule in intra_rules)
             logger.lazy_debug("Variable %s intra scores: %s", idx, scores)
             var_scores.append((idx, scores))
@@ -281,7 +283,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
     
         constr_scores = []
         for i in constr_indices:
-            scores = tuple(rule.score_matrix_for_constraint(i, vars, obj_coeffs, bounds, A, constraints, rhs)
+            scores = tuple(rule.score_matrix_for_constraint(i, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
                            for rule in intra_rules)
             logger.lazy_debug("Constraint %s intra scores: %s", i, scores)
             constr_scores.append((i, scores))

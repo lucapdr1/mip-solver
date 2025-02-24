@@ -42,7 +42,7 @@ class CanonicalFormGenerator:
         """Generate a consistent ordering of variables and constraints."""
         # Score and sort variables
         var_scores = self.ordering_rule.score_variables(
-            self.vars, self.obj_coeffs, self.original_bounds, self.A, self.constrs, self.rhs
+            self.vars, self.obj_coeffs, self.original_bounds, self.A, self.A_csc, self.A_csr, self.constrs, self.rhs
         )
         # Log variable scores in one shot if debug is enabled.
         self.logger.lazy_debug("Variable scores before ordering: %s", var_scores)
@@ -66,7 +66,7 @@ class CanonicalFormGenerator:
 
         # Score and sort constraints.
         constraint_scores = self.ordering_rule.score_constraints(
-            self.vars, self.obj_coeffs, self.original_bounds, self.A, self.constrs, self.rhs
+            self.vars, self.obj_coeffs, self.original_bounds, self.A, self.A_csc, self.A_csr, self.constrs, self.rhs
         )
         self.logger.lazy_debug("Constraint scores before ordering: %s", constraint_scores)
         

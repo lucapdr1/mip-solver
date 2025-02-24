@@ -17,7 +17,7 @@ class VariableTypeRule(OrderingRule):
     def __init__(self, scaling=1):
         self.scaling = scaling
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         """
         Vectorized scoring of variables based on their types and bounds.
         
@@ -65,30 +65,30 @@ class VariableTypeRule(OrderingRule):
         scores *= self.scaling
         return scores
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # This rule is only concerned with variable types.
         return np.zeros(len(constraints), dtype=int)
     
     # --- Methods for Rectangular Block Ordering ---
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns a score for a single variable as a tuple, so it is compatible with lexicographic ordering.
         """
         score = self.score_variables([vars[idx]],
                                      obj_coeffs[idx:idx+1],
                                      [bounds[idx]],
-                                     A, constraints, rhs)[0]
+                                     A, A_csc, A_csr, constraints, rhs)[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns a score for a single constraint as a tuple.
         Since this rule does not affect constraints, always return (0,).
         """
         return (0,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the given block (specified by var_indices and constr_indices) based on variable type.
         
@@ -114,7 +114,7 @@ class VariableTypeRule(OrderingRule):
         rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None    
 
         # We pass the original A; the rule does not depend on A.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub))
             
         # Group the original variable indices by their computed score.
         unique_scores = np.unique(sub_var_scores)

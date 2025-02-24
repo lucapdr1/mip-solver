@@ -17,11 +17,11 @@ class ConstraintCompositionRule(OrderingRule):
     def __init__(self, scaling=1):
         self.scaling = scaling
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # This rule is for constraints only.
        return np.zeros(len(vars), dtype=int)
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Iterates over each constraint (row) in A and assigns a score based on the types of variables
         present:
@@ -68,22 +68,22 @@ class ConstraintCompositionRule(OrderingRule):
 
     # --- Methods to Support Rectangular Block/Intra Reordering ---
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         This rule does not affect variable ordering, so we return a fixed tuple.
         """
         return (0,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns the score for a single constraint as a tuple by leveraging score_constraints.
         """
         # Create a one-element list for the constraint.
         rhs_single = [rhs[idx]] if rhs is not None else None
-        score = self.score_constraints(vars, obj_coeffs, bounds, A, [constraints[idx]], rhs_single)[0]
+        score = self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, [constraints[idx]], rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block defined by var_indices and constr_indices based on the
         constraint composition score computed on the corresponding submatrix.
@@ -114,9 +114,11 @@ class ConstraintCompositionRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
         
         # Compute constraint scores on the submatrix.
-        sub_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Group the original constraint indices by their computed scores using NumPy.
         unique_scores = np.unique(sub_scores)

@@ -23,7 +23,7 @@ class SignPatternRule(OrderingRule):
     def __init__(self):
         self.tol = 1e-15  # tolerance for considering a value nonzero
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         """
         Since sign information for columns is not invariant under row scaling,
         we do not try to compute it. Instead, we simply return a constant score,
@@ -31,7 +31,7 @@ class SignPatternRule(OrderingRule):
         """
         return np.zeros(len(vars), dtype=int)
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         For each constraint (row), count the positive and negative entries
         (using a tolerance) and adjust the count based on the slack variable's sign.
@@ -73,17 +73,17 @@ class SignPatternRule(OrderingRule):
 
     # --- Methods for Rectangular Block Reordering ---
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns the (constant) score for a single variable (column) as a one-element tuple.
         """
         score = self.score_variables([vars[idx]],
                                      obj_coeffs[idx:idx+1],
                                      [bounds[idx]],
-                                     A, constraints, rhs)[0]
+                                     A, A_csc, A_csr, constraints, rhs)[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns the sign-based score for a single constraint (row) as a one-element tuple.
         """
@@ -96,7 +96,7 @@ class SignPatternRule(OrderingRule):
                                        rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block (defined by var_indices and constr_indices) using sign pattern-based grouping.
         
@@ -124,10 +124,12 @@ class SignPatternRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
 
         # Compute scores on the submatrix.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Group the original variable indices by their computed score.
         unique_var_scores = np.unique(sub_var_scores)

@@ -9,11 +9,11 @@ class ConstraintIntegerCountRule(OrderingRule):
     Counts the number of integer variables (BINARY, INTEGER, or SEMIINT) appearing
     in each constraint.
     """
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         # This rule does not affect variable scores.
        return np.zeros(len(vars), dtype=int)
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         For each constraint (row) in A, count the number of variables that appear with a
         nonzero coefficient and whose VType is one of GRB.BINARY, GRB.INTEGER, or GRB.SEMIINT.
@@ -49,7 +49,7 @@ class ConstraintIntegerCountRule(OrderingRule):
 
     # --- Methods for Rectangular Block Ordering ---
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns a tuple containing the score for a single variable.
         (For this rule, variables are not scored, so it is always 0.)
@@ -57,10 +57,10 @@ class ConstraintIntegerCountRule(OrderingRule):
         score = self.score_variables([vars[idx]],
                                      obj_coeffs[idx:idx+1],
                                      [bounds[idx]],
-                                     A, constraints, rhs)[0]
+                                     A, A_csc, A_csr, constraints, rhs)[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns a tuple containing the score for a single constraint.
         Here the score is the number of integer variables (BINARY, INTEGER, SEMIINT)
@@ -75,7 +75,7 @@ class ConstraintIntegerCountRule(OrderingRule):
                                        rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block (defined by var_indices and constr_indices) using the integer count.
         
@@ -100,10 +100,12 @@ class ConstraintIntegerCountRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
 
         # Compute scores on the submatrix.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Group the original variable indices by their computed score using vectorized masking.
         unique_var_scores = np.unique(sub_var_scores)
@@ -132,11 +134,11 @@ class ConstraintContinuousCountRule(OrderingRule):
     def __init__(self):
         self.tol = 1e-15  # tolerance for considering a value nonzero
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         # This rule does not affect variable scores.
        return np.zeros(len(vars), dtype=int)
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         For each constraint (row) in A, count the number of variables that appear with a
         nonzero coefficient and whose VType is either GRB.CONTINUOUS or GRB.SEMICONT.
@@ -173,7 +175,7 @@ class ConstraintContinuousCountRule(OrderingRule):
 
     # --- Methods for Rectangular Block Ordering ---
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns a tuple containing the score for a single variable.
         (For this rule, variables are not scored, so it is always 0.)
@@ -181,10 +183,10 @@ class ConstraintContinuousCountRule(OrderingRule):
         score = self.score_variables([vars[idx]],
                                      obj_coeffs[idx:idx+1],
                                      [bounds[idx]],
-                                     A, constraints, rhs)[0]
+                                     A, A_csc, A_csr, constraints, rhs)[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns a tuple containing the score for a single constraint.
         Here the score is the number of continuous variables (CONTINUOUS, SEMICONT)
@@ -199,7 +201,7 @@ class ConstraintContinuousCountRule(OrderingRule):
                                        rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block (defined by var_indices and constr_indices) using the continuous count.
         
@@ -227,9 +229,12 @@ class ConstraintContinuousCountRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
+
         # Compute scores on the submatrix.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Group the original variable indices by their computed score using vectorized masking.
         unique_var_scores = np.unique(sub_var_scores)
@@ -260,7 +265,7 @@ class BothBoundsFiniteCountRule(OrderingRule):
     def __init__(self, scaling=1):
         self.scaling = scaling
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         # Convert bounds to a NumPy array of shape (n_vars, 2).
         bounds_arr = np.array(bounds, dtype=float)
         # Create a boolean mask: True if both bounds are finite.
@@ -269,7 +274,7 @@ class BothBoundsFiniteCountRule(OrderingRule):
         scores = finite_mask.astype(int) * self.scaling
         return scores  # (NumPy array; convert to list if needed)
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # Convert bounds to a NumPy array.
         bounds_arr = np.array(bounds, dtype=float)
         # Create an indicator for each variable: 1 if both bounds are finite, 0 otherwise.
@@ -300,16 +305,16 @@ class BothBoundsFiniteCountRule(OrderingRule):
         
         return scores  # (NumPy array; convert to list if necessary)
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         score = self.score_variables(
                     [vars[idx]],
                     obj_coeffs[idx:idx+1],
                     [bounds[idx]],
-                    A, constraints, rhs
+                    A, A_csc, A_csr, constraints, rhs
                 )[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         rhs_single = [rhs[idx]] if rhs is not None else None
         score = self.score_constraints(vars,
                                        obj_coeffs,
@@ -319,7 +324,7 @@ class BothBoundsFiniteCountRule(OrderingRule):
                                        rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # Ensure var_indices and constr_indices are NumPy arrays.
         var_indices = np.array(var_indices)
         constr_indices = np.array(constr_indices)
@@ -334,10 +339,12 @@ class BothBoundsFiniteCountRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
 
         # Compute scores on the submatrix.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Group the original variable indices by their computed score using vectorized masking.
         unique_var_scores = np.unique(sub_var_scores)
@@ -368,7 +375,7 @@ class OneBoundFiniteCountRule(OrderingRule):
     def __init__(self, scaling=1):
         self.scaling = scaling
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         # Convert bounds to a NumPy array of shape (n_vars, 2)
         bounds_arr = np.array(bounds, dtype=float)
         # A finite bound: not infinite.
@@ -379,7 +386,7 @@ class OneBoundFiniteCountRule(OrderingRule):
         scores = (finite_count == 1).astype(int) * self.scaling
         return scores  # (If needed, use .tolist())
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # Convert bounds to a NumPy array.
         bounds_arr = np.array(bounds, dtype=float)
         # Indicator: 1 for a variable that has exactly one finite bound, 0 otherwise.
@@ -406,16 +413,16 @@ class OneBoundFiniteCountRule(OrderingRule):
         
         return scores  # (If needed, use .tolist())
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         score = self.score_variables(
                     [vars[idx]],
                     obj_coeffs[idx:idx+1],
                     [bounds[idx]],
-                    A, constraints, rhs
+                    A, A_csc, A_csr, constraints, rhs
                 )[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         rhs_single = [rhs[idx]] if rhs is not None else None
         score = self.score_constraints(vars,
                                        obj_coeffs,
@@ -425,7 +432,7 @@ class OneBoundFiniteCountRule(OrderingRule):
                                        rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         vars_sub   = [vars[i] for i in var_indices]
         bounds_sub = [bounds[i] for i in var_indices]
         constr_sub = [constraints[i] for i in constr_indices]
@@ -435,8 +442,11 @@ class OneBoundFiniteCountRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
-        sub_var_scores    = self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
-        sub_constr_scores = self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
+
+        sub_var_scores    = self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub)
+        sub_constr_scores = self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub)
 
         var_groups = defaultdict(list)
         for idx, score in zip(var_indices, sub_var_scores):
@@ -464,7 +474,7 @@ class BothBoundsInfiniteCountRule(OrderingRule):
     def __init__(self, scaling=1):
         self.scaling = scaling
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         # Convert bounds to a NumPy array with shape (n_vars, 2)
         bounds_arr = np.array(bounds, dtype=float)
         # A variable has both bounds infinite if both entries are infinite.
@@ -472,7 +482,7 @@ class BothBoundsInfiniteCountRule(OrderingRule):
         scores = mask.astype(int) * self.scaling
         return scores  # Return as a NumPy array; convert to list if needed
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # Convert bounds to a NumPy array.
         bounds_arr = np.array(bounds, dtype=float)
         # Create an indicator for variables that have both bounds infinite.
@@ -496,16 +506,16 @@ class BothBoundsInfiniteCountRule(OrderingRule):
         
         return scores  # Return as a NumPy array; convert to list if needed
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         score = self.score_variables(
                     [vars[idx]],
                     obj_coeffs[idx:idx+1],
                     [bounds[idx]],
-                    A, constraints, rhs
+                    A, A_csc, A_csr, constraints, rhs
                 )[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         rhs_single = [rhs[idx]] if rhs is not None else None
         score = self.score_constraints(vars,
                                        obj_coeffs,
@@ -515,7 +525,7 @@ class BothBoundsInfiniteCountRule(OrderingRule):
                                        rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # Ensure var_indices and constr_indices are NumPy arrays.
         var_indices = np.array(var_indices)
         constr_indices = np.array(constr_indices)
@@ -529,10 +539,12 @@ class BothBoundsInfiniteCountRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
 
         # Compute scores on the submatrix.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Group the original variable indices by their computed score using vectorized masking.
         unique_var_scores = np.unique(sub_var_scores)

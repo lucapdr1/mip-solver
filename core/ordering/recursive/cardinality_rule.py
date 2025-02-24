@@ -17,7 +17,7 @@ class NonZeroCountRule(OrderingRule):
         self.scaling = scaling  
         self.tol = tol
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Calculate the number of nonzero coefficients in each variable's column,
         considering entries with absolute value > self.tol as nonzero.
@@ -45,7 +45,7 @@ class NonZeroCountRule(OrderingRule):
 
         return scores  # Returns a NumPy array
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Calculate the number of nonzero coefficients in each constraint's row,
         considering entries with absolute value > self.tol as nonzero.
@@ -72,7 +72,7 @@ class NonZeroCountRule(OrderingRule):
 
     # --- Methods for Rectangular Block Ordering ---
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Wraps the variable scoring method to return a single score as a tuple,
         so that it can be used in lexicographic ordering.
@@ -80,18 +80,18 @@ class NonZeroCountRule(OrderingRule):
         return self.score_variables([vars[idx]],
                                     obj_coeffs[idx:idx+1],
                                     [bounds[idx]],
-                                    A, constraints, rhs)[0]
+                                    A, A_csc, A_csr, constraints, rhs)[0]
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Wraps the constraint scoring method to return a single score as a tuple,
         so that it can be used in lexicographic ordering.
         """
         rhs_single = np.array([rhs[idx]]) if rhs is not None else None
         return self.score_constraints(vars, obj_coeffs, bounds,
-                                      A, [constraints[idx]], rhs_single)[0]
+                                      A, A_csc, A_csr, [constraints[idx]], rhs_single)[0]
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block defined by the indices (var_indices, constr_indices) using
         the cardinality scores computed on the submatrix.
@@ -121,10 +121,12 @@ class NonZeroCountRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
         
         # Compute scores on the sub-block.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Group the original variable indices by their computed score.
         unique_var_scores = np.unique(sub_var_scores)

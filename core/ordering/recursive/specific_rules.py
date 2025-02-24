@@ -13,7 +13,7 @@ class AllCoefficientsOneRule(OrderingRule):
         self.scaling = scaling
         self.tol = tol
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         num_vars = A.shape[1]
         scores = np.zeros(num_vars, dtype=int)
         
@@ -48,7 +48,7 @@ class AllCoefficientsOneRule(OrderingRule):
         return scores
 
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         num_constraints = A.shape[0]
         scores = np.zeros(num_constraints, dtype=int)
         
@@ -74,17 +74,17 @@ class AllCoefficientsOneRule(OrderingRule):
         return scores
 
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns the (constant) score for a single variable (column) as a one-element tuple.
         """
         score = self.score_variables([vars[idx]],
                                      obj_coeffs[idx:idx+1],
                                      [bounds[idx]],
-                                     A, constraints, rhs)[0]
+                                     A, A_csc, A_csr, constraints, rhs)[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns the sign-based score for a single constraint (row) as a one-element tuple.
         """
@@ -97,7 +97,7 @@ class AllCoefficientsOneRule(OrderingRule):
                                        rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # Ensure var_indices and constr_indices are NumPy arrays.
         var_indices = np.array(var_indices)
         constr_indices = np.array(constr_indices)
@@ -111,10 +111,12 @@ class AllCoefficientsOneRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
         
         # Compute scores on the sub-block.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Ensure original indices are numpy arrays.
         var_indices = np.array(var_indices)
@@ -156,7 +158,7 @@ class AllBinaryVariablesRule(OrderingRule):
         self.tol = tol
 
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         # Convert bounds to a NumPy array (shape: [num_vars, 2])
         bounds_arr = np.array(bounds, dtype=float)
         # Check if lower bound is close to 0 and upper bound close to 1
@@ -167,7 +169,7 @@ class AllBinaryVariablesRule(OrderingRule):
         scores = np.where(is_binary, self.scaling, 0)
         return scores
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # Number of constraints
         num_constraints = A.shape[0]
         # Convert bounds to a NumPy array (shape: [num_vars, 2])
@@ -197,17 +199,17 @@ class AllBinaryVariablesRule(OrderingRule):
                     scores[i] = self.scaling
         return scores
 
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns the (constant) score for a single variable (column) as a one-element tuple.
         """
         score = self.score_variables([vars[idx]],
                                      obj_coeffs[idx:idx+1],
                                      [bounds[idx]],
-                                     A, constraints, rhs)[0]
+                                     A, A_csc, A_csr, constraints, rhs)[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns the sign-based score for a single constraint (row) as a one-element tuple.
         """
@@ -220,7 +222,7 @@ class AllBinaryVariablesRule(OrderingRule):
                                        rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # Ensure var_indices and constr_indices are NumPy arrays.
         var_indices = np.array(var_indices)
         constr_indices = np.array(constr_indices)
@@ -234,10 +236,12 @@ class AllBinaryVariablesRule(OrderingRule):
         A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
+        submatrix_csc = submatrix.tocsc()
+        submatrix_csr = submatrix.tocsr()
         
         # Compute scores on the sub-block.
-        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
-        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub))
         
         # Group the original variable indices by their computed score using NumPy.
         unique_var_scores = np.unique(sub_var_scores)

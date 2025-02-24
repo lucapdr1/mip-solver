@@ -17,7 +17,7 @@ class BoundCategoryRule(OrderingRule):
     def __init__(self, scaling=1):
         self.scaling = scaling
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         """
         Computes a score for each variable based solely on its bounds.
         
@@ -75,29 +75,29 @@ class BoundCategoryRule(OrderingRule):
         scores *= self.scaling
         return scores
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         # This rule is only concerned with variable bound properties.
         return np.zeros(len(constraints), dtype=int)
     
     # --- Methods for Rectangular Block Partitioning ---
     
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Returns the bound-category score for a single variable as a one-element tuple.
         """
         score = self.score_variables([vars[idx]],
                                      obj_coeffs[idx:idx+1],
                                      [bounds[idx]],
-                                     A, constraints, rhs)[0]
+                                     A, A_csc, A_csr, constraints, rhs)[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Since bound category does not affect constraints, we return a fixed tuple.
         """
         return (0,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block (defined by var_indices and constr_indices) based on bound-category scores.
         
@@ -123,7 +123,7 @@ class BoundCategoryRule(OrderingRule):
         rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
 
         # Compute variable scores for this block.
-        sub_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, constr_sub, rhs_sub))
+        sub_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub))
         
         # Group the original variable indices by their computed score using vectorized masking.
         unique_scores = np.unique(sub_scores)
