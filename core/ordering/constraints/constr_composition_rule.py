@@ -110,7 +110,7 @@ class ConstraintCompositionRule(OrderingRule):
         # Ensure A is in CSR for efficient row slicing:
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix.tocsc()
+        submatrix_csc = submatrix
         submatrix_csr = submatrix.tocsr()
         
         # Compute constraint scores on the submatrix.

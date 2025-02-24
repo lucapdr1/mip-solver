@@ -100,7 +100,7 @@ class ConstraintIntegerCountRule(OrderingRule):
         
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix.tocsc()
+        submatrix_csc = submatrix
         submatrix_csr = submatrix.tocsr()
 
         # Compute scores on the submatrix.
@@ -229,7 +229,7 @@ class ConstraintContinuousCountRule(OrderingRule):
         
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix.tocsc()
+        submatrix_csc = submatrix
         submatrix_csr = submatrix.tocsr()
 
         # Compute scores on the submatrix.
@@ -339,7 +339,7 @@ class BothBoundsFiniteCountRule(OrderingRule):
         
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix.tocsc()
+        submatrix_csc = submatrix
         submatrix_csr = submatrix.tocsr()
 
         # Compute scores on the submatrix.
@@ -442,7 +442,7 @@ class OneBoundFiniteCountRule(OrderingRule):
         
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix.tocsc()
+        submatrix_csc = submatrix
         submatrix_csr = submatrix.tocsr()
 
         sub_var_scores    = self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, submatrix_csc, submatrix_csr, constr_sub, rhs_sub)
@@ -539,7 +539,7 @@ class BothBoundsInfiniteCountRule(OrderingRule):
         
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix.tocsc()
+        submatrix_csc = submatrix
         submatrix_csr = submatrix.tocsr()
 
         # Compute scores on the submatrix.

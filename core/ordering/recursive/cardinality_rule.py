@@ -53,8 +53,6 @@ class NonZeroCountRule(OrderingRule):
         """
         num_constraints, num_vars = A.shape
         if hasattr(A, "tocsr"):
-            # Convert A to CSR for fast row slicing.
-            A_csr = A.tocsr()
             # Create row indices for each nonzero entry.
             row_indices = np.repeat(np.arange(num_constraints), np.diff(A_csr.indptr))
             mask = np.abs(A_csr.data) > self.tol
@@ -116,10 +114,9 @@ class NonZeroCountRule(OrderingRule):
         # Extract the submatrix corresponding to the block.
         # First slice rows, then columns.
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
-        submatrix_csc = submatrix.tocsc()
+        submatrix_csc = submatrix
         submatrix_csr = submatrix.tocsr()
         
         # Compute scores on the sub-block.
