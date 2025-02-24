@@ -122,19 +122,22 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         logger.lazy_debug("Recursion level %d: var_indices: %s, constr_indices: %s",
                     level, var_indices, constr_indices)
         
+        (var_indices, constr_indices, vars_sub, bounds_sub,
+            constr_sub, rhs_sub, sub_csr, sub_csc) = self.extract_block_data(
+                vars, bounds, constraints, rhs, A_csr, var_indices, constr_indices)
+
         # Stop if max depth reached.
         if level >= self.max_depth:
             logger.lazy_debug("Level %d: Maximum depth reached; applying intra rules.", level)
             return self._apply_intra_rules_matrix(var_indices, constr_indices,
-                                                vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
+                                                vars_sub, obj_coeffs, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub,
                                                 intra_rules)
-        
         # First try parent's rules.
         effective_partition = None
         used_rule = None
         for rule in parent_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
-                                                        vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+                                                        vars_sub, obj_coeffs, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub)
             logger.lazy_debug("Level %d: Parent rule %s produced partition_map with %d blocks.",
                         level, rule.__class__.__name__, len(partition_map))
             if len(partition_map) > 1:
@@ -187,7 +190,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         used_rule = None
         for rule in child_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
-                                                        vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+                                                        vars_sub, obj_coeffs, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub)
             logger.lazy_debug("Level %d: Child rule %s produced partition_map with %d blocks.",
                         level, rule.__class__.__name__, len(partition_map))
             if len(partition_map) > 1:
@@ -245,13 +248,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         """
         Uses the given block rule's score_matrix method to partition the current block.
         """
-
-        (var_indices, constr_indices, vars_sub, bounds_sub,
-        constr_sub, rhs_sub, submatrix_csr, submatrix_csc) = self.extract_block_data(
-            vars, bounds, constraints, rhs, A_csr, var_indices, constr_indices
-        )
-
-        partition_map = rule.score_matrix(var_indices, constr_indices, vars_sub, obj_coeffs, bounds_sub, submatrix_csr, submatrix_csc, submatrix_csr, constr_sub, rhs_sub)
+        partition_map = rule.score_matrix(var_indices, constr_indices, vars, obj_coeffs, bounds, A_csr, A_csc, A_csr, constraints, rhs)
         logger.lazy_debug("Partition by rule %s: partition_map: %s", rule.__class__.__name__, partition_map)
         return partition_map
 
