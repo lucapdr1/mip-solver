@@ -80,24 +80,28 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
         Returns a score for each variable equal to its position in the computed ordering.
+        If the cached ordering is partial, only those indices are updated.
         """
         self._compute_ordering(vars, obj_coeffs, bounds, A, constraints, rhs)
-        scores = [0] * len(vars)
-        for pos, var_idx in enumerate(self.cached_var_order):
-            scores[var_idx] = pos
+        n = len(vars)
+        scores = np.zeros(n, dtype=int)
+        cached_order = np.array(self.cached_var_order, dtype=int)
+        # Assign positions to only the indices in cached_order.
+        scores[cached_order] = np.arange(cached_order.size)
         logger.lazy_debug("Final variable ordering (positions): %s", scores)
         return scores
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
         Returns a score for each constraint equal to its position in the computed ordering.
+        If the cached ordering is partial, only those indices are updated.
         """
         self._compute_ordering(vars, obj_coeffs, bounds, A, constraints, rhs)
-        scores = [0] * len(constraints)
-        for pos, constr_idx in enumerate(self.cached_constr_order):
-            scores[constr_idx] = pos
+        n = len(constraints)
+        scores = np.zeros(n, dtype=int)
+        cached_order = np.array(self.cached_constr_order, dtype=int)
+        scores[cached_order] = np.arange(cached_order.size)
         logger.lazy_debug("Final constraint ordering (positions): %s", scores)
-        #reset chaches before ending this iteration
         self.reset_cache()
         return scores
 

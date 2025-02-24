@@ -19,6 +19,7 @@ from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
 from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES
 
+import cProfile, pstats, io
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
         self.gp_env = gp_env
@@ -46,7 +47,15 @@ class OptimizationExperiment:
             # Generate the canonical form of the original model once
             self.logger.lazy_debug("Generating canonical form for the original model...")
             self.logger.info("Before Canonical")
+            pr = cProfile.Profile()
+            pr.enable()
             original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
+            pr.disable()
+            s = io.StringIO()
+            stats = pstats.Stats(pr, stream=s).sort_stats('cumulative')
+            stats.print_stats(20)  # prints top 20 slowest functions
+            print(s.getvalue())
+            
             self.logger.info("After Canonical")
             #ProblemPrinterlog_model(original_canonical, self.logger, level="DEBUG")
 

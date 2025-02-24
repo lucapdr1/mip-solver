@@ -20,6 +20,8 @@ class CanonicalFormGenerator:
         self.vars = np.array(self.model.getVars(), dtype=object)
         self.constrs = np.array(self.model.getConstrs(), dtype=object)
         self.A = self.model.getA()  # Constraint matrix in sparse format
+        self.A_csr = self.A.tocsr()
+        self.A_csc = self.A.tocsc()
 
         if self.A is None or self.A.shape[0] == 0 or self.A.shape[1] == 0:
             raise ValueError("Constraint matrix is empty or invalid")
@@ -60,7 +62,7 @@ class CanonicalFormGenerator:
         self.logger.lazy_debug("Original bounds before reordering: %s", bounds_str)
         
         # Reorder columns of A
-        self.A = self.A.tocsc()[:, var_order]
+        self.A = self.A_csc[:, var_order]
 
         # Score and sort constraints.
         constraint_scores = self.ordering_rule.score_constraints(
@@ -79,7 +81,7 @@ class CanonicalFormGenerator:
         self.logger.lazy_debug("Original constraints before reordering: %s", constr_str)
         
         # Reorder rows of A and RHS.
-        self.A = self.A.tocsr()[constr_order, :]
+        self.A = self.A_csr[constr_order, :]
         self.rhs = self.rhs[constr_order]
 
         # Reorder variables, objective coefficients, and bounds.
@@ -111,12 +113,11 @@ class CanonicalFormGenerator:
             )
             new_vars.append(new_var)
 
-        A_csr = self.A.tocsr()
-        indptr = A_csr.indptr
-        indices = A_csr.indices
-        data = A_csr.data
+        indptr = self.A_csr.indptr
+        indices = self.A_csr.indices
+        data = self.A_csr.data
 
-        for i in range(A_csr.shape[0]):
+        for i in range(self.A_csr.shape[0]):
             expr = gp.LinExpr()
             for idx in range(indptr[i], indptr[i+1]):
                 j = indices[idx]
