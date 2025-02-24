@@ -52,7 +52,7 @@ class IterationLogger:
         self.logger.info(f"- Permutation Distance After Canonicalization: {iteration_result['permutation_distance_after_canonicalization']}")
 
     def log_model_comparison(self, original_canonical, permuted_canonical):
-        self.logger.debug("Detailed model comparison:")
+        self.logger.lazy_debug("Detailed model comparison:")
         # Assuming your LoggingHandler has a log_model_differences method.
         from utils.logging_handler import LoggingHandler
         LoggingHandler().log_model_differences(self.logger, original_canonical, permuted_canonical)

@@ -40,22 +40,22 @@ class CanonicalFormGenerator:
         """Generate a consistent ordering of variables and constraints"""
          # Score and sort variables
         var_scores = self.ordering_rule.score_variables(self.vars, self.obj_coeffs, self.original_bounds, self.A, self.constrs, self.rhs)
-        self.logger.debug("Variable scores before ordering:")
+        self.logger.lazy_debug("Variable scores before ordering:")
         for i, score in enumerate(var_scores):
-            self.logger.debug(f"Var {i} score: {score}")
+            self.logger.lazy_debug(f"Var {i} score: {score}")
         
         var_types = np.array([var.VType for var in self.vars])
 
         var_order = np.argsort(var_scores)
         
-        self.logger.debug("Variable ordering:")
-        self.logger.debug(f"Order: {var_order}")
+        self.logger.lazy_debug("Variable ordering:")
+        self.logger.lazy_debug(f"Order: {var_order}")
         
         # Original variable bounds before reordering
-        self.logger.debug("Original bounds before reordering:")
+        self.logger.lazy_debug("Original bounds before reordering:")
         for i, var in enumerate(self.vars):
             var_type = "Continuous" if var.VType == GRB.CONTINUOUS else "Integer" if var.VType == GRB.INTEGER else "Binary"
-            self.logger.debug(f"Var {i} (Type: {var_type}): [{var.LB}, {var.UB}]")
+            self.logger.lazy_debug(f"Var {i} (Type: {var_type}): [{var.LB}, {var.UB}]")
         
 
         # Reorder columns of A
@@ -63,24 +63,24 @@ class CanonicalFormGenerator:
 
         # Score and sort constraints
         constraint_scores = self.ordering_rule.score_constraints(self.vars, self.obj_coeffs, self.original_bounds, self.A, self.constrs, self.rhs)
-        self.logger.debug("Constraint scores before ordering:")
+        self.logger.lazy_debug("Constraint scores before ordering:")
         for i, score in enumerate(constraint_scores):
-            self.logger.debug(f"Constr {i}: Score: {score}")
+            self.logger.lazy_debug(f"Constr {i}: Score: {score}")
 
         constr_order = np.argsort(constraint_scores)
 
-        self.logger.debug("Constraint ordering:")
-        self.logger.debug(f"Order: {constr_order}")
+        self.logger.lazy_debug("Constraint ordering:")
+        self.logger.lazy_debug(f"Order: {constr_order}")
 
         # Log original constraints before reordering
-        self.logger.debug("Original constraints before reordering:")
+        self.logger.lazy_debug("Original constraints before reordering:")
         for i, constr in enumerate(self.constrs):
             sense = {
                 "<": "<=",
                 ">": ">=",
                 "=": "=",
             }[constr.Sense]
-            self.logger.debug(f"Constr {i}: {sense} {self.rhs[i]}")
+            self.logger.lazy_debug(f"Constr {i}: {sense} {self.rhs[i]}")
 
         # Reorder rows of A and RHS
         self.A = self.A[constr_order, :]
@@ -139,15 +139,15 @@ class CanonicalFormGenerator:
 
     def _models_equivalent(self, model1, model2, tol=1e-6):
         """Check if two models are equivalent within tolerance with detailed logging"""
-        self.logger.debug("Starting detailed model comparison...")
+        self.logger.lazy_debug("Starting detailed model comparison...")
         
         # Check dimensions
         if model1.NumVars != model2.NumVars:
-            self.logger.debug(f"Variable count mismatch: {model1.NumVars} vs {model2.NumVars}")
+            self.logger.lazy_debug(f"Variable count mismatch: {model1.NumVars} vs {model2.NumVars}")
             return False
             
         if model1.NumConstrs != model2.NumConstrs:
-            self.logger.debug(f"Constraint count mismatch: {model1.NumConstrs} vs {model2.NumConstrs}")
+            self.logger.lazy_debug(f"Constraint count mismatch: {model1.NumConstrs} vs {model2.NumConstrs}")
             return False
         
         # Compare matrices
@@ -156,16 +156,16 @@ class CanonicalFormGenerator:
         
         # Compare matrix properties
         if A1.nnz != A2.nnz:
-            self.logger.debug(f"Non-zero elements mismatch: {A1.nnz} vs {A2.nnz}")
+            self.logger.lazy_debug(f"Non-zero elements mismatch: {A1.nnz} vs {A2.nnz}")
             return False
 
         # Compare matrix data
         if not np.allclose(A1.data, A2.data, atol=tol):
             diff_indices = ~np.isclose(A1.data, A2.data, atol=tol)
             diff_positions = np.where(diff_indices)[0]
-            self.logger.debug("Matrix coefficient differences found:")
+            self.logger.lazy_debug("Matrix coefficient differences found:")
             for pos in diff_positions[:5]:  # Show first 5 differences
-                self.logger.debug(f"Position {pos}: {A1.data[pos]} vs {A2.data[pos]}")
+                self.logger.lazy_debug(f"Position {pos}: {A1.data[pos]} vs {A2.data[pos]}")
             return False
             
         # Compare objective coefficients
@@ -175,55 +175,55 @@ class CanonicalFormGenerator:
         if not np.allclose(obj1, obj2, atol=tol):
             diff_indices = ~np.isclose(obj1, obj2, atol=tol)
             var_indices = np.where(diff_indices)[0]
-            self.logger.debug("Objective coefficient differences found:")
+            self.logger.lazy_debug("Objective coefficient differences found:")
             for idx in var_indices[:5]:  # Show first 5 differences
-                self.logger.debug(f"Variable {idx}: {obj1[idx]} vs {obj2[idx]}")
+                self.logger.lazy_debug(f"Variable {idx}: {obj1[idx]} vs {obj2[idx]}")
             return False
 
         # Compare variable bounds
         for i, (v1, v2) in enumerate(zip(model1.getVars(), model2.getVars())):
             if not (np.isclose(v1.LB, v2.LB, atol=tol) and 
                    np.isclose(v1.UB, v2.UB, atol=tol)):
-                self.logger.debug(f"Bound mismatch for variable {i}:")
-                self.logger.debug(f"LB: {v1.LB} vs {v2.LB}")
-                self.logger.debug(f"UB: {v1.UB} vs {v2.UB}")
+                self.logger.lazy_debug(f"Bound mismatch for variable {i}:")
+                self.logger.lazy_debug(f"LB: {v1.LB} vs {v2.LB}")
+                self.logger.lazy_debug(f"UB: {v1.UB} vs {v2.UB}")
                 return False
             
             if v1.VType != v2.VType:
-                self.logger.debug(f"Variable type mismatch for variable {i}:")
-                self.logger.debug(f"Type: {v1.VType} vs {v2.VType}")
+                self.logger.lazy_debug(f"Variable type mismatch for variable {i}:")
+                self.logger.lazy_debug(f"Type: {v1.VType} vs {v2.VType}")
                 return False
 
         # Compare constraint senses and RHS
         for i, (c1, c2) in enumerate(zip(model1.getConstrs(), model2.getConstrs())):
             if c1.Sense != c2.Sense:
-                self.logger.debug(f"Constraint sense mismatch for constraint {i}:")
-                self.logger.debug(f"Sense: {c1.Sense} vs {c2.Sense}")
+                self.logger.lazy_debug(f"Constraint sense mismatch for constraint {i}:")
+                self.logger.lazy_debug(f"Sense: {c1.Sense} vs {c2.Sense}")
                 return False
                 
             if not np.isclose(c1.RHS, c2.RHS, atol=tol):
-                self.logger.debug(f"RHS mismatch for constraint {i}:")
-                self.logger.debug(f"RHS: {c1.RHS} vs {c2.RHS}")
+                self.logger.lazy_debug(f"RHS mismatch for constraint {i}:")
+                self.logger.lazy_debug(f"RHS: {c1.RHS} vs {c2.RHS}")
                 return False
 
-        self.logger.debug("Models are equivalent within tolerance")
+        self.logger.lazy_debug("Models are equivalent within tolerance")
         return True
 
     def validate(self, canonical_from_orginal, canonical_from_permuted):
         """Validate canonical form invariance with detailed logging"""
         try:
-            self.logger.debug("Starting model validation...")
+            self.logger.lazy_debug("Starting model validation...")
             cf1 = canonical_from_orginal
             cf2 = canonical_from_permuted
             
             # Add comparison of matrix structures before detailed comparison
             A1 = cf1.getA()
             A2 = cf2.getA()
-            self.logger.debug(f"Original canonical matrix: shape={A1.shape}, nnz={A1.nnz}")
-            self.logger.debug(f"Permuted canonical matrix: shape={A2.shape}, nnz={A2.nnz}")
+            self.logger.lazy_debug(f"Original canonical matrix: shape={A1.shape}, nnz={A1.nnz}")
+            self.logger.lazy_debug(f"Permuted canonical matrix: shape={A2.shape}, nnz={A2.nnz}")
             
             result = self._models_equivalent(cf1, cf2)
-            self.logger.debug(f"Validation result: {result}")
+            self.logger.lazy_debug(f"Validation result: {result}")
             return result
             
         except Exception as e:

@@ -7,6 +7,7 @@ from gurobipy import GRB
 import numpy as np
 import boto3
 import tempfile
+import logging
 from botocore.exceptions import ClientError
 
 from utils.logging_handler import LoggingHandler
@@ -17,7 +18,7 @@ from core.post_processing.performance_evaluator import PerformanceEvaluator
 from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
-from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES
+from utils.config import LOG_LEVEL, LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -36,7 +37,8 @@ class OptimizationExperiment:
     
     def run_experiment(self, num_iterations):
             """Run multiple iterations with detailed logging and solving functionality"""
-            ProblemPrinter.log_model(self.original_model, self.logger, level="DEBUG")
+            if LOG_LEVEL == logging.DEBUG:
+                ProblemPrinter.log_model(self.original_model, self.logger, level="DEBUG")
             results = []
 
             # Solve the original problem once
@@ -44,7 +46,7 @@ class OptimizationExperiment:
             original_result = self.solve_problem(self.original_model)
 
             # Generate the canonical form of the original model once
-            self.logger.debug("Generating canonical form for the original model...")
+            self.logger.lazy_debug("Generating canonical form for the original model...")
             original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
             ProblemPrinter.log_model(original_canonical, self.logger, level="DEBUG")
 
@@ -78,7 +80,7 @@ class OptimizationExperiment:
     def run_single_iteration(self, original_result, canonical_from_original_result, 
                              original_canonical, original_canonical_var_order, original_canonical_constr_order):
         try:
-            self.logger.debug("Starting new iteration...")
+            self.logger.lazy_debug("Starting new iteration...")
 
             # === 1. Create the permuted problem (unscaled) ===
             self.logger.info("Creating Permuted Problem")
@@ -89,10 +91,10 @@ class OptimizationExperiment:
             self.logger.info("Computing Permutation Distance before Canonicalization...")
             original_var_order = list(range(self.original_model.NumVars))
             original_constr_order = list(range(self.original_model.NumConstrs))
-            self.logger.debug(f"Original Constraint Order: {original_constr_order}")
-            self.logger.debug(f"Permuted Constraint Order: {constr_permutation}")
-            self.logger.debug(f"Original Variable Order: {original_var_order}")
-            self.logger.debug(f"Permuted Variable Order: {var_permutation}")
+            self.logger.lazy_debug(f"Original Constraint Order: {original_constr_order}")
+            self.logger.lazy_debug(f"Permuted Constraint Order: {constr_permutation}")
+            self.logger.lazy_debug(f"Original Variable Order: {original_var_order}")
+            self.logger.lazy_debug(f"Permuted Variable Order: {var_permutation}")
 
             permuted_distance = self.permutator.permutation_distance(
                 original_constr_order, original_var_order,
@@ -149,7 +151,7 @@ class OptimizationExperiment:
                 normalized_model = intermediate_model
 
             # === 4. Generate canonical form from the final model ===
-            self.logger.debug("Generating canonical form for the final model...")
+            self.logger.lazy_debug("Generating canonical form for the final model...")
             # Note: You may want to pass a Normalizer() instance to CanonicalFormGenerator
             # if canonicalization itself makes use of normalization.
             canon_gen = CanonicalFormGenerator(self.gp_env, normalized_model, self.ordering_rule)
@@ -162,10 +164,10 @@ class OptimizationExperiment:
             final_constr_order = constr_permutation[permuted_canonical_constr_order]
 
             self.logger.info("Computing Permutation Distance after Canonicalization...")
-            self.logger.debug(f"Original Canonical Constraint Order: {original_canonical_constr_order}")
-            self.logger.debug(f"Permuted Canonical Constraint Order: {final_constr_order}")
-            self.logger.debug(f"Original Canonical Variable Order: {original_canonical_var_order}")
-            self.logger.debug(f"Permuted Canonical Variable Order: {final_var_order}")
+            self.logger.lazy_debug(f"Original Canonical Constraint Order: {original_canonical_constr_order}")
+            self.logger.lazy_debug(f"Permuted Canonical Constraint Order: {final_constr_order}")
+            self.logger.lazy_debug(f"Original Canonical Variable Order: {original_canonical_var_order}")
+            self.logger.lazy_debug(f"Permuted Canonical Variable Order: {final_var_order}")
 
             canonical_distance = self.permutator.permutation_distance(
                 original_canonical_constr_order, original_canonical_var_order,

@@ -47,7 +47,7 @@ class ProblemPrinter:
         return "\n".join(lines)
 
     @staticmethod
-    def log_model(model, logger, level="INFO"):
+    def log_model(model, logger, level="DEBUG"):
         """
         Logs the Gurobi model using the provided logger.
         
