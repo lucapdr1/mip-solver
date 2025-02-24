@@ -19,32 +19,50 @@ class VariableTypeRule(OrderingRule):
 
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Returns a list of scores for the variables reflecting their "type priority."
-        Higher score implies higher priority.
-        - SEMICONT or SEMIINT => 4
-        - BINARY => 3
-        - INTEGER: if (ub - lb) is approximately 1 => 3 (treated as binary); else 2
-        - CONTINUOUS => 1
-        - Fallback => 0
+        Vectorized scoring of variables based on their types and bounds.
+        
+        Scoring:
+        - 4 for SEMICONT or SEMIINT.
+        - 3 for BINARY.
+        - For INTEGER: 3 if (ub - lb) is ~1 (binary-like), else 2.
+        - 1 for CONTINUOUS.
+        - 0 for any other type.
+        
+        The final score is multiplied by self.scaling.
+        Returns a NumPy array of scores.
         """
-        scores = []
-        for i, var in enumerate(vars):
-            lb, ub = bounds[i]  # [lower_bound, upper_bound]
-            
-            if var.VType in [GRB.SEMICONT, GRB.SEMIINT]:
-                score = 4
-            elif var.VType == GRB.BINARY:
-                score = 3
-            elif var.VType == GRB.INTEGER:
-                if math.isclose(ub - lb, 1.0, abs_tol=1e-9):
-                    score = 3  # treat as binary
-                else:
-                    score = 2
-            elif var.VType == GRB.CONTINUOUS:
-                score = 1
-            else:
-                score = 0
-            scores.append(score * self.scaling)
+        n = len(vars)
+        # Create an array of variable types.
+        vtypes = np.array([var.VType for var in vars])
+        # Create a 2D array for bounds.
+        bounds_arr = np.array(bounds, dtype=float)  # shape (n, 2)
+        # Compute the difference (ub - lb) for each variable.
+        diffs = bounds_arr[:, 1] - bounds_arr[:, 0]
+        
+        # Initialize scores to zero.
+        scores = np.zeros(n, dtype=float)
+        
+        # Masks for each type:
+        mask_semicont = (vtypes == GRB.SEMICONT)
+        mask_semiint = (vtypes == GRB.SEMIINT)
+        mask_binary   = (vtypes == GRB.BINARY)
+        mask_integer  = (vtypes == GRB.INTEGER)
+        mask_cont     = (vtypes == GRB.CONTINUOUS)
+        
+        # Apply scores based on type.
+        scores[mask_semicont] = 4
+        scores[mask_semiint] = 4
+        scores[mask_binary] = 3
+        scores[mask_cont] = 1
+        
+        # For INTEGER, check if the bound difference is close to 1.
+        mask_int_binary_like = mask_integer & (np.abs(diffs - 1.0) < 1e-9)
+        mask_int_nonbinary   = mask_integer & ~mask_int_binary_like
+        scores[mask_int_binary_like] = 3
+        scores[mask_int_nonbinary] = 2
+
+        # Multiply by scaling factor.
+        scores *= self.scaling
         return scores
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
@@ -96,22 +114,23 @@ class VariableTypeRule(OrderingRule):
         rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None    
 
         # We pass the original A; the rule does not depend on A.
-        sub_var_scores = self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, constr_sub, rhs_sub)
-        
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, constr_sub, rhs_sub))
+            
         # Group the original variable indices by their computed score.
-        var_groups = defaultdict(list)
-        for idx, score in zip(var_indices, sub_var_scores):
-            var_groups[score].append(idx)
+        unique_scores = np.unique(sub_var_scores)
+        var_groups = {}
+        for score in unique_scores:
+            mask = (sub_var_scores == score)
+            var_groups[score] = var_indices[mask]
         
         # All constraints are scored 0 by this rule.
-        constr_groups = {0: list(constr_indices)}
+        constr_groups = {0: constr_indices}
         
-        # Form the partition map as the Cartesian product of the groups.
+        # Form the partition map as the Cartesian product of the variable groups and constraint groups.
         partition_map = {}
         label = 0
-        for score_v, vgroup in var_groups.items():
+        for score, vgroup in var_groups.items():
             for cscore, cgroup in constr_groups.items():
                 partition_map[label] = (vgroup, cgroup)
                 label += 1
-                
         return partition_map
