@@ -9,46 +9,43 @@ class HierarchicalRuleComposition(OrderingRule):
         self.constr_block_rules = constr_block_rules or []
         self.constr_intra_rules = constr_intra_rules or []
 
-    # ==========================
-    # Variable Scoring
-    # ==========================
     def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
-        # 1. Compute block identifiers from block rules
+        # 1. Compute block identifiers from block rules, and flatten them to ensure 1D.
         block_components = [
-            rule.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+            np.ravel(rule.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
             for rule in self.var_block_rules
         ]
-
-        # 2. Compute intra-block scores
+        
+        # 2. Compute intra-block scores (assuming these already return 1D arrays).
         intra_scores = np.zeros(len(vars))
         for rule in self.var_intra_rules:
-            intra_scores += rule.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
-
+            intra_scores += np.ravel(rule.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        
         # 3. Combine into tuples: (block1, block2, ..., intra_score)
-        var_scores = []
+        var_scores = np.empty(len(vars), dtype=object)
         for i in range(len(vars)):
             block_part = tuple(comp[i] for comp in block_components)
-            var_scores.append(block_part + (intra_scores[i],))
-
+            var_scores[i] = block_part + (intra_scores[i],)
         return var_scores
 
-    # ==========================
-    # Constraint Scoring
-    # ==========================
     def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
-        # Similar logic for constraints
+        # 1. Compute block identifiers from block rules for constraints, flattening each to 1D.
         block_components = [
-            rule.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+            np.ravel(rule.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
             for rule in self.constr_block_rules
         ]
-
+        
+        # 2. Compute intra-block scores (assumed to be 1D).
         intra_scores = np.zeros(len(constraints))
         for rule in self.constr_intra_rules:
-            intra_scores += rule.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
-
-        constr_scores = []
+            intra_scores += np.ravel(rule.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        
+        # 3. Combine into tuples for each constraint and store in a NumPy array.
+        constr_scores = np.empty(len(constraints), dtype=object)
         for i in range(len(constraints)):
             block_part = tuple(comp[i] for comp in block_components)
-            constr_scores.append(block_part + (intra_scores[i],))
-
+            constr_scores[i] = block_part + (intra_scores[i],)
+        
+        print("ok2")
         return constr_scores
+
