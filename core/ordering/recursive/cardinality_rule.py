@@ -19,50 +19,56 @@ class NonZeroCountRule(OrderingRule):
 
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Calculate the number of nonzero coefficients in each variable's column.
-        Handles both dense and sparse matrices.
+        Calculate the number of nonzero coefficients in each variable's column,
+        considering entries with absolute value > self.tol as nonzero.
+        The score for each variable is: nonzero_count * self.scaling.
+        
+        This function handles both dense and sparse matrices.
         """
-        num_constraints, num_vars = A.shape  # Get dimensions
-        scores = np.zeros(num_vars, dtype=int)
-        
-        # Use CSC for fast column access if available
+        num_constraints, num_vars = A.shape
         if hasattr(A, "tocsc"):
-            A = A.tocsc()
-        
-        for j in range(num_vars):
-            column = A[:, j]
-            if hasattr(column, "toarray"):
-                column = column.toarray().flatten()
-            # Use tolerance to determine nonzero entries
-            nonzero_count = np.count_nonzero(np.abs(column) > self.tol)
-            scores[j] = nonzero_count * self.scaling
-        
-        return scores.tolist()
+            # Convert A to CSC format for fast column slicing.
+            A_csc = A.tocsc()
+            # For each column j, np.diff(A_csc.indptr)[j] gives the number of stored (nonzero) elements.
+            # To get the "nonzero" count based on tol, we first create a column index for each stored element.
+            col_indices = np.repeat(np.arange(num_vars), np.diff(A_csc.indptr))
+            # Create a boolean mask for entries that are "nonzero" (exceed tol).
+            mask = np.abs(A_csc.data) > self.tol
+            # Count the number of True values for each column using np.bincount.
+            counts = np.bincount(col_indices[mask], minlength=num_vars)
+            scores = counts * self.scaling
+        else:
+            # Assume A is a dense NumPy array.
+            mask = np.abs(A) > self.tol  # shape (num_constraints, num_vars)
+            counts = np.sum(mask, axis=0)  # count nonzeros per column
+            scores = counts * self.scaling
+
+        return scores  # Returns a NumPy array
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Calculate the number of nonzero coefficients in each constraint's row.
-        Handles both dense and sparse matrices.
+        Calculate the number of nonzero coefficients in each constraint's row,
+        considering entries with absolute value > self.tol as nonzero.
+        The score for each constraint is: nonzero_count * self.scaling.
+        
+        This function handles both dense and sparse matrices.
         """
         num_constraints, num_vars = A.shape
-        scores = np.zeros(num_constraints, dtype=int)
-        
-        # If A is sparse and supports getnnz, use it:
-        if hasattr(A, "getnnz"):
-            # getnnz(axis=1) returns the nonzero count for each row.
-            scores = A.getnnz(axis=1) * self.scaling
-            return scores.tolist()
+        if hasattr(A, "tocsr"):
+            # Convert A to CSR for fast row slicing.
+            A_csr = A.tocsr()
+            # Create row indices for each nonzero entry.
+            row_indices = np.repeat(np.arange(num_constraints), np.diff(A_csr.indptr))
+            mask = np.abs(A_csr.data) > self.tol
+            counts = np.bincount(row_indices[mask], minlength=num_constraints)
+            scores = counts * self.scaling
         else:
-            # Otherwise, convert to CSR for fast row access if possible.
-            if hasattr(A, "tocsr"):
-                A = A.tocsr()
-            for i in range(num_constraints):
-                row = A[i, :]
-                if hasattr(row, "toarray"):
-                    row = row.toarray().flatten()
-                nonzero_count = np.count_nonzero(np.abs(row) > self.tol)
-                scores[i] = nonzero_count * self.scaling
-            return scores.tolist()
+            # Assume A is a dense NumPy array.
+            mask = np.abs(A) > self.tol  # shape (num_constraints, num_vars)
+            counts = np.sum(mask, axis=1)  # count nonzeros per row
+            scores = counts * self.scaling
+
+        return scores  # Returns a NumPy array
 
     # --- Methods for Rectangular Block Ordering ---
 
@@ -116,26 +122,24 @@ class NonZeroCountRule(OrderingRule):
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         
-        # Compute variable scores on the submatrix.
-        sub_var_scores = self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
-        # Compute constraint scores on the submatrix.
-        sub_constr_scores = self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
+        # Compute scores on the sub-block.
+        sub_var_scores = np.array(self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
+        sub_constr_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
         
-        # Group original indices by their scores.
-        var_partitions = defaultdict(list)
-        for idx, score in zip(var_indices, sub_var_scores):
-            var_partitions[score].append(idx)
-            
-        constr_partitions = defaultdict(list)
-        for idx, score in zip(constr_indices, sub_constr_scores):
-            constr_partitions[score].append(idx)
-            
-        # Form subblocks via Cartesian product.
+        # Group the original variable indices by their computed score.
+        unique_var_scores = np.unique(sub_var_scores)
+        var_partitions = {score: var_indices[sub_var_scores == score] for score in unique_var_scores}
+        
+        # Group the original constraint indices by their computed score.
+        unique_constr_scores = np.unique(sub_constr_scores)
+        constr_partitions = {score: constr_indices[sub_constr_scores == score] for score in unique_constr_scores}
+        
+        # Form the partition map as the Cartesian product of variable and constraint groups.
         partition_map = {}
         label = 0
-        for score_v, var_group in var_partitions.items():
-            for score_c, constr_group in constr_partitions.items():
-                partition_map[label] = (var_group, constr_group)
+        for score_v in unique_var_scores:
+            for score_c in unique_constr_scores:
+                partition_map[label] = (var_partitions[score_v], constr_partitions[score_c])
                 label += 1
-                
+                    
         return partition_map

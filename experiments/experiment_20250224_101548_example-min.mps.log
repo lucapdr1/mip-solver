@@ -1,0 +1,64 @@
+2025-02-24 10:15:48,705 - INFO: Successfully loaded local problem from input/example-min.mps
+2025-02-24 10:15:48,706 - INFO: Experiment Settings:
+2025-02-24 10:15:48,707 - INFO: - INPUT_DIR: input/
+2025-02-24 10:15:48,708 - INFO: - LOG_LEVEL: 20
+2025-02-24 10:15:48,709 - INFO: - OUTPUT_DIR: experiments/
+2025-02-24 10:15:48,709 - INFO: - INPUT_PROBLEM: example-min.mps
+2025-02-24 10:15:48,710 - INFO: - NUMBER_OF_PERMUTATIONS: 1
+2025-02-24 10:15:48,711 - INFO: - NORMALIZATION_ACTIVE: False
+2025-02-24 10:15:48,712 - INFO: - MATRICES_TO_CSV: False
+2025-02-24 10:15:48,713 - INFO: - LOG_MATRIX: False
+2025-02-24 10:15:48,713 - INFO: - LOG_MODEL_COMPARISON: False
+2025-02-24 10:15:48,714 - INFO: - PRODUCTION: False
+2025-02-24 10:15:48,715 - INFO: - RECURSIVE_RULES: True
+2025-02-24 10:15:48,715 - INFO: - DISABLE_SOLVING: True
+2025-02-24 10:15:48,716 - INFO: Successfully loaded problem from input/example-min.mps
+2025-02-24 10:15:48,716 - INFO: Problem Details:
+2025-02-24 10:15:48,717 - INFO: - Variables: 18
+2025-02-24 10:15:48,718 - INFO: - Constraints: 18
+2025-02-24 10:15:48,719 - INFO: - Objective Sense: Minimize
+2025-02-24 10:15:48,722 - INFO: Solving Original Problem
+2025-02-24 10:15:48,723 - INFO: Solving is disabled via environment variable. Returning placeholder result.
+2025-02-24 10:15:49,612 - INFO: Solving Canonical from Original Problem
+2025-02-24 10:15:49,613 - INFO: Solving is disabled via environment variable. Returning placeholder result.
+2025-02-24 10:15:49,615 - INFO: Running iteration 1/1
+2025-02-24 10:15:49,616 - INFO: Creating Permuted Problem
+2025-02-24 10:15:49,620 - INFO: Computing Permutation Distance before Canonicalization...
+2025-02-24 10:15:49,621 - INFO: Permutation Distance Before Canonicalization: 155.0
+2025-02-24 10:15:49,622 - INFO: Solving Permuted Problem
+2025-02-24 10:15:49,623 - INFO: Solving is disabled via environment variable. Returning placeholder result.
+2025-02-24 10:15:49,624 - INFO: Scaling is disabled. Using unscaled permuted model.
+2025-02-24 10:15:49,625 - INFO: Normalization is disabled. Using the intermediate model as is.
+2025-02-24 10:15:50,625 - INFO: Computing Permutation Distance after Canonicalization...
+2025-02-24 10:15:50,627 - INFO: Permutation Distance After Canonicalization: 72.0
+2025-02-24 10:15:50,628 - INFO: Applying final canonical ordering to permuted model and solving it
+2025-02-24 10:15:50,631 - INFO: Solving Reordering Form from Permuted Model
+2025-02-24 10:15:50,632 - INFO: Solving is disabled via environment variable. Returning placeholder result.
+2025-02-24 10:15:50,636 - INFO: Iteration 1 Results:
+2025-02-24 10:15:50,637 - INFO: - Models equivalent: False
+2025-02-24 10:15:50,638 - INFO: - Variable counts match: True
+2025-02-24 10:15:50,639 - INFO: - Constraint counts match: True
+2025-02-24 10:15:50,640 - INFO: - Original Objective Value: None
+2025-02-24 10:15:50,641 - INFO: - Permuted Objective Value: None
+2025-02-24 10:15:50,642 - INFO: - Canonical from Original Objective Value: None
+2025-02-24 10:15:50,643 - INFO: - Canonical from Permuted Objective Value: None
+2025-02-24 10:15:50,644 - INFO: - Original Solve Time: 0.0000000000 seconds
+2025-02-24 10:15:50,644 - INFO: - Permuted Solve Time: 0.0000000000 seconds
+2025-02-24 10:15:50,645 - INFO: - Canonical from Original Solve Time: 0.0000000000 seconds
+2025-02-24 10:15:50,646 - INFO: - Canonical from Permuted Solve Time: 0.0000000000 seconds
+2025-02-24 10:15:50,647 - INFO: - Original Work Units: 0.0000000000
+2025-02-24 10:15:50,649 - INFO: - Permuted Work Units: 0.0000000000
+2025-02-24 10:15:50,650 - INFO: - Canonical from Original Work Units: 0.0000000000
+2025-02-24 10:15:50,651 - INFO: - Canonical from Permuted Work Units: 0.0000000000
+2025-02-24 10:15:50,652 - INFO: - Permutation Distance Before Canonicalization: 155.0
+2025-02-24 10:15:50,653 - INFO: - Permutation Distance After Canonicalization: 72.0
+2025-02-24 10:15:50,654 - WARNING: Not enough runs to compute standard deviation of solve times.
+2025-02-24 10:15:50,655 - WARNING: Not enough runs to compute standard deviation of work units.
+2025-02-24 10:15:50,655 - WARNING: Not enough runs to compute standard deviation of permutation distances.
+2025-02-24 10:15:50,656 - INFO: Granularity Statistics:
+2025-02-24 10:15:50,657 - INFO:  - Total Blocks: 58
+2025-02-24 10:15:50,658 - INFO:  - Avg(Block Size): 5.5862
+2025-02-24 10:15:50,659 - INFO:  - Min(Block Size): 1
+2025-02-24 10:15:50,659 - INFO:  - Max(Block Size): 50
+2025-02-24 10:15:50,660 - INFO:  - Sum of SubBlocks sizes: 324
+2025-02-24 10:15:50,661 - INFO:  - Original matrix size: 324
