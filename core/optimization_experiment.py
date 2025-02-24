@@ -7,7 +7,6 @@ from gurobipy import GRB
 import numpy as np
 import boto3
 import tempfile
-import logging
 from botocore.exceptions import ClientError
 
 from utils.logging_handler import LoggingHandler
@@ -18,7 +17,7 @@ from core.post_processing.performance_evaluator import PerformanceEvaluator
 from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
-from utils.config import LOG_LEVEL, LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES
+from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -37,8 +36,7 @@ class OptimizationExperiment:
     
     def run_experiment(self, num_iterations):
             """Run multiple iterations with detailed logging and solving functionality"""
-            if LOG_LEVEL == logging.DEBUG:
-                ProblemPrinter.log_model(self.original_model, self.logger, level="DEBUG")
+            #ProblemPrinterlog_model(self.original_model, self.logger, level="DEBUG")
             results = []
 
             # Solve the original problem once
@@ -47,8 +45,10 @@ class OptimizationExperiment:
 
             # Generate the canonical form of the original model once
             self.logger.lazy_debug("Generating canonical form for the original model...")
+            self.logger.info("Before Canonical")
             original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
-            ProblemPrinter.log_model(original_canonical, self.logger, level="DEBUG")
+            self.logger.info("After Canonical")
+            #ProblemPrinterlog_model(original_canonical, self.logger, level="DEBUG")
 
             # Solve the Canonical from original once
             self.logger.info("Solving Canonical from Original Problem")
@@ -85,7 +85,7 @@ class OptimizationExperiment:
             # === 1. Create the permuted problem (unscaled) ===
             self.logger.info("Creating Permuted Problem")
             permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem()
-            ProblemPrinter.log_model(permuted_model, self.logger, level="DEBUG")
+            #ProblemPrinterlog_model(permuted_model, self.logger, level="DEBUG")
 
             # Compute permutation distance BEFORE canonicalization (using unscaled permuted model)
             self.logger.info("Computing Permutation Distance before Canonicalization...")
@@ -132,7 +132,7 @@ class OptimizationExperiment:
                 # Assuming 'scaler' is an instance of ProblemScaler:
                 scaled_model, used_row_scales, used_col_scales, D_row, D_col = scaler.create_scaled_problem_with_scales(row_scales, col_scales)
                 """
-                ProblemPrinter.log_model(scaled_model, self.logger, level="DEBUG")
+                #ProblemPrinterlog_model(scaled_model, self.logger, level="DEBUG")
                 intermediate_model = scaled_model
             else:
                 self.logger.info("Scaling is disabled. Using unscaled permuted model.")
@@ -145,7 +145,7 @@ class OptimizationExperiment:
                 self.logger.info("Normalization is enabled. Normalizing the problem.")
                 normalizer = ProblemNormalizer()
                 normalized_model = normalizer.normalize_model(intermediate_model)
-                ProblemPrinter.log_model(normalized_model, self.logger, level="DEBUG")
+                #ProblemPrinterlog_model(normalized_model, self.logger, level="DEBUG")
             else:
                 self.logger.info("Normalization is disabled. Using the intermediate model as is.")
                 normalized_model = intermediate_model
@@ -184,7 +184,7 @@ class OptimizationExperiment:
             ordered_permuted_model = self.permutator.apply_permutation(permuted_model, permuted_canonical_var_order, permuted_canonical_constr_order)
             self.logger.info("Solving Reordering Form from Permuted Model")
             final_ordered_result = self.solve_problem(ordered_permuted_model)
-            ProblemPrinter.log_model(ordered_permuted_model, self.logger, level="DEBUG")
+            #ProblemPrinterlog_model(ordered_permuted_model, self.logger, level="DEBUG")
 
             return permuted_canonical, permuted_result, final_ordered_result, permuted_distance, canonical_distance
 
