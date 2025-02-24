@@ -96,11 +96,15 @@ class BoundCategoryRule(OrderingRule):
             A dictionary mapping block labels to tuples:
             { label: (list_of_variable_indices, list_of_constraint_indices) }
         """
-        # Construct sub-lists for the current block.
-        vars_sub = [vars[i] for i in var_indices]
-        bounds_sub = [bounds[i] for i in var_indices]
-        constr_sub = [constraints[i] for i in constr_indices]
-        rhs_sub = [rhs[i] for i in constr_indices] if rhs is not None else None
+        # Ensure var_indices and constr_indices are NumPy arrays.
+        var_indices = np.array(var_indices)
+        constr_indices = np.array(constr_indices)
+        
+        # Construct sub-arrays for the current block.
+        vars_sub = np.array(vars)[var_indices]
+        bounds_sub = np.array(bounds)[var_indices]   # For interface consistency.
+        constr_sub = np.array(constraints)[constr_indices]
+        rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
 
         # Compute scores on the sub-block.
         sub_scores = self.score_variables(vars_sub, obj_coeffs, bounds_sub, A, constr_sub, rhs_sub)

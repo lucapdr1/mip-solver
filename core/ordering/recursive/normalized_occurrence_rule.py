@@ -89,7 +89,10 @@ class NormalizedOccurrenceCountRule(OrderingRule):
         rhs_sub = [rhs[i] for i in constr_indices] if rhs is not None else None
 
         # Extract the submatrix for the block.
-        submatrix = A[constr_indices, :][:, var_indices]
+        # Ensure A is in CSR for efficient row slicing:
+        A_csr = A.tocsr()
+        row_slice = A_csr[constr_indices, :]
+        submatrix = row_slice.tocsc()[:, var_indices]
         
         sub_var_scores = self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
         sub_constr_scores = self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
