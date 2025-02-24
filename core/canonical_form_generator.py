@@ -17,8 +17,8 @@ class CanonicalFormGenerator:
         
     def _initialize_structures(self):
         """Extract model components with integrity checks"""
-        self.vars = self.model.getVars()
-        self.constrs = self.model.getConstrs()
+        self.vars = np.array(self.model.getVars(), dtype=object)
+        self.constrs = np.array(self.model.getConstrs(), dtype=object)
         self.A = self.model.getA()  # Constraint matrix in sparse format
 
         if self.A is None or self.A.shape[0] == 0 or self.A.shape[1] == 0:
@@ -34,65 +34,62 @@ class CanonicalFormGenerator:
         self.obj_coeffs = np.array([var.Obj for var in self.vars])
         self.rhs = np.array([c.RHS for c in self.constrs])
         self.sense = self.model.ModelSense
-        self.original_bounds = [(var.LB, var.UB) for var in self.vars]
+        self.original_bounds = np.array([(var.LB, var.UB) for var in self.vars], dtype=float)
     
     def generate_ordering(self):
-        """Generate a consistent ordering of variables and constraints"""
-         # Score and sort variables
-        var_scores = self.ordering_rule.score_variables(self.vars, self.obj_coeffs, self.original_bounds, self.A, self.constrs, self.rhs)
-        self.logger.lazy_debug("Variable scores before ordering:")
-        for i, score in enumerate(var_scores):
-            self.logger.lazy_debug(f"Var {i} score: {score}")
+        """Generate a consistent ordering of variables and constraints."""
+        # Score and sort variables
+        var_scores = self.ordering_rule.score_variables(
+            self.vars, self.obj_coeffs, self.original_bounds, self.A, self.constrs, self.rhs
+        )
+        # Log variable scores in one shot if debug is enabled.
+        self.logger.lazy_debug("Variable scores before ordering: %s", var_scores)
         
+        # Get variable types once.
         var_types = np.array([var.VType for var in self.vars])
-
+        
+        # Compute ordering using NumPy's argsort.
         var_order = np.argsort(var_scores)
+        self.logger.lazy_debug("Variable ordering: %s", var_order)
         
-        self.logger.lazy_debug("Variable ordering:")
-        self.logger.lazy_debug(f"Order: {var_order}")
+        # Log original variable bounds (combine into one string to avoid per-item loop).
+        bounds_str = ", ".join(
+            f"Var {i} (Type: {'Continuous' if var.VType == GRB.CONTINUOUS else 'Integer' if var.VType == GRB.INTEGER else 'Binary'}): [{var.LB}, {var.UB}]"
+            for i, var in enumerate(self.vars)
+        )
+        self.logger.lazy_debug("Original bounds before reordering: %s", bounds_str)
         
-        # Original variable bounds before reordering
-        self.logger.lazy_debug("Original bounds before reordering:")
-        for i, var in enumerate(self.vars):
-            var_type = "Continuous" if var.VType == GRB.CONTINUOUS else "Integer" if var.VType == GRB.INTEGER else "Binary"
-            self.logger.lazy_debug(f"Var {i} (Type: {var_type}): [{var.LB}, {var.UB}]")
-        
-
         # Reorder columns of A
-        self.A = self.A[:, var_order]
+        self.A = self.A.tocsc()[:, var_order]
 
-        # Score and sort constraints
-        constraint_scores = self.ordering_rule.score_constraints(self.vars, self.obj_coeffs, self.original_bounds, self.A, self.constrs, self.rhs)
-        self.logger.lazy_debug("Constraint scores before ordering:")
-        for i, score in enumerate(constraint_scores):
-            self.logger.lazy_debug(f"Constr {i}: Score: {score}")
-
+        # Score and sort constraints.
+        constraint_scores = self.ordering_rule.score_constraints(
+            self.vars, self.obj_coeffs, self.original_bounds, self.A, self.constrs, self.rhs
+        )
+        self.logger.lazy_debug("Constraint scores before ordering: %s", constraint_scores)
+        
         constr_order = np.argsort(constraint_scores)
+        self.logger.lazy_debug("Constraint ordering: %s", constr_order)
 
-        self.logger.lazy_debug("Constraint ordering:")
-        self.logger.lazy_debug(f"Order: {constr_order}")
-
-        # Log original constraints before reordering
-        self.logger.lazy_debug("Original constraints before reordering:")
-        for i, constr in enumerate(self.constrs):
-            sense = {
-                "<": "<=",
-                ">": ">=",
-                "=": "=",
-            }[constr.Sense]
-            self.logger.lazy_debug(f"Constr {i}: {sense} {self.rhs[i]}")
-
-        # Reorder rows of A and RHS
-        self.A = self.A[constr_order, :]
+        # Log original constraints (build one combined string).
+        constr_str = ", ".join(
+            f"Constr {i}: { {'<': '<=', '>': '>=', '=': '='}[constr.Sense] } {self.rhs[i]}"
+            for i, constr in enumerate(self.constrs)
+        )
+        self.logger.lazy_debug("Original constraints before reordering: %s", constr_str)
+        
+        # Reorder rows of A and RHS.
+        self.A = self.A.tocsr()[constr_order, :]
         self.rhs = self.rhs[constr_order]
 
-        # Ensure variable types match the reordered variables
+        # Reorder variables, objective coefficients, and bounds.
         self.vars = [self.vars[idx] for idx in var_order]
         self.obj_coeffs = self.obj_coeffs[var_order]
-        var_types = var_types[var_order]
         self.original_bounds = [self.original_bounds[idx] for idx in var_order]
+        var_types = var_types[var_order]
 
         return var_order, var_types, constr_order
+
 
     def get_canonical_form(self):
         """Generate canonical model"""
