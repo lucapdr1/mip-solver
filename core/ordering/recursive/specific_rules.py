@@ -18,7 +18,6 @@ class AllCoefficientsOneRule(OrderingRule):
         scores = np.zeros(num_vars, dtype=int)
         
         if hasattr(A, "tocsc"):
-            A_csc = A.tocsc()
             # Get column pointers and compute number of nonzeros per column.
             indptr = A_csc.indptr
             counts = np.diff(indptr)  # length = num_vars
@@ -53,7 +52,7 @@ class AllCoefficientsOneRule(OrderingRule):
         scores = np.zeros(num_constraints, dtype=int)
         
         if hasattr(A, "tocsr"):
-            A_csr = A.tocsr()
+            
             indptr = A_csr.indptr
             counts = np.diff(indptr)
             diff = np.abs(A_csr.data - 1.0)
@@ -108,7 +107,7 @@ class AllCoefficientsOneRule(OrderingRule):
         rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
         
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
+        
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()
@@ -181,7 +180,7 @@ class AllBinaryVariablesRule(OrderingRule):
         scores = np.zeros(num_constraints, dtype=int)
         
         if hasattr(A, "tocsr"):
-            A_csr = A.tocsr()
+            
             for i in range(num_constraints):
                 start = A_csr.indptr[i]
                 end = A_csr.indptr[i+1]
@@ -233,7 +232,7 @@ class AllBinaryVariablesRule(OrderingRule):
         rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
         
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
+        
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()

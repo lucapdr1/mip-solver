@@ -28,7 +28,7 @@ class ConstraintIntegerCountRule(OrderingRule):
         )
 
         if hasattr(A, "tocsr"):
-            A_csr = A.tocsr()
+            
             # Create a binary indicator matrix from A:
             A_bool = A_csr.copy()
             A_bool.data = np.ones_like(A_bool.data)
@@ -97,7 +97,7 @@ class ConstraintIntegerCountRule(OrderingRule):
 
         # Extract the submatrix corresponding to the block.
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
+        
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()
@@ -158,7 +158,7 @@ class ConstraintContinuousCountRule(OrderingRule):
 
         # Process sparse A if possible.
         if hasattr(A, "tocsr"):
-            A_csr = A.tocsr()
+            
             # Create a binary version of A: 1 if |entry| > tol, 0 otherwise.
             binary_data = (np.abs(A_csr.data) > tol).astype(int)
             A_bin = A_csr.copy()
@@ -226,7 +226,7 @@ class ConstraintContinuousCountRule(OrderingRule):
 
         # Extract the submatrix corresponding to the current block.
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
+        
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()
@@ -281,7 +281,7 @@ class BothBoundsFiniteCountRule(OrderingRule):
         indicator = (~np.isinf(bounds_arr).any(axis=1)).astype(int)  # shape (n_vars,)
         
         if hasattr(A, "tocsr"):
-            A_csr = A.tocsr()
+            
             # Create a binary version of A: 1 if coefficient is nonzero, 0 otherwise.
             # (You might add a tolerance if desired; here we treat any nonzero as nonzero.)
             binary = A_csr.copy()
@@ -336,7 +336,7 @@ class BothBoundsFiniteCountRule(OrderingRule):
 
         # Extract the submatrix.
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
+        
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()
@@ -397,7 +397,7 @@ class OneBoundFiniteCountRule(OrderingRule):
         # We want to count, for each constraint (row), the number of variables with
         # nonzero coefficients and with indicator==1.
         if hasattr(A, "tocsr"):
-            A_csr = A.tocsr()
+            
             # Convert A to a binary matrix: set nonzero entries (ignoring sign) to 1.
             A_bin = A_csr.copy()
             A_bin.data = (np.abs(A_bin.data) != 0).astype(int)
@@ -439,7 +439,7 @@ class OneBoundFiniteCountRule(OrderingRule):
         rhs_sub    = [rhs[i] for i in constr_indices] if rhs is not None else None
 
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
+        
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()
@@ -490,7 +490,7 @@ class BothBoundsInfiniteCountRule(OrderingRule):
         
         # Process A as a sparse matrix if possible.
         if hasattr(A, "tocsr"):
-            A_csr = A.tocsr()
+            
             # Create a binary version of A: 1 for nonzero entries.
             A_bin = A_csr.copy()
             A_bin.data = (np.abs(A_bin.data) != 0).astype(int)
@@ -536,7 +536,7 @@ class BothBoundsInfiniteCountRule(OrderingRule):
         rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
 
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
+        
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()

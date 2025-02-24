@@ -90,7 +90,7 @@ class NormalizedOccurrenceCountRule(OrderingRule):
 
         # Extract the submatrix for the block.
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
+        
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()

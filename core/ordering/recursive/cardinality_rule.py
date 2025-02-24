@@ -27,8 +27,6 @@ class NonZeroCountRule(OrderingRule):
         """
         num_constraints, num_vars = A.shape
         if hasattr(A, "tocsc"):
-            # Convert A to CSC format for fast column slicing.
-            A_csc = A.tocsc()
             # For each column j, np.diff(A_csc.indptr)[j] gives the number of stored (nonzero) elements.
             # To get the "nonzero" count based on tol, we first create a column index for each stored element.
             col_indices = np.repeat(np.arange(num_vars), np.diff(A_csc.indptr))

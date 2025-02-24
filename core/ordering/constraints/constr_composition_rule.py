@@ -44,9 +44,6 @@ class ConstraintCompositionRule(OrderingRule):
         
         nrows = len(constraints)
         scores = np.empty(nrows, dtype=int)
-        
-        # Ensure that A is in CSR format for fast row slicing.
-        A_csr = A.tocsr() if hasattr(A, "tocsr") else A
 
         for i in range(nrows):
             # Get the nonzero indices of the current row.
@@ -111,7 +108,6 @@ class ConstraintCompositionRule(OrderingRule):
         rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
 
         # Ensure A is in CSR for efficient row slicing:
-        A_csr = A.tocsr()
         row_slice = A_csr[constr_indices, :]
         submatrix = row_slice.tocsc()[:, var_indices]
         submatrix_csc = submatrix.tocsc()
