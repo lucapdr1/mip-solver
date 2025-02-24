@@ -12,7 +12,7 @@ class ColumnsCoefficientRule(OrderingRule):
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         #Simple absolute value
         #return np.sum(np.abs(A), axis=1).flatten().tolist()[0]
-        return [0] * len(constraints)
+        return np.zeros(len(constraints), dtype=int)
     
     def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
         """

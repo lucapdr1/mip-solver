@@ -1,4 +1,5 @@
 from core.ordering.ordering_rule_interface import OrderingRule
+import numpy as np
 
 class ConstraintSenseRule(OrderingRule):
     def __init__(self, scaling=1):
@@ -6,7 +7,7 @@ class ConstraintSenseRule(OrderingRule):
 
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # This rule does not reorder variables
-        return [0] * len(vars)
+       return np.zeros(len(vars), dtype=int)
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # Prioritize constraints by type: '<', '=', '>'

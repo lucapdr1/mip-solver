@@ -1,6 +1,7 @@
 from core.ordering.ordering_rule_interface import OrderingRule
 from gurobipy import GRB
 from collections import defaultdict
+import numpy as np
 import math
 
 class ConstraintCompositionRule(OrderingRule):
@@ -18,43 +19,51 @@ class ConstraintCompositionRule(OrderingRule):
 
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # This rule is for constraints only.
-        return [0] * len(vars)
+       return np.zeros(len(vars), dtype=int)
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
-        Iterates over each constraint (row) in A, examines the variables that appear,
-        and assigns a category score:
-          - 3 if only integral variables appear,
-          - 2 if only continuous variables appear,
-          - 1 if a mix appears.
+        Iterates over each constraint (row) in A and assigns a score based on the types of variables
+        present:
+        - 3 if only integral variables appear,
+        - 2 if only continuous variables appear,
+        - 1 if a mix appears.
+        This version leverages NumPy for inner-loop operations and returns a NumPy array.
         """
-        scores = []
-        for row_idx, constr in enumerate(constraints):
-            row_data = A[row_idx, :]
-            if hasattr(row_data, "toarray"):
-                row_data = row_data.toarray().flatten()
-            nz_indices = row_data.nonzero()[0]
+        # Precompute an array mapping each variable to a code:
+        # 3 for integral/binary/semiint, 2 for continuous/semicont.
+        vtype_map = {
+            GRB.BINARY: 3,
+            GRB.INTEGER: 3,
+            GRB.SEMIINT: 3,
+            GRB.CONTINUOUS: 2,
+            GRB.SEMICONT: 2
+        }
+        # Precompute the codes for all variables.
+        var_codes = np.array([vtype_map[v.VType] for v in vars])
+        
+        nrows = len(constraints)
+        scores = np.empty(nrows, dtype=int)
+        
+        # Ensure that A is in CSR format for fast row slicing.
+        A_csr = A.tocsr() if hasattr(A, "tocsr") else A
 
-            has_integral = False
-            has_continuous = False
-
-            for col_idx in nz_indices:
-                var = vars[col_idx]
-                if var.VType in [GRB.BINARY, GRB.INTEGER, GRB.SEMIINT]:
-                    has_integral = True
-                elif var.VType in [GRB.CONTINUOUS, GRB.SEMICONT]:
-                    has_continuous = True
-                if has_integral and has_continuous:
-                    break
-
-            if has_integral and not has_continuous:
-                cat = 3
-            elif has_continuous and not has_integral:
-                cat = 2
+        for i in range(nrows):
+            # Get the nonzero indices of the current row.
+            row = A_csr.getrow(i)
+            nz_indices = row.indices  # Already a NumPy array.
+            if nz_indices.size == 0:
+                # If the row has no nonzeros, assign a default score.
+                scores[i] = 1 * self.scaling
             else:
-                cat = 1
-
-            scores.append(cat * self.scaling)
+                row_codes = var_codes[nz_indices]
+                # Use vectorized operations:
+                if np.all(row_codes == 3):
+                    scores[i] = 3 * self.scaling
+                elif np.all(row_codes == 2):
+                    scores[i] = 2 * self.scaling
+                else:
+                    scores[i] = 1 * self.scaling
         return scores
 
     # --- Methods to Support Rectangular Block/Intra Reordering ---
@@ -69,6 +78,7 @@ class ConstraintCompositionRule(OrderingRule):
         """
         Returns the score for a single constraint as a tuple by leveraging score_constraints.
         """
+        # Create a one-element list for the constraint.
         rhs_single = [rhs[idx]] if rhs is not None else None
         score = self.score_constraints(vars, obj_coeffs, bounds, A, [constraints[idx]], rhs_single)[0]
         return (score,)
@@ -79,46 +89,53 @@ class ConstraintCompositionRule(OrderingRule):
         constraint composition score computed on the corresponding submatrix.
         
         Steps:
-        1. Construct sub-lists for variables, bounds, constraints, and rhs for the block.
+        1. Construct sub-arrays for variables, bounds, constraints, and rhs for the block.
         2. Extract the submatrix of A corresponding to these indices.
-        3. Call score_constraints on the sub-lists and submatrix.
-        4. Log the computed scores.
-        5. Group the original constraint indices by these scores.
-        6. Group all variable indices together (since this rule does not affect variables).
-        7. Sort the constraint groups by their score in descending order.
-        8. Form the partition map as the Cartesian product of these groups.
+        3. Call score_constraints on the sub-arrays and submatrix.
+        4. Group the original constraint indices by these scores using NumPy.
+        5. Group all variable indices together (since this rule does not affect variables).
+        6. Sort the constraint groups by their score in descending order.
+        7. Form the partition map as the Cartesian product of these groups.
         
-        Returns a dictionary mapping block labels to tuples:
-            { label: (list_of_variable_indices, list_of_constraint_indices) }
+        Returns a dictionary mapping block labels to tuples of NumPy arrays:
+            { label: (var_indices_array, constr_indices_array) }
         """
-        # Construct sub-lists for the current block.
-        vars_sub = [vars[i] for i in var_indices]
-        bounds_sub = [bounds[i] for i in var_indices]  # Not used, but for interface consistency.
-        constr_sub = [constraints[i] for i in constr_indices]
-        rhs_sub = [rhs[i] for i in constr_indices] if rhs is not None else None
+        # Ensure var_indices and constr_indices are NumPy arrays.
+        var_indices = np.array(var_indices)
+        constr_indices = np.array(constr_indices)
+        
+        # Construct sub-arrays for the current block.
+        vars_sub = np.array(vars)[var_indices]
+        bounds_sub = np.array(bounds)[var_indices]   # For interface consistency.
+        constr_sub = np.array(constraints)[constr_indices]
+        rhs_sub = np.array(rhs)[constr_indices] if rhs is not None else None
 
-        # Extract the submatrix corresponding to the block.
-        submatrix = A[constr_indices, :][:, var_indices]
+        # Ensure A is in CSR for efficient row slicing:
+        A_csr = A.tocsr()
+        row_slice = A_csr[constr_indices, :]
+        submatrix = row_slice.tocsc()[:, var_indices]
         
         # Compute constraint scores on the submatrix.
-        sub_scores = self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
+        sub_scores = np.array(self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub))
         
-        # Group the original constraint indices by their computed scores.
-        constr_groups = defaultdict(list)
-        for idx, score in zip(constr_indices, sub_scores):
-            constr_groups[score].append(idx)
-            
-        # All variables are grouped together, as this rule does not differentiate them.
-        var_groups = {0: list(var_indices)}
+        # Group the original constraint indices by their computed scores using NumPy.
+        unique_scores = np.unique(sub_scores)
+        constr_groups = {}
+        for score in unique_scores:
+            mask = (sub_scores == score)
+            constr_groups[score] = constr_indices[mask]
         
-        # Sort the constraint groups by their score in descending order.
-        sorted_scores = sorted(constr_groups.keys(), reverse=True)
+        # All variables are grouped together (since this rule does not differentiate them).
+        var_groups = {0: var_indices}
         
-        # Form the partition map as the Cartesian product of variable groups and the sorted constraint groups.
+        # Sort the unique scores in descending order.
+        sorted_scores = np.sort(np.array(list(constr_groups.keys())))[::-1]
+        
+        # Form the partition map: for each sorted score, assign the entire var_indices and the corresponding constraint group.
         partition_map = {}
         label = 0
         for score in sorted_scores:
-            partition_map[label] = (list(var_indices), constr_groups[score])
+            partition_map[label] = (var_indices, constr_groups[score])
             label += 1
                     
         return partition_map

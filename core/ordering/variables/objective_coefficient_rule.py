@@ -16,7 +16,7 @@ class ObjectiveCoefficientRule(OrderingRule):
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # This rule does not reorder constraints
-        return [0] * len(constraints)
+        return np.zeros(len(constraints), dtype=int)
     
     def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
         """

@@ -28,7 +28,7 @@ class VariableOccurrenceRule(OrderingRule):
         Returns:
             List of zeros for each constraint
         """
-        return [0] * len(constraints)
+        return np.zeros(len(constraints), dtype=int)
     
     def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
         """

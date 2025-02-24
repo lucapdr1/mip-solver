@@ -2,6 +2,7 @@ from core.ordering.ordering_rule_interface import OrderingRule
 from gurobipy import GRB
 from collections import defaultdict
 import math
+import numpy as np
 
 class VariableTypeRule(OrderingRule):
     """
@@ -48,7 +49,7 @@ class VariableTypeRule(OrderingRule):
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # This rule is only concerned with variable types.
-        return [0] * len(constraints)
+        return np.zeros(len(constraints), dtype=int)
     
     # --- Methods for Rectangular Block Ordering ---
 

@@ -11,7 +11,7 @@ class ConstraintIntegerCountRule(OrderingRule):
     """
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # This rule does not affect variable scores.
-        return [0] * len(vars)
+       return np.zeros(len(vars), dtype=int)
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """
@@ -127,7 +127,7 @@ class ConstraintContinuousCountRule(OrderingRule):
     """
     def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # This rule does not affect variable scores.
-        return [0] * len(vars)
+       return np.zeros(len(vars), dtype=int)
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         """

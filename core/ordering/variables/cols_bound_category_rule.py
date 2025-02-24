@@ -61,7 +61,7 @@ class BoundCategoryRule(OrderingRule):
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
         # This rule is only concerned with variable bound properties.
-        return [0] * len(constraints)
+        return np.zeros(len(constraints), dtype=int)
     
     # --- Methods for Rectangular Block Partitioning ---
     
