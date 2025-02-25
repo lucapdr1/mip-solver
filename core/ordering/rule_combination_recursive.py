@@ -253,7 +253,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         return partition_map
 
     def _apply_intra_rules_matrix(self, var_indices, constr_indices,
-                                  vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs, intra_rules):
+                              vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs, intra_rules):
         """
         When no further block partitioning is possible, apply intra rules to order the indices.
         """
@@ -266,42 +266,51 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         if not intra_rules:
             logger.lazy_debug("No intra rules provided; returning identity ordering for this block.")
             return list(var_indices), list(constr_indices)
-    
+
+        # --- Process variable scores ---
         var_scores = []
         for idx in var_indices:
-            scores = tuple(rule.score_matrix_for_variable(idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
-                           for rule in intra_rules)
-            logger.lazy_debug("Variable %s intra scores: %s", idx, scores)
-            var_scores.append((idx, scores))
-        # Assume var_scores is a list of tuples: (idx, score_tuple)
+            flat_scores = []
+            for rule in intra_rules:
+                score = rule.score_matrix_for_variable(idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+                # If the score is a tuple, flatten it by extending the list; otherwise, append the scalar.
+                if isinstance(score, tuple):
+                    flat_scores.extend(score)
+                else:
+                    flat_scores.append(score)
+            normalized_score = tuple(flat_scores)
+            logger.lazy_debug("Variable %s intra scores: %s", idx, normalized_score)
+            var_scores.append((idx, normalized_score))
+        
         # Extract indices and scores into NumPy arrays.
-        indices = np.array([idx for idx, score in var_scores])
-        # Convert the score tuples into a 2D array.
-        score_array = np.array([score for idx, score in var_scores])
-        # To sort lexicographically in the order of the tuple (first element most significant),
-        # we need to reverse the order of the columns (because np.lexsort uses the last key as primary).
-        order = np.lexsort(score_array.T)
-        ordered_vars = indices[order[::-1]]  # Reverse after sorting
-        # Now get the ordered indices as a NumPy array.
-        ordered_vars = indices[order]
-    
+        var_indices_array = np.array([idx for idx, score in var_scores])
+        var_score_array = np.array([score for idx, score in var_scores])
+        # Lexsort uses the last key as primary; ensure a lexicographic sort over columns.
+        order_vars = np.lexsort(var_score_array.T)
+        ordered_vars = var_indices_array[order_vars]
+
+        # --- Process constraint scores ---
         constr_scores = []
         for i in constr_indices:
-            scores = tuple(rule.score_matrix_for_constraint(i, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
-                           for rule in intra_rules)
-            logger.lazy_debug("Constraint %s intra scores: %s", i, scores)
-            constr_scores.append((i, scores))
-        # Extract indices and score tuples into NumPy arrays.
-        indices = np.array([i for i, score in constr_scores])
-        score_array = np.array([score for i, score in constr_scores])
-        # np.lexsort sorts by the last key first, so reverse the columns
-        order = np.lexsort(score_array.T)
-        ordered_vars = indices[order[::-1]]  # Reverse after sorting
-        # Get the sorted constraint indices as a NumPy array.
-        ordered_constr = indices[order]
-    
+            flat_scores = []
+            for rule in intra_rules:
+                score = rule.score_matrix_for_constraint(i, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+                if isinstance(score, tuple):
+                    flat_scores.extend(score)
+                else:
+                    flat_scores.append(score)
+            normalized_score = tuple(flat_scores)
+            logger.lazy_debug("Constraint %s intra scores: %s", i, normalized_score)
+            constr_scores.append((i, normalized_score))
+        
+        constr_indices_array = np.array([i for i, score in constr_scores])
+        constr_score_array = np.array([score for i, score in constr_scores])
+        order_constr = np.lexsort(constr_score_array.T)
+        ordered_constr = constr_indices_array[order_constr]
+
         logger.lazy_debug("Intra ordering: vars: %s, constr: %s", ordered_vars, ordered_constr)
         return ordered_vars, ordered_constr
+
     
     def extract_block_data(self, vars, bounds, constraints, rhs, A_csr, var_indices, constr_indices):
         """
