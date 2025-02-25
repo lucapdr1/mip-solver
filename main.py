@@ -19,6 +19,7 @@ from core.ordering.recursive.sign_pattern_rule import SignPatternRule
 from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCountRule, ConstraintContinuousCountRule, BothBoundsFiniteCountRule, BothBoundsInfiniteCountRule, OneBoundFiniteCountRule
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
 from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule
+from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
 from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES
@@ -83,18 +84,19 @@ def create_recursive_hierarchical_ordering(json_file=None):
         ]
 
     matrix_intra_rules = [
-        ColumnsCoefficientRule(1),
-        ObjectiveCoefficientRule(100),
-        VariableOccurrenceRule(1),
-        RowCoefficientRule(1),
-        RHSValueRule(100),
-        ConstraintRangeRule(1)
+        LadderIntraRule(),
+        #ColumnsCoefficientRule(1),
+        #ObjectiveCoefficientRule(100),
+        #VariableOccurrenceRule(1),
+        #RowCoefficientRule(1),
+        #RHSValueRule(100),
+        #ConstraintRangeRule(1)
     ]
 
     return RecursiveHierarchicalRuleComposition(
         matrix_block_rules_parent=matrix_block_rules,
         matrix_block_rules_child=matrix_repatable_rules,
-        #matrix_intra_rules=matrix_intra_rules,
+        matrix_intra_rules=matrix_intra_rules,
         max_depth=50
     )
 
