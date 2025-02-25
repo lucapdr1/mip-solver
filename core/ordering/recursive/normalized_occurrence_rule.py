@@ -23,7 +23,7 @@ class NormalizedOccurrenceCountRule(OrderingRule):
         self.discretize = discretize
         self.tol = tol
 
-    def score_variables(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr,  constraints, rhs):
         # A is assumed to be the matrix corresponding to the block.
         num_rows = A.shape[0]
         scores = []
@@ -43,7 +43,7 @@ class NormalizedOccurrenceCountRule(OrderingRule):
             scores.append(score)
         return scores
 
-    def score_constraints(self, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         num_cols = A.shape[1]
         scores = []
         # Use CSR if available for fast row access.
@@ -64,35 +64,26 @@ class NormalizedOccurrenceCountRule(OrderingRule):
 
     # --- Methods for Rectangular Block Ordering ---
     
-    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         score = self.score_variables([vars[idx]],
                                       obj_coeffs[idx:idx+1],
                                       [bounds[idx]],
-                                      A, constraints, rhs)[0]
+                                      A, A_csc, A_csr, constraints, rhs)[0]
         return (score,)
 
-    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         rhs_single = np.array([rhs[idx]]) if rhs is not None else None
         score = self.score_constraints(vars, obj_coeffs, bounds,
-                                       A, [constraints[idx]], rhs_single)[0]
+                                       A, A_csc, A_csr, [constraints[idx]], rhs_single)[0]
         return (score,)
 
-    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, constraints, rhs):
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
-        Partitions the block using normalized occurrence count scores computed on the submatrix.
+        Partitions the block using normalized occurrence count scores computed on the A.
         The rule reuses its score_variables and score_constraints methods.
         """
-        # Construct sub-lists for the current block.
-        vars_sub = [vars[i] for i in var_indices]
-        bounds_sub = [bounds[i] for i in var_indices]
-        constr_sub = [constraints[i] for i in constr_indices]
-        rhs_sub = [rhs[i] for i in constr_indices] if rhs is not None else None
-
-        # Extract the submatrix for the block.
-        submatrix = A[constr_indices, :][:, var_indices]
-        
-        sub_var_scores = self.score_variables(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
-        sub_constr_scores = self.score_constraints(vars_sub, obj_coeffs, bounds_sub, submatrix, constr_sub, rhs_sub)
+        sub_var_scores = self.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+        sub_constr_scores = self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
         
         # Group original indices by their scores.
         var_groups = defaultdict(list)

@@ -38,7 +38,7 @@ class LoggingHandler:
     def _setup_production_features(self):
         """Production setup that runs only once"""
         atexit.register(self._s3_upload_wrapper)
-        self.logger.debug("Initialized S3 logging capabilities")
+        self.logger.lazy_debug("Initialized S3 logging capabilities")
 
     # Keep other methods unchanged...
 
@@ -118,7 +118,20 @@ class LoggingHandler:
 
     def get_logger(self):
         """Public accessor for the logger"""
-        return self.logger
+        return self
+    
+    def info(self, msg, *args, **kwargs):
+        self.logger.info(msg, *args, **kwargs)
+
+    def debug(self, msg, *args, **kwargs):
+        self.logger.debug(msg, *args, **kwargs)
+    
+    def lazy_debug(self, msg, *args, **kwargs):
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        self.logger.warning(msg, *args, **kwargs)
 
     @staticmethod
     def log_model_differences(logger, model1, model2):
@@ -130,26 +143,26 @@ class LoggingHandler:
         obj1 = [v.Obj for v in model1.getVars()]
         obj2 = [v.Obj for v in model2.getVars()]
         if obj1 != obj2:
-            logger.debug("Objective coefficient differences found:")
+            logger.lazy_debug("Objective coefficient differences found:")
             for i, (o1, o2) in enumerate(zip(obj1, obj2)):
                 if abs(o1 - o2) > tolerance:
-                    logger.debug(f"Var {i}: {o1} vs {o2}")
+                    logger.lazy_debug(f"Var {i}: {o1} vs {o2}")
 
         # Compare variable bounds
         for i, (v1, v2) in enumerate(zip(model1.getVars(), model2.getVars())):
             if abs(v1.LB - v2.LB) > tolerance or abs(v1.UB - v2.UB) > tolerance:
-                logger.debug(f"Variable bounds differ for Var {i}: LB={v1.LB} vs {v2.LB}, UB={v1.UB} vs {v2.UB}")
+                logger.lazy_debug(f"Variable bounds differ for Var {i}: LB={v1.LB} vs {v2.LB}, UB={v1.UB} vs {v2.UB}")
 
         # Compare constraint matrix structure and coefficients
         A1 = model1.getA().toarray()
         A2 = model2.getA().toarray()
 
         if A1.shape != A2.shape:
-            logger.debug(f"Matrix shape differs: {A1.shape} vs {A2.shape}")
+            logger.lazy_debug(f"Matrix shape differs: {A1.shape} vs {A2.shape}")
         else:
             diff_matrix = np.abs(A1 - A2) > tolerance
             if LOG_MATRIX and diff_matrix.any():
-                logger.debug("Matrix coefficient differences found:")
+                logger.lazy_debug("Matrix coefficient differences found:")
                 df_A1 = pd.DataFrame(A1, columns=[f"x{i}" for i in range(A1.shape[1])])
                 df_A2 = pd.DataFrame(A2, columns=[f"x{i}" for i in range(A2.shape[1])])
 
@@ -157,30 +170,30 @@ class LoggingHandler:
 
                 if MATRICES_TO_CSV:
                     df_combined.to_csv(f"constraint_matrix_model_{timestamp}.csv", index=False)
-                    logger.debug(f"Constraint matrices saved as 'constraint_matrix_model_{timestamp}.csv'")
+                    logger.lazy_debug(f"Constraint matrices saved as 'constraint_matrix_model_{timestamp}.csv'")
 
-                logger.debug("\n" + df_combined.to_string())
+                logger.lazy_debug("\n" + df_combined.to_string())
 
         # Compare RHS
         rhs1 = [c.RHS for c in model1.getConstrs()]
         rhs2 = [c.RHS for c in model2.getConstrs()]
         if rhs1 != rhs2:
-            logger.debug("RHS differences found:")
+            logger.lazy_debug("RHS differences found:")
             df_rhs = pd.DataFrame({"Model 1": rhs1, "Model 2": rhs2})
-            logger.debug("\n" + df_rhs.to_string())
+            logger.lazy_debug("\n" + df_rhs.to_string())
 
         # Compare constraint senses
         senses1 = [c.Sense for c in model1.getConstrs()]
         senses2 = [c.Sense for c in model2.getConstrs()]
         if senses1 != senses2:
-            logger.debug("Constraint sense differences found:")
+            logger.lazy_debug("Constraint sense differences found:")
             df_sense = pd.DataFrame({"Model 1": senses1, "Model 2": senses2})
-            logger.debug("\n" + df_sense.to_string())
+            logger.lazy_debug("\n" + df_sense.to_string())
 
         # Compare variable types
         vtype1 = [v.VType for v in model1.getVars()]
         vtype2 = [v.VType for v in model2.getVars()]
         if vtype1 != vtype2:
-            logger.debug("Variable type differences found:")
+            logger.lazy_debug("Variable type differences found:")
             df_vtype = pd.DataFrame({"Model 1": vtype1, "Model 2": vtype2})
-            logger.debug("\n" + df_vtype.to_string())
+            logger.lazy_debug("\n" + df_vtype.to_string())
