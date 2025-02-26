@@ -39,6 +39,10 @@ class AggregatedMetrics:
     std_perm_distance_before: Optional[float] = None
     std_perm_distance_after: Optional[float] = None
 
+    std_perm_distance_reduction_pct: Optional[float] = None
+    std_solve_time_reduction_pct: Optional[float] = None
+    std_work_units_reduction_pct: Optional[float] = None
+
     models_equivalent_pct: Optional[float] = None
     variable_counts_match_pct: Optional[float] = None
     constraint_counts_match_pct: Optional[float] = None
@@ -51,6 +55,9 @@ class GranularityStats:
     max_block_size: Optional[int] = None
     sum_subblocks_sizes: Optional[int] = None
     original_matrix_size: Optional[int] = None
+@dataclass
+class AggregatedGranularityMetrics:
+    avg_block_percentage : Optional[float] = None
 
 @dataclass
 class LogMetrics:
@@ -58,3 +65,4 @@ class LogMetrics:
     iterations: List[IterationMetrics] = field(default_factory=list)
     aggregated_metrics: AggregatedMetrics = field(default_factory=AggregatedMetrics)
     granularity_stats: Optional[GranularityStats] = None 
+    granularity_metrics : Optional[AggregatedGranularityMetrics] = None

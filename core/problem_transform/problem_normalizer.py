@@ -24,7 +24,7 @@ class ProblemNormalizer:
                 - bounds is a list of tuples (lb, ub) for each variable,
                 - vtypes is a list of variable types.
         """
-        self.logger.debug("Extracting problem data from the input Gurobi model.")
+        self.logger.lazy_debug("Extracting problem data from the input Gurobi model.")
         constrs = model.getConstrs()
         vars = model.getVars()
         n_vars = len(vars)
@@ -56,7 +56,7 @@ class ProblemNormalizer:
         rhs = np.array(rhs)
         vtypes = [var.VType for var in vars]
 
-        self.logger.debug("Extraction complete: %d constraints, %d variables.", n_constrs, n_vars)
+        self.logger.lazy_debug("Extraction complete: %d constraints, %d variables.", n_constrs, n_vars)
         return A, obj_coeffs, rhs, bounds, vtypes, constraint_senses
 
     def _compute_scaling_factors(self, A, vtypes, tol=1e-9):
@@ -121,38 +121,12 @@ class ProblemNormalizer:
             row_norms[i] = norm
             row_scaling[i] = 1.0 / norm if norm != 0 else 1.0
 
-        self.logger.debug("Row norms (modified): %s", row_norms)
-        self.logger.debug("Column norms (modified): %s", col_norms)
-        self.logger.debug("Row scaling factors (modified): %s", row_scaling)
-        self.logger.debug("Column scaling factors (modified): %s", col_scaling)
+        self.logger.lazy_debug("Row norms (modified): %s", row_norms)
+        self.logger.lazy_debug("Column norms (modified): %s", col_norms)
+        self.logger.lazy_debug("Row scaling factors (modified): %s", row_scaling)
+        self.logger.lazy_debug("Column scaling factors (modified): %s", col_scaling)
         return row_scaling, col_scaling, row_norms, col_norms
 
-
-        for i in range(n_constrs):
-            row_data = A_csr.getrow(i).toarray().flatten()
-            indices = np.nonzero(np.abs(row_data) > tol)[0]
-            if len(indices) == 0:
-                norm = 1.0
-            else:
-                if any(vtypes[j] in [GRB.INTEGER, GRB.BINARY] for j in indices):
-                    int_vals = [int(round(abs(row_data[j]))) for j in indices if abs(row_data[j]) > tol]
-                    if len(int_vals) > 0:
-                        g = int_vals[0]
-                        for val in int_vals[1:]:
-                            g = gcd(g, val)
-                        norm = g if g != 0 else max(int_vals)
-                    else:
-                        norm = 1.0
-                else:
-                    norm = np.sqrt(np.sum(np.square(row_data[indices])))
-            row_norms[i] = norm
-            row_scaling[i] = 1.0 / norm if norm != 0 else 1.0
-
-        self.logger.debug("Row norms (modified): %s", row_norms)
-        self.logger.debug("Column norms (modified): %s", col_norms)
-        self.logger.debug("Row scaling factors (modified): %s", row_scaling)
-        self.logger.debug("Column scaling factors (modified): %s", col_scaling)
-        return row_scaling, col_scaling, row_norms, col_norms
 
     def _normalize_matrix(self, A, row_scaling, col_scaling):
         """
@@ -176,7 +150,7 @@ class ProblemNormalizer:
         Returns:
             tuple: (A_normalized, normalized_obj_coeffs, normalized_rhs, normalized_bounds, scaling_factors)
         """
-        self.logger.debug("Starting normalization of problem data.")
+        self.logger.lazy_debug("Starting normalization of problem data.")
         row_scaling, col_scaling, row_norms, col_norms = self._compute_scaling_factors(A, vtypes)
         A_normalized = self._normalize_matrix(A, row_scaling, col_scaling)
 
@@ -195,14 +169,14 @@ class ProblemNormalizer:
             normalized_bounds.append((new_lb, new_ub))
         
         scaling_factors = (row_scaling, col_scaling, row_norms, col_norms)
-        self.logger.debug("Normalization complete.")
+        self.logger.lazy_debug("Normalization complete.")
         return A_normalized, normalized_obj_coeffs, normalized_rhs, normalized_bounds, scaling_factors
 
     def _build_model_from_data(self, A_normalized, obj_coeffs, rhs, bounds, vtypes, constraint_senses, original_model):
         """
         Build a new Gurobi model from normalized problem data.
         """
-        self.logger.debug("Building new Gurobi model from normalized data.")
+        self.logger.lazy_debug("Building new Gurobi model from normalized data.")
         new_model = gp.Model("normalized_model")
         n_vars = len(obj_coeffs)
         var_list = []
@@ -241,7 +215,7 @@ class ProblemNormalizer:
                 new_model.addConstr(expr == rhs[i], name=f"c{i+1}")
         new_model.update()
 
-        self.logger.debug("New Gurobi model built successfully.")
+        self.logger.lazy_debug("New Gurobi model built successfully.")
         return new_model
 
 
@@ -250,10 +224,10 @@ class ProblemNormalizer:
         Normalize an input Gurobi model and return a new normalized Gurobi model.
         The model to be normalized is passed as a parameter.
         """
-        self.logger.debug("Starting normalization of the Gurobi model.")
+        self.logger.lazy_debug("Starting normalization of the Gurobi model.")
         A, obj_coeffs, rhs, bounds, vtypes, constraint_senses = self._extract_problem_data(model)
         A_norm, obj_coeffs_norm, rhs_norm, bounds_norm, scaling_factors = self.normalize(A, obj_coeffs, rhs, bounds, vtypes)
         new_model = self._build_model_from_data(A_norm, obj_coeffs_norm, rhs_norm, bounds_norm, vtypes, constraint_senses, model)
         new_model._scaling_factors = scaling_factors
-        self.logger.debug("Gurobi model normalization complete.")
+        self.logger.lazy_debug("Gurobi model normalization complete.")
         return new_model

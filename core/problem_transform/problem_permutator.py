@@ -101,12 +101,18 @@ class ProblemPermutator:
         # Then, reorder the rows (constraints)
         A_perm = A_tmp[constr_permutation, :]
         A_perm_csr = A_perm.tocsr()
+        indptr = A_perm_csr.indptr
+        indices = A_perm_csr.indices
+        data = A_perm_csr.data
 
         for new_row_idx in range(num_constrs):
             old_constr = constrs[constr_permutation[new_row_idx]]
             expr = gp.LinExpr()
-            row = A_perm_csr.getrow(new_row_idx)
-            for col_idx, coeff in zip(row.indices, row.data):
+            start = indptr[new_row_idx]
+            end = indptr[new_row_idx+1]
+            for idx in range(start, end):
+                col_idx = indices[idx]
+                coeff = data[idx]
                 expr.add(new_vars[col_idx], float(coeff))
             rhs_value = old_constr.RHS
             if old_constr.Sense == GRB.LESS_EQUAL:
@@ -115,7 +121,8 @@ class ProblemPermutator:
                 new_model.addConstr(expr >= rhs_value)
             else:  # GRB.EQUAL
                 new_model.addConstr(expr == rhs_value)
-        new_model.ModelSense = model.ModelSense
+
+                new_model.ModelSense = model.ModelSense
         new_model.update()
         return new_model
 
@@ -151,13 +158,41 @@ class ProblemPermutator:
         if len(perm2) != n:
             raise ValueError("Permutations must be the same length.")
 
+        # Map elements of perm2 to their positions
         pos_in_perm2 = [0] * n
         for i, val in enumerate(perm2):
             pos_in_perm2[val] = i
 
-        distance = 0
-        for i in range(n):
-            for j in range(i+1, n):
-                if pos_in_perm2[perm1[i]] > pos_in_perm2[perm1[j]]:
-                    distance += 1
-        return distance
+        # Transform perm1 into the positions from perm2
+        transformed = [pos_in_perm2[val] for val in perm1]
+
+        # Use a merge sort based inversion count
+        _, inv_count = self._count_inversions(transformed)
+        return inv_count
+
+    def _count_inversions(self, arr):
+        # Base case: a single element has zero inversions
+        if len(arr) <= 1:
+            return arr, 0
+        mid = len(arr) // 2
+        left, inv_left = self._count_inversions(arr[:mid])
+        right, inv_right = self._count_inversions(arr[mid:])
+        merged, inv_split = self._merge_count(left, right)
+        return merged, inv_left + inv_right + inv_split
+
+    def _merge_count(self, left, right):
+        merged = []
+        inv_count = 0
+        i = j = 0
+        while i < len(left) and j < len(right):
+            if left[i] <= right[j]:
+                merged.append(left[i])
+                i += 1
+            else:
+                merged.append(right[j])
+                inv_count += len(left) - i  # Count inversions: all remaining left items are greater
+                j += 1
+        # Append remaining elements (no inversions added)
+        merged.extend(left[i:])
+        merged.extend(right[j:])
+        return merged, inv_count

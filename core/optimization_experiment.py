@@ -36,7 +36,7 @@ class OptimizationExperiment:
     
     def run_experiment(self, num_iterations):
             """Run multiple iterations with detailed logging and solving functionality"""
-            ProblemPrinter.log_model(self.original_model, self.logger, level="DEBUG")
+            #ProblemPrinterlog_model(self.original_model, self.logger, level="DEBUG")
             results = []
 
             # Solve the original problem once
@@ -44,9 +44,10 @@ class OptimizationExperiment:
             original_result = self.solve_problem(self.original_model)
 
             # Generate the canonical form of the original model once
-            self.logger.debug("Generating canonical form for the original model...")
+            self.logger.lazy_debug("Generating canonical form for the original model...")
+  
             original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
-            ProblemPrinter.log_model(original_canonical, self.logger, level="DEBUG")
+            #ProblemPrinterlog_model(original_canonical, self.logger, level="DEBUG")
 
             # Solve the Canonical from original once
             self.logger.info("Solving Canonical from Original Problem")
@@ -78,21 +79,21 @@ class OptimizationExperiment:
     def run_single_iteration(self, original_result, canonical_from_original_result, 
                              original_canonical, original_canonical_var_order, original_canonical_constr_order):
         try:
-            self.logger.debug("Starting new iteration...")
+            self.logger.lazy_debug("Starting new iteration...")
 
             # === 1. Create the permuted problem (unscaled) ===
             self.logger.info("Creating Permuted Problem")
             permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem()
-            ProblemPrinter.log_model(permuted_model, self.logger, level="DEBUG")
+            #ProblemPrinterlog_model(permuted_model, self.logger, level="DEBUG")
 
             # Compute permutation distance BEFORE canonicalization (using unscaled permuted model)
             self.logger.info("Computing Permutation Distance before Canonicalization...")
             original_var_order = list(range(self.original_model.NumVars))
             original_constr_order = list(range(self.original_model.NumConstrs))
-            self.logger.debug(f"Original Constraint Order: {original_constr_order}")
-            self.logger.debug(f"Permuted Constraint Order: {constr_permutation}")
-            self.logger.debug(f"Original Variable Order: {original_var_order}")
-            self.logger.debug(f"Permuted Variable Order: {var_permutation}")
+            self.logger.lazy_debug(f"Original Constraint Order: {original_constr_order}")
+            self.logger.lazy_debug(f"Permuted Constraint Order: {constr_permutation}")
+            self.logger.lazy_debug(f"Original Variable Order: {original_var_order}")
+            self.logger.lazy_debug(f"Permuted Variable Order: {var_permutation}")
 
             permuted_distance = self.permutator.permutation_distance(
                 original_constr_order, original_var_order,
@@ -130,7 +131,7 @@ class OptimizationExperiment:
                 # Assuming 'scaler' is an instance of ProblemScaler:
                 scaled_model, used_row_scales, used_col_scales, D_row, D_col = scaler.create_scaled_problem_with_scales(row_scales, col_scales)
                 """
-                ProblemPrinter.log_model(scaled_model, self.logger, level="DEBUG")
+                #ProblemPrinterlog_model(scaled_model, self.logger, level="DEBUG")
                 intermediate_model = scaled_model
             else:
                 self.logger.info("Scaling is disabled. Using unscaled permuted model.")
@@ -143,13 +144,13 @@ class OptimizationExperiment:
                 self.logger.info("Normalization is enabled. Normalizing the problem.")
                 normalizer = ProblemNormalizer()
                 normalized_model = normalizer.normalize_model(intermediate_model)
-                ProblemPrinter.log_model(normalized_model, self.logger, level="DEBUG")
+                #ProblemPrinterlog_model(normalized_model, self.logger, level="DEBUG")
             else:
                 self.logger.info("Normalization is disabled. Using the intermediate model as is.")
                 normalized_model = intermediate_model
 
             # === 4. Generate canonical form from the final model ===
-            self.logger.debug("Generating canonical form for the final model...")
+            self.logger.lazy_debug("Generating canonical form for the final model...")
             # Note: You may want to pass a Normalizer() instance to CanonicalFormGenerator
             # if canonicalization itself makes use of normalization.
             canon_gen = CanonicalFormGenerator(self.gp_env, normalized_model, self.ordering_rule)
@@ -162,10 +163,10 @@ class OptimizationExperiment:
             final_constr_order = constr_permutation[permuted_canonical_constr_order]
 
             self.logger.info("Computing Permutation Distance after Canonicalization...")
-            self.logger.debug(f"Original Canonical Constraint Order: {original_canonical_constr_order}")
-            self.logger.debug(f"Permuted Canonical Constraint Order: {final_constr_order}")
-            self.logger.debug(f"Original Canonical Variable Order: {original_canonical_var_order}")
-            self.logger.debug(f"Permuted Canonical Variable Order: {final_var_order}")
+            self.logger.lazy_debug(f"Original Canonical Constraint Order: {original_canonical_constr_order}")
+            self.logger.lazy_debug(f"Permuted Canonical Constraint Order: {final_constr_order}")
+            self.logger.lazy_debug(f"Original Canonical Variable Order: {original_canonical_var_order}")
+            self.logger.lazy_debug(f"Permuted Canonical Variable Order: {final_var_order}")
 
             canonical_distance = self.permutator.permutation_distance(
                 original_canonical_constr_order, original_canonical_var_order,
@@ -182,7 +183,7 @@ class OptimizationExperiment:
             ordered_permuted_model = self.permutator.apply_permutation(permuted_model, permuted_canonical_var_order, permuted_canonical_constr_order)
             self.logger.info("Solving Reordering Form from Permuted Model")
             final_ordered_result = self.solve_problem(ordered_permuted_model)
-            ProblemPrinter.log_model(ordered_permuted_model, self.logger, level="DEBUG")
+            #ProblemPrinterlog_model(ordered_permuted_model, self.logger, level="DEBUG")
 
             return permuted_canonical, permuted_result, final_ordered_result, permuted_distance, canonical_distance
 

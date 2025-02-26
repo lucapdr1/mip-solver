@@ -1,5 +1,7 @@
 import gurobipy as gp
 from gurobipy import GRB
+import logging
+from utils.config import LOG_LEVEL
 
 class ProblemPrinter:
     @staticmethod
@@ -47,7 +49,7 @@ class ProblemPrinter:
         return "\n".join(lines)
 
     @staticmethod
-    def log_model(model, logger, level="INFO"):
+    def log_model(model, logger, level="DEBUG"):
         """
         Logs the Gurobi model using the provided logger.
         
@@ -56,6 +58,7 @@ class ProblemPrinter:
             logger (logging.Logger): Logger instance.
             level (str): Logging level (e.g., "DEBUG", "INFO").
         """
-        model_str = ProblemPrinter.format_model(model)
-        log_method = getattr(logger, level.lower())  # Default to logger.info if level is invalid
-        log_method(model_str)
+        if LOG_LEVEL == logging.DEBUG:
+            model_str = ProblemPrinter.format_model(model)
+            log_method = getattr(logger, level.lower())  # Default to logger.info if level is invalid
+            log_method(model_str)
