@@ -85,7 +85,7 @@ def create_recursive_hierarchical_ordering(json_file=None):
 
     matrix_intra_rules = [
         #TODO: change when it is applied
-        LadderIntraRule(),
+        LadderIntraRule(0.3),
         #ColumnsCoefficientRule(1),
         #ObjectiveCoefficientRule(100),
         #VariableOccurrenceRule(1),

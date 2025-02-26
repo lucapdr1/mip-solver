@@ -254,9 +254,13 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         return partition_map
 
     def _apply_intra_rules_matrix(self, global_var_indices, global_constr_indices,
-                                vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub, intra_rules):
+                              vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub, intra_rules):
         """
-        Applies intra rules on a sub-block that has already been extracted.
+        Applies intra rules on a sub-block that has already been extracted, using a hierarchical composition
+        of intra rules similar to HierarchicalRuleComposition. For each variable and constraint in the sub-block,
+        it computes a combined score as a tuple (by concatenating the scores from each intra rule).
+        The local indices are then sorted lexicographically by these score tuples, and the resulting ordering is
+        mapped back to the corresponding global indices.
 
         Parameters:
         - global_var_indices, global_constr_indices: Global indices corresponding to the sub-block.
@@ -266,19 +270,23 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         Returns:
         ordered_vars, ordered_constr -- the final global ordering of indices.
         """
+        # Create local indices for the sub-block.
+        num_vars = len(vars_sub)
+        num_constr = len(constr_sub)
+        local_var_indices = np.arange(num_vars)
+        local_constr_indices = np.arange(num_constr)
+
+        # Record granularity data.
+        block_size = num_vars * num_constr
+        self.granularity_data.append(block_size)
+        logger.lazy_debug(f"Leaf block size: {block_size} (local vars: {num_vars}, local constrs: {num_constr})")
+
+
         # If no intra rules are provided, return identity ordering.
         if not intra_rules:
             logger.lazy_debug("No intra rules provided; returning identity ordering for this block.")
             return global_var_indices.tolist(), global_constr_indices.tolist()
 
-        # Create local indices for the sub-block.
-        local_var_indices = np.arange(len(vars_sub))
-        local_constr_indices = np.arange(len(constr_sub))
-        
-        block_size = len(local_var_indices) * len(local_constr_indices)
-        self.granularity_data.append(block_size)
-        logger.lazy_debug(f"Leaf block size: {block_size} (local vars: {len(local_var_indices)}, local constrs: {len(local_constr_indices)})")
-        
         # --- Process variable scores on the local sub-block ---
         var_scores = []
         for idx in local_var_indices:
@@ -299,7 +307,6 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                 else:
                     flat_scores.append(score)
             var_scores.append((idx, tuple(flat_scores)))
-        # If no variable scores were computed, return identity ordering.
         if len(var_scores) == 0:
             ordered_vars = global_var_indices.tolist()
         else:
@@ -315,7 +322,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                 ordered_local_vars = local_var_indices[order_vars_local]
             # Map local variable ordering back to global indices.
             ordered_vars = global_var_indices[ordered_local_vars]
-        
+
         # --- Process constraint scores on the local sub-block ---
         constr_scores = []
         for idx in local_constr_indices:
@@ -349,7 +356,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                 ordered_local_constr = local_constr_indices[order_constr_local]
             # Map local constraint ordering back to global indices.
             ordered_constr = global_constr_indices[ordered_local_constr]
-        
+
         logger.lazy_debug("Final intra ordering: global vars: %s, global constr: %s", ordered_vars, ordered_constr)
         return ordered_vars, ordered_constr
 
