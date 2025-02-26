@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Usage: ./submit_jobs.sh <input_directory> <num_permutations>
+# Usage example sh ./runBatchOfJobs.sh ./batch experiments2/
 
 INPUT_DIR="$1"
-NUM_PERMUTATIONS="${2:5}"  # Default to empty if not provided
+OUTPUT_DIR="$2"
+NUM_PERMUTATIONS="${3:5}"  # Default to 5 if not provided
 
 # Verify input directory exists
 if [ ! -d "$INPUT_DIR" ]; then
@@ -44,6 +45,13 @@ for file in "$INPUT_DIR"/*.mps; do
         {
           \"name\": \"INPUT_PROBLEM\",
           \"value\": \"$FILENAME\"
+        },
+         "
+
+  CMD+="
+        {
+          \"name\": \"OUTPUT_DIR\",
+          \"value\": \"$OUTPUT_DIR\"
         }
       ]
     }'"
