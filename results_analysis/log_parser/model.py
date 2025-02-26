@@ -39,6 +39,10 @@ class AggregatedMetrics:
     std_perm_distance_before: Optional[float] = None
     std_perm_distance_after: Optional[float] = None
 
+    std_perm_distance_reduction_pct: Optional[float] = None
+    std_solve_time_reduction_pct: Optional[float] = None
+    std_work_units_reduction_pct: Optional[float] = None
+
     models_equivalent_pct: Optional[float] = None
     variable_counts_match_pct: Optional[float] = None
     constraint_counts_match_pct: Optional[float] = None

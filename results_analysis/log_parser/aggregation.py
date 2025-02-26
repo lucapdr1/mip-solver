@@ -46,6 +46,32 @@ def compute_aggregated_metrics(iterations: List[IterationMetrics]) -> Aggregated
             variable_counts_match = [it.variable_counts_match for it in iterations]
             constraint_counts_match = [it.constraint_counts_match for it in iterations]
 
+            # Compute percentage reduction in std deviation for permutation distance
+            agg.std_perm_distance_reduction_pct = round((
+                (agg.std_perm_distance_before - agg.std_perm_distance_after) /
+                agg.std_perm_distance_before * 100
+            ),2)
+
+            # Compute percentage reduction in std deviation for solve times,
+            # checking to avoid division by zero if the solver is disabled
+            if agg.std_all_permutation_solve_time and agg.std_all_permutation_solve_time != 0:
+                agg.std_solve_time_reduction_pct = round((
+                    (agg.std_all_permutation_solve_time - agg.std_all_canonical_solve_time) /
+                    agg.std_all_permutation_solve_time * 100
+                ),2)
+            else:
+                agg.std_solve_time_reduction_pct = None
+
+            # Compute percentage reduction in std deviation for work units,
+            # similarly checking to avoid division by zero if necessary
+            if agg.std_all_permutation_work_units and agg.std_all_permutation_work_units != 0:
+                agg.std_work_units_reduction_pct = round((
+                    (agg.std_all_permutation_work_units - agg.std_all_canonical_work_units) /
+                    agg.std_all_permutation_work_units * 100
+                ),2)
+            else:
+                agg.std_work_units_reduction_pct = None
+
             agg.models_equivalent_pct = np.mean(models_equivalent) * 100
             agg.variable_counts_match_pct = np.mean(variable_counts_match) * 100
             agg.constraint_counts_match_pct = np.mean(constraint_counts_match) * 100

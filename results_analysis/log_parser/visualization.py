@@ -7,37 +7,50 @@ mpl.rcParams['text.usetex'] = False
 
 def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     """
-    Creates a single image with three subplots (one for each metric)
-    where each subplot is a grouped bar chart comparing paired metrics
-    for each instance. A logarithmic y-scale is applied for better visualization.
-    Each subplot displays its own x-axis labels.
+    Creates a single image with six subplots:
+      - Subplots 1-3: Grouped bar charts for the variability metrics:
+           1. Permutation Distance Variability (std before vs. after canonicalization)
+           2. Solve Time Variability (permutation vs. canonical)
+           3. Work Units Variability (permutation vs. canonical)
+         (y-axis uses a logarithmic scale for these metrics)
+      - Subplots 4-6: Single bar charts for the reduction percentage metrics:
+           4. Permutation Distance Reduction (%)
+           5. Solve Time Reduction (%)
+           6. Work Units Reduction (%)
+         (y-axis is linear since reductions may be negative or positive)
     
-    For each subplot, the right bar (canonical) is colored conditionally:
+    For the grouped bar charts, the canonical bar is colored conditionally:
       - Green if the permutation value is higher than the canonical value (improvement)
       - Red if lower
       - Gray if equal.
     
-    The function also computes the percentage of green bars (improvements)
-    and annotates that percentage in each subplot.
+    In subplots 4-6, a horizontal dashed line is drawn at the average reduction.
+    
+    For each subplot, the function computes the percentage of green bars and annotates that percentage.
     
     Parameters:
-        df (pd.DataFrame): DataFrame with aggregated metrics.
+        df (pd.DataFrame): DataFrame with aggregated metrics. Expected columns include:
+            'std_perm_distance_before', 'std_perm_distance_after',
+            'std_all_permutation_solve_time', 'std_all_canonical_solve_time',
+            'std_all_permutation_work_units', 'std_all_canonical_work_units',
+            'std_perm_distance_reduction_pct', 'std_solve_time_reduction_pct',
+            'std_work_units_reduction_pct'
+            plus an 'instance' or 'file_name' column for labeling.
         output_file (str): Path to save the resulting image.
     """
     # Use the "instance" column if available; otherwise use "file_name"
     labels = df['instance'] if 'instance' in df.columns else df['file_name']
-    
     num_instances = len(labels)
     x = np.arange(num_instances)  # label locations
-    width = 0.35  # width of the bars
+    width = 0.35  # width of the grouped bars
+    bar_width = 0.6  # width for single bar charts
 
-    # Create figure with three subplots (one row per metric), without sharing x-axis.
-    fig, axs = plt.subplots(3, 1, figsize=(12, 18), sharex=False)
+    # Create figure with six subplots (vertical layout)
+    fig, axs = plt.subplots(6, 1, figsize=(12, 36), sharex=False)
 
     # --- Subplot 1: Permutation Distance Variability (Sample STD) ---
     left_values = df['std_perm_distance_before'].abs()
     right_values = df['std_perm_distance_after'].abs()
-    # Compute colors for the canonical bars
     right_colors = [
         'green' if l > r else 'red' if l < r else 'gray'
         for l, r in zip(left_values, right_values)
@@ -47,10 +60,9 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[0].set_title('Permutation Distance Variability (Sample STD)')
     axs[0].set_ylabel('Standard Deviation')
     axs[0].legend()
-    axs[0].set_yscale("log")  # log scale on y-axis
+    axs[0].set_yscale("log")
     axs[0].set_xticks(x)
     axs[0].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
-    # Compute percentage of green bars and annotate
     num_green = sum(1 for color in right_colors if color == 'green')
     percentage_green = (num_green / len(right_colors)) * 100
     axs[0].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[0].transAxes,
@@ -98,6 +110,72 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     axs[2].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[2].transAxes,
                 horizontalalignment='right', verticalalignment='top',
                 bbox=dict(facecolor='white', alpha=0.5))
+    
+    # --- Subplot 4: Permutation Distance Reduction (%) ---
+    reduction_values = df['std_perm_distance_reduction_pct']
+    numeric_reduction_values = reduction_values.apply(lambda x: x if x is not None else 0)
+    reduction_colors = [
+        'green' if (val is not None and val > 0) else 
+        'red' if (val is not None and val < 0) else 'gray'
+        for val in reduction_values
+    ]
+    axs[3].bar(x, numeric_reduction_values, bar_width, color=reduction_colors)
+    avg_perm_dist_reduction = numeric_reduction_values.mean()
+    axs[3].axhline(avg_perm_dist_reduction, color='black', linestyle='--', label=f'Avg: {avg_perm_dist_reduction:.1f}%')
+    axs[3].set_title('Permutation Distance Reduction (%)')
+    axs[3].set_ylabel('Reduction Percentage (%)')
+    axs[3].set_xticks(x)
+    axs[3].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
+    num_green = sum(1 for val in reduction_values if val is not None and val > 0)
+    percentage_green = (num_green / len(reduction_values)) * 100
+    axs[3].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[3].transAxes,
+                horizontalalignment='right', verticalalignment='top',
+                bbox=dict(facecolor='white', alpha=0.5))
+    axs[3].legend()
+    
+    # --- Subplot 5: Solve Time Reduction (%) ---
+    reduction_values = df['std_solve_time_reduction_pct']
+    numeric_reduction_values = reduction_values.apply(lambda x: x if x is not None else 0)
+    reduction_colors = [
+        'green' if (val is not None and val > 0) else 
+        'red' if (val is not None and val < 0) else 'gray'
+        for val in reduction_values
+    ]
+    axs[4].bar(x, numeric_reduction_values, bar_width, color=reduction_colors)
+    avg_solve_time_reduction = numeric_reduction_values.mean()
+    axs[4].axhline(avg_solve_time_reduction, color='black', linestyle='--', label=f'Avg: {avg_solve_time_reduction:.1f}%')
+    axs[4].set_title('Solve Time Reduction (%)')
+    axs[4].set_ylabel('Reduction Percentage (%)')
+    axs[4].set_xticks(x)
+    axs[4].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
+    num_green = sum(1 for val in reduction_values if val is not None and val > 0)
+    percentage_green = (num_green / len(reduction_values)) * 100
+    axs[4].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[4].transAxes,
+                horizontalalignment='right', verticalalignment='top',
+                bbox=dict(facecolor='white', alpha=0.5))
+    axs[4].legend()
+    
+    # --- Subplot 6: Work Units Reduction (%) ---
+    reduction_values = df['std_work_units_reduction_pct']
+    numeric_reduction_values = reduction_values.apply(lambda x: x if x is not None else 0)
+    reduction_colors = [
+        'green' if (val is not None and val > 0) else 
+        'red' if (val is not None and val < 0) else 'gray'
+        for val in reduction_values
+    ]
+    axs[5].bar(x, numeric_reduction_values, bar_width, color=reduction_colors)
+    avg_work_units_reduction = numeric_reduction_values.mean()
+    axs[5].axhline(avg_work_units_reduction, color='black', linestyle='--', label=f'Avg: {avg_work_units_reduction:.1f}%')
+    axs[5].set_title('Work Units Reduction (%)')
+    axs[5].set_ylabel('Reduction Percentage (%)')
+    axs[5].set_xticks(x)
+    axs[5].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
+    num_green = sum(1 for val in reduction_values if val is not None and val > 0)
+    percentage_green = (num_green / len(reduction_values)) * 100
+    axs[5].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[5].transAxes,
+                horizontalalignment='right', verticalalignment='top',
+                bbox=dict(facecolor='white', alpha=0.5))
+    axs[5].legend()
     
     plt.tight_layout()
     plt.savefig(output_file)
