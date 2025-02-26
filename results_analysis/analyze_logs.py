@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 from log_parser.model import LogMetrics
 from log_parser.parsing import parse_model_info, parse_iterations, parse_granularity_stats
-from log_parser.aggregation import compute_aggregated_metrics
+from log_parser.aggregation import compute_aggregated_metrics, compute_granularity_metrics
 from log_parser.visualization import plot_aggregated_comparisons, plot_granularity_combined
 
 def parse_log_file(file_path: str) -> LogMetrics:
@@ -16,8 +16,10 @@ def parse_log_file(file_path: str) -> LogMetrics:
     iterations = parse_iterations(content)
     aggregated = compute_aggregated_metrics(iterations)
     granularity_stats = parse_granularity_stats(content)
+    granularity_metrics = compute_granularity_metrics(granularity_stats, model_info)
     
-    return LogMetrics(model_info=model_info, iterations=iterations, aggregated_metrics=aggregated, granularity_stats=granularity_stats)
+    
+    return LogMetrics(model_info=model_info, iterations=iterations, aggregated_metrics=aggregated, granularity_stats=granularity_stats, granularity_metrics=granularity_metrics)
 
 def process_logs_folder(folder_path: str) -> pd.DataFrame:
     logs = []
@@ -32,6 +34,8 @@ def process_logs_folder(folder_path: str) -> pd.DataFrame:
                 # Include granularity stats if available
                 if log_metrics.granularity_stats:
                     log_data.update(log_metrics.granularity_stats.__dict__)
+                if log_metrics.granularity_metrics:
+                    log_data.update(log_metrics.granularity_metrics.__dict__)
                 logs.append(log_data)
             except Exception as e:
                 print(f"Error processing {file_name}: {e}")

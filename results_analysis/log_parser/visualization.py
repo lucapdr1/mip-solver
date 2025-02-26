@@ -153,7 +153,7 @@ def plot_granularity_combined(df: pd.DataFrame, output_file: str = None) -> None
         return
     # Compute percentage = (avg_block_size / (variables * constraints)) * 100
     df = df.copy()
-    df['avg_block_percentage'] = (df['avg_block_size'] / (df['variables'] * df['constraints'])) * 100
+    #df['avg_block_percentage'] = (df['avg_block_size'] / (df['variables'] * df['constraints'])) * 100
     overall_median_percentage = df['avg_block_percentage'].median()
     
     axs[1].bar(x_positions, df['avg_block_percentage'], color='skyblue')

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List
-from log_parser.model import IterationMetrics, AggregatedMetrics
+from log_parser.model import IterationMetrics, AggregatedMetrics, AggregatedGranularityMetrics
 from log_parser.parsing import parse_model_info, parse_iterations
 
 
@@ -52,4 +52,12 @@ def compute_aggregated_metrics(iterations: List[IterationMetrics]) -> Aggregated
     except Exception as e:
         print(f"Error computing aggregated metrics: {e}")
     
+    return agg
+
+def compute_granularity_metrics(granularity_stats, model_info):
+    agg = AggregatedGranularityMetrics()
+    try:
+        agg.avg_block_percentage = granularity_stats.avg_block_size / (model_info.variables * model_info.constraints) * 100
+    except Exception as e:
+        print(f"Error computing aggregated metrics: {e}")
     return agg
