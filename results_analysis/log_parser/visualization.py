@@ -114,6 +114,8 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
     # --- Subplot 4: Permutation Distance Reduction (%) ---
     reduction_values = df['std_perm_distance_reduction_pct']
     numeric_reduction_values = reduction_values.apply(lambda x: x if x is not None else 0)
+    #leave out problems increase std
+    numeric_reduction_values = reduction_values.apply(lambda x: 0 if x < 0 else x)
     reduction_colors = [
         'green' if (val is not None and val > 0) else 
         'red' if (val is not None and val < 0) else 'gray'
