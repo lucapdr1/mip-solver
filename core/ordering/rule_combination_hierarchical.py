@@ -45,7 +45,5 @@ class HierarchicalRuleComposition(OrderingRule):
         for i in range(len(constraints)):
             block_part = tuple(comp[i] for comp in block_components)
             constr_scores[i] = block_part + (intra_scores[i],)
-        
-        print("ok2")
         return constr_scores
 
