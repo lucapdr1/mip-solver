@@ -2,6 +2,7 @@ import numpy as np
 from collections import defaultdict
 from utils.logging_handler import LoggingHandler
 from core.ordering.ordering_rule_interface import OrderingRule
+from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
 
 logger = LoggingHandler().get_logger()
 
@@ -239,8 +240,8 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         # If no effective partition from parent's or child's rules, apply intra rules.
         logger.lazy_debug("Level %d: No effective partition from parent's or child's rules; applying intra rules.", level)
         return self._apply_intra_rules_matrix(var_indices, constr_indices,
-                                            vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
-                                            intra_rules)
+                                                vars_sub, obj_coeffs, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub,
+                                                intra_rules)
 
 
     def _partition_by_rule_matrix(self, rule, var_indices, constr_indices,
@@ -252,66 +253,107 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         logger.lazy_debug("Partition by rule %s: partition_map: %s", rule.__class__.__name__, partition_map)
         return partition_map
 
-    def _apply_intra_rules_matrix(self, var_indices, constr_indices,
-                              vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs, intra_rules):
+    def _apply_intra_rules_matrix(self, global_var_indices, global_constr_indices,
+                                vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub, intra_rules):
         """
-        When no further block partitioning is possible, apply intra rules to order the indices.
-        """
-        # Append the product of current block dimensions
-        block_size = len(var_indices) * len(constr_indices)
-        self.granularity_data.append(block_size)
-        logger.lazy_debug(f"Leaf block size: {block_size} (vars: {len(var_indices)}, constrs: {len(constr_indices)})")
+        Applies intra rules on a sub-block that has already been extracted.
 
-        logger.lazy_debug("Applying intra rules on var_indices: %s, constr_indices: %s", var_indices, constr_indices)
+        Parameters:
+        - global_var_indices, global_constr_indices: Global indices corresponding to the sub-block.
+        - vars_sub, bounds_sub, constr_sub, rhs_sub, etc.: The sub-block arrays.
+        - intra_rules: A list of intra rules to apply.
+
+        Returns:
+        ordered_vars, ordered_constr -- the final global ordering of indices.
+        """
+        # If no intra rules are provided, return identity ordering.
         if not intra_rules:
             logger.lazy_debug("No intra rules provided; returning identity ordering for this block.")
-            return list(var_indices), list(constr_indices)
+            return global_var_indices.tolist(), global_constr_indices.tolist()
 
-        # --- Process variable scores ---
+        # Create local indices for the sub-block.
+        local_var_indices = np.arange(len(vars_sub))
+        local_constr_indices = np.arange(len(constr_sub))
+        
+        block_size = len(local_var_indices) * len(local_constr_indices)
+        self.granularity_data.append(block_size)
+        logger.lazy_debug(f"Leaf block size: {block_size} (local vars: {len(local_var_indices)}, local constrs: {len(local_constr_indices)})")
+        
+        # --- Process variable scores on the local sub-block ---
         var_scores = []
-        for idx in var_indices:
+        for idx in local_var_indices:
             flat_scores = []
             for rule in intra_rules:
-                score = rule.score_matrix_for_variable(idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
-                # If the score is a tuple, flatten it by extending the list; otherwise, append the scalar.
+                if isinstance(rule, LadderIntraRule):
+                    score = rule.score_matrix_for_variable(
+                        idx, vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub,
+                        original_var_count=self.original_var_count, original_constr_count=self.original_constr_count
+                    )
+                else:
+                    score = rule.score_matrix_for_variable(
+                        idx, vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub
+                    )
+                # Flatten the score if it is a tuple.
                 if isinstance(score, tuple):
                     flat_scores.extend(score)
                 else:
                     flat_scores.append(score)
-            normalized_score = tuple(flat_scores)
-            logger.lazy_debug("Variable %s intra scores: %s", idx, normalized_score)
-            var_scores.append((idx, normalized_score))
+            var_scores.append((idx, tuple(flat_scores)))
+        # If no variable scores were computed, return identity ordering.
+        if len(var_scores) == 0:
+            ordered_vars = global_var_indices.tolist()
+        else:
+            # Build a 2D array for lexicographic sorting.
+            score_len = len(var_scores[0][1])
+            score_array = np.empty((len(var_scores), score_len), dtype=float)
+            for i, (l_idx, score_tuple) in enumerate(var_scores):
+                score_array[i, :] = np.array(score_tuple, dtype=float)
+            if score_array.size == 0:
+                ordered_local_vars = local_var_indices
+            else:
+                order_vars_local = np.lexsort(score_array.T)
+                ordered_local_vars = local_var_indices[order_vars_local]
+            # Map local variable ordering back to global indices.
+            ordered_vars = global_var_indices[ordered_local_vars]
         
-        # Extract indices and scores into NumPy arrays.
-        var_indices_array = np.array([idx for idx, score in var_scores])
-        var_score_array = np.array([score for idx, score in var_scores])
-        # Lexsort uses the last key as primary; ensure a lexicographic sort over columns.
-        order_vars = np.lexsort(var_score_array.T)
-        ordered_vars = var_indices_array[order_vars]
-
-        # --- Process constraint scores ---
+        # --- Process constraint scores on the local sub-block ---
         constr_scores = []
-        for i in constr_indices:
+        for idx in local_constr_indices:
             flat_scores = []
             for rule in intra_rules:
-                score = rule.score_matrix_for_constraint(i, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+                if isinstance(rule, LadderIntraRule):
+                    score = rule.score_matrix_for_constraint(
+                        idx, vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub,
+                        original_var_count=self.original_var_count, original_constr_count=self.original_constr_count
+                    )
+                else:
+                    score = rule.score_matrix_for_constraint(
+                        idx, vars_sub, obj_coeffs, bounds_sub, A, A_csc, A_csr, constr_sub, rhs_sub
+                    )
                 if isinstance(score, tuple):
                     flat_scores.extend(score)
                 else:
                     flat_scores.append(score)
-            normalized_score = tuple(flat_scores)
-            logger.lazy_debug("Constraint %s intra scores: %s", i, normalized_score)
-            constr_scores.append((i, normalized_score))
+            constr_scores.append((idx, tuple(flat_scores)))
+        if len(constr_scores) == 0:
+            ordered_constr = global_constr_indices.tolist()
+        else:
+            score_len = len(constr_scores[0][1])
+            constr_score_array = np.empty((len(constr_scores), score_len), dtype=float)
+            for i, (l_idx, score_tuple) in enumerate(constr_scores):
+                constr_score_array[i, :] = np.array(score_tuple, dtype=float)
+            if constr_score_array.size == 0:
+                ordered_local_constr = local_constr_indices
+            else:
+                order_constr_local = np.lexsort(constr_score_array.T)
+                ordered_local_constr = local_constr_indices[order_constr_local]
+            # Map local constraint ordering back to global indices.
+            ordered_constr = global_constr_indices[ordered_local_constr]
         
-        constr_indices_array = np.array([i for i, score in constr_scores])
-        constr_score_array = np.array([score for i, score in constr_scores])
-        order_constr = np.lexsort(constr_score_array.T)
-        ordered_constr = constr_indices_array[order_constr]
-
-        logger.lazy_debug("Intra ordering: vars: %s, constr: %s", ordered_vars, ordered_constr)
+        logger.lazy_debug("Final intra ordering: global vars: %s, global constr: %s", ordered_vars, ordered_constr)
         return ordered_vars, ordered_constr
 
-    
+
     def extract_block_data(self, vars, bounds, constraints, rhs, A_csr, var_indices, constr_indices):
         """
         Prepares block data by converting indices and slicing arrays and submatrix.
