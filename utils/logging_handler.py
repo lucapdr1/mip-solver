@@ -38,7 +38,7 @@ class LoggingHandler:
     def _setup_production_features(self):
         """Production setup that runs only once"""
         atexit.register(self._s3_upload_wrapper)
-        self.logger.lazy_debug("Initialized S3 logging capabilities")
+        self.logger.debug("Initialized S3 logging capabilities")
 
     # Keep other methods unchanged...
 
