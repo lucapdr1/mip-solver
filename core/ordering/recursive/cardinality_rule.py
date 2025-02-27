@@ -214,3 +214,82 @@ class ObjectiveNonZeroCountRule(OrderingRule):
                 label += 1
                     
         return partition_map
+    
+class RHSNonZeroCountRule(OrderingRule):
+    """
+    Assigns scores based on the presence of nonzero values in the right-hand side (rhs) vector.
+    This rule is scale-invariant because it only considers whether a rhs value is zero or nonzero.
+    
+    - score_constraints(...) returns 1 (scaled) if the constraint's rhs is nonzero, and 0 otherwise.
+    - score_variables(...) returns 0 for every variable since rhs does not affect them.
+    """
+    
+    def __init__(self, scaling=1, tol=1e-12):
+        self.scaling = scaling  
+        self.tol = tol
+
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        # The rhs does not affect variables; assign a score of 0 to each.
+        return np.zeros(len(vars)) * self.scaling
+
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        For each constraint, assign a score of 1 (times the scaling factor) if the absolute 
+        rhs value exceeds tol; otherwise, assign 0.
+        """
+        if rhs is None:
+            return np.zeros(len(constraints)) * self.scaling
+        rhs_arr = np.array(rhs)
+        scores = (np.abs(rhs_arr) > self.tol).astype(int)
+        return scores * self.scaling
+
+    # --- Methods for Rectangular Block Ordering ---
+
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Wraps the variable scoring method to return a single score as a tuple,
+        so that it can be used in lexicographic ordering.
+        """
+        return self.score_variables([vars[idx]],
+                                    obj_coeffs[idx:idx+1],
+                                    [bounds[idx]],
+                                    A, A_csc, A_csr, constraints, rhs)[0]
+
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Wraps the constraint scoring method to return a single score as a tuple,
+        so that it can be used in lexicographic ordering.
+        """
+        rhs_single = np.array([rhs[idx]]) if rhs is not None else None
+        return self.score_constraints(vars, obj_coeffs, bounds,
+                                      A, A_csc, A_csr, [constraints[idx]], rhs_single)[0]
+
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Partitions the block defined by the indices (var_indices, constr_indices) using the rhs
+        nonzero scores for constraints (and zero scores for variables).
+        
+        Returns a dictionary mapping a label to a tuple of:
+            (list_of_variable_indices, list_of_constraint_indices)
+        """
+        # Compute scores on the sub-block.
+        sub_var_scores = np.array(self.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        sub_constr_scores = np.array(self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        
+        # Group the original variable indices by their computed score.
+        unique_var_scores = np.unique(sub_var_scores)
+        var_partitions = {score: var_indices[sub_var_scores == score] for score in unique_var_scores}
+        
+        # Group the original constraint indices by their computed score.
+        unique_constr_scores = np.unique(sub_constr_scores)
+        constr_partitions = {score: constr_indices[sub_constr_scores == score] for score in unique_constr_scores}
+        
+        # Form the partition map as the Cartesian product of variable and constraint groups.
+        partition_map = {}
+        label = 0
+        for score_v in unique_var_scores:
+            for score_c in unique_constr_scores:
+                partition_map[label] = (var_partitions[score_v], constr_partitions[score_c])
+                label += 1
+                    
+        return partition_map
