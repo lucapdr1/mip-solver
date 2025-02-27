@@ -139,19 +139,22 @@ class ObjectiveNonZeroCountRule(OrderingRule):
         self.tol = tol
 
     def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
-        """
-        For each variable, assign a score of 1 (times the scaling factor) if the absolute
-        objective coefficient exceeds tol; otherwise, assign 0.
-        Optionally, if the variable has an 'is_structural' attribute and it's False, score it as 0.
-        """
-        scores = []
-        for var, coef in zip(vars, obj_coeffs):
-            if hasattr(var, "is_structural") and not var.is_structural:
-                score = 0
-            else:
-                score = 1 if abs(coef) > self.tol else 0
-            scores.append(score)
-        return np.array(scores) * self.scaling
+        # Create an array indicating if a variable is structural.
+        # If a variable doesn't have the attribute, assume it is structural (True).
+        is_structural = np.array([getattr(var, "is_structural", True) for var in vars])
+        
+        # Convert objective coefficients to a NumPy array (if not already)
+        obj_coeffs_arr = np.array(obj_coeffs)
+        
+        # Create a boolean mask where True indicates that the absolute coefficient exceeds tol.
+        nonzero_mask = np.abs(obj_coeffs_arr) > self.tol
+        
+        # Only score those variables that are structural.
+        # nonzero_mask is converted to int (True becomes 1, False becomes 0),
+        # and then we force non-structural variables to 0.
+        scores = np.where(is_structural, nonzero_mask.astype(int), 0)
+        
+        return scores * self.scaling
 
     def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
