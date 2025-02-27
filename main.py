@@ -76,11 +76,12 @@ def create_recursive_hierarchical_ordering(json_file=None):
             #All the other rules
             NonZeroCountRule(),
             SignPatternRule(),
-            ConstraintIntegerCountRule(),
-            ConstraintContinuousCountRule(),
             BothBoundsFiniteCountRule(),
             BothBoundsInfiniteCountRule(),
-            OneBoundFiniteCountRule()
+            OneBoundFiniteCountRule(),
+            #Moved after
+            ConstraintIntegerCountRule(),
+            ConstraintContinuousCountRule(),
         ]
 
     matrix_intra_rules = [
