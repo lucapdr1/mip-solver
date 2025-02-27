@@ -124,3 +124,90 @@ class NonZeroCountRule(OrderingRule):
                 label += 1
                     
         return partition_map
+
+class ObjectiveNonZeroCountRule(OrderingRule):
+    """
+    Assigns scores based on the presence of nonzero coefficients in the objective function.
+    This rule is scale-invariant because it only considers whether an objective coefficient is zero or nonzero.
+    
+    - score_variables(...) returns 1 (scaled) if the variable's objective coefficient is nonzero, and 0 otherwise.
+    - score_constraints(...) returns 0 for every constraint since the objective does not affect constraints.
+    """
+    
+    def __init__(self, scaling=1, tol=1e-12):
+        self.scaling = scaling  
+        self.tol = tol
+
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        For each variable, assign a score of 1 (times the scaling factor) if the absolute
+        objective coefficient exceeds tol; otherwise, assign 0.
+        Optionally, if the variable has an 'is_structural' attribute and it's False, score it as 0.
+        """
+        scores = []
+        for var, coef in zip(vars, obj_coeffs):
+            if hasattr(var, "is_structural") and not var.is_structural:
+                score = 0
+            else:
+                score = 1 if abs(coef) > self.tol else 0
+            scores.append(score)
+        return np.array(scores) * self.scaling
+
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Since the objective function does not contribute to the score of constraints,
+        all constraints receive a score of 0.
+        """
+        num_constraints = len(constraints)
+        return np.zeros(num_constraints) * self.scaling
+
+    # --- Methods for Rectangular Block Ordering ---
+    
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Wraps the variable scoring method to return a single score as a tuple,
+        so that it can be used in lexicographic ordering.
+        """
+        return self.score_variables([vars[idx]],
+                                    obj_coeffs[idx:idx+1],
+                                    [bounds[idx]],
+                                    A, A_csc, A_csr, constraints, rhs)[0]
+
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Wraps the constraint scoring method to return a single score as a tuple,
+        so that it can be used in lexicographic ordering.
+        """
+        rhs_single = np.array([rhs[idx]]) if rhs is not None else None
+        return self.score_constraints(vars, obj_coeffs, bounds,
+                                      A, A_csc, A_csr, [constraints[idx]], rhs_single)[0]
+
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Partitions the block defined by the indices (var_indices, constr_indices) using the objective
+        nonzero scores for variables and (zero) scores for constraints.
+        
+        Returns a dictionary mapping a label to a tuple of:
+            (list_of_variable_indices, list_of_constraint_indices)
+        """
+        # Compute scores on the sub-block.
+        sub_var_scores = np.array(self.score_variables(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        sub_constr_scores = np.array(self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        
+        # Group the original variable indices by their computed score.
+        unique_var_scores = np.unique(sub_var_scores)
+        var_partitions = {score: var_indices[sub_var_scores == score] for score in unique_var_scores}
+        
+        # Group the original constraint indices by their computed score.
+        unique_constr_scores = np.unique(sub_constr_scores)
+        constr_partitions = {score: constr_indices[sub_constr_scores == score] for score in unique_constr_scores}
+        
+        # Form the partition map as the Cartesian product of variable and constraint groups.
+        partition_map = {}
+        label = 0
+        for score_v in unique_var_scores:
+            for score_c in unique_constr_scores:
+                partition_map[label] = (var_partitions[score_v], constr_partitions[score_c])
+                label += 1
+                    
+        return partition_map
