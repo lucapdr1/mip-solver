@@ -1,6 +1,8 @@
 #!/bin/bash
 
 # Usage example sh ./runBatchOfJobs.sh ./batch experiments2/
+# To download experiment result
+# aws s3 cp s3://lucapolimi-experiments/firstBounds/ ./batch_output/frist-bounds --recursive
 
 INPUT_DIR="$1"
 OUTPUT_DIR="$2"
