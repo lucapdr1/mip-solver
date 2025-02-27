@@ -14,7 +14,7 @@ from core.ordering.constraints.constr_composition_rule import ConstraintComposit
 from core.ordering.constraints.rhs_value_rule import RHSValueRule
 from core.ordering.constraints.row_coefficient_rule import RowCoefficientRule
 from core.ordering.constraints.constraint_range_rule import ConstraintRangeRule
-from core.ordering.recursive.cardinality_rule import NonZeroCountRule, ObjectiveNonZeroCountRule
+from core.ordering.recursive.cardinality_rule import NonZeroCountRule, ObjectiveNonZeroCountRule, RHSNonZeroCountRule
 from core.ordering.recursive.sign_pattern_rule import SignPatternRule
 from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCountRule, ConstraintContinuousCountRule, BothBoundsFiniteCountRule, BothBoundsInfiniteCountRule, OneBoundFiniteCountRule
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
@@ -76,6 +76,7 @@ def create_recursive_hierarchical_ordering(json_file=None):
             #All the other rules
             NonZeroCountRule(),
             ObjectiveNonZeroCountRule(),
+            RHSNonZeroCountRule(),
             SignPatternRule(),
             ConstraintIntegerCountRule(),
             ConstraintContinuousCountRule(),
