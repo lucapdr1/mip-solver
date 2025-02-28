@@ -4,7 +4,7 @@ from core.ordering.constraints.constr_composition_rule import ConstraintComposit
 from core.ordering.constraints.constraint_range_rule import ConstraintRangeRule
 from core.ordering.constraints.rhs_value_rule import RHSValueRule
 from core.ordering.constraints.row_coefficient_rule import RowCoefficientRule
-from core.ordering.recursive.cardinality_rule import NonZeroCountRule
+from core.ordering.recursive.cardinality_rule import NonZeroCountRule, ObjectiveNonZeroCountRule, RHSNonZeroCountRule
 from core.ordering.recursive.scale_Invariant_rules import BothBoundsFiniteCountRule, BothBoundsInfiniteCountRule, ConstraintContinuousCountRule, ConstraintIntegerCountRule, OneBoundFiniteCountRule
 from core.ordering.recursive.sign_pattern_rule import SignPatternRule
 from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule
@@ -21,6 +21,8 @@ RULE_MAP = {
     "AllCoefficientsOneRule": AllCoefficientsOneRule(),
     "AllBinaryVariablesRule": AllBinaryVariablesRule(),
     "NonZeroCountRule": NonZeroCountRule(),
+    "ObjectiveNonZeroCountRule" : ObjectiveNonZeroCountRule(),
+    "RHSNonZeroCountRule" : RHSNonZeroCountRule(),
     "SignPatternRule": SignPatternRule(),
     "ConstraintIntegerCountRule": ConstraintIntegerCountRule(),
     "ConstraintContinuousCountRule": ConstraintContinuousCountRule(),
