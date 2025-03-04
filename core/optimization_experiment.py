@@ -48,11 +48,11 @@ class OptimizationExperiment:
   
             original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
             #ProblemPrinterlog_model(original_canonical, self.logger, level="DEBUG")
-
-            # Solve the Canonical from original once
+            
+            ordered_canonical_model = self.permutator.apply_permutation(self.original_model, original_canonical_var_order, original_canonical_constr_order)
             self.logger.info("Solving Canonical from Original Problem")
-            canonical_from_original_result  = self.solve_problem(original_canonical)
-
+            canonical_from_original_result = self.solve_problem(ordered_canonical_model)
+            
             for i in range(num_iterations):
                 self.logger.info(f"Running iteration {i+1}/{num_iterations}")
                 try:
@@ -259,6 +259,7 @@ class OptimizationExperiment:
         """
         Solve the given optimization problem.
         """
+        print(model)
         if DISABLE_SOLVING:
             self.logger.info("Solving is disabled via environment variable. Returning placeholder result.")
             return {
