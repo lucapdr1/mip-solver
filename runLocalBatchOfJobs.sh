@@ -3,7 +3,7 @@
 # Set default values if arguments are not provided
 DEFAULT_INPUT_DIR="./input"
 DEFAULT_OUTPUT_DIR="./output"
-DEFAULT_NUMBER_OF_PERMUTATIONS=5
+DEFAULT_NUMBER_OF_PERMUTATIONS=4
 
 # Use provided arguments or default values
 INPUT_DIR="${1:-$DEFAULT_INPUT_DIR}/"
