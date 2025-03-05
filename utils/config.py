@@ -30,7 +30,7 @@ LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'
 LOG_MODEL_COMPARISON = os.getenv('LOG_MODEL_COMPARISON', 'False').lower() == 'true'
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'True').lower() == 'true'
-DISABLE_SOLVING = os.getenv('DISABLE_SOLVING', 'True').lower() == 'true'
+DISABLE_SOLVING = os.getenv('DISABLE_SOLVING', 'False').lower() == 'true'
 
 #AWS
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'lucapolimi-experiments')
