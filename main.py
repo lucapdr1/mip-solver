@@ -75,8 +75,8 @@ def create_recursive_hierarchical_ordering(json_file=None):
             AllBinaryVariablesRule(),
             #All the other rules
             NonZeroCountRule(),
-            ObjectiveNonZeroCountRule(),
-            RHSNonZeroCountRule(),
+            #ObjectiveNonZeroCountRule(),
+            #RHSNonZeroCountRule(),
             SignPatternRule(),
             ConstraintIntegerCountRule(),
             ConstraintContinuousCountRule(),

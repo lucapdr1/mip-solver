@@ -2,6 +2,89 @@
 
 `mip-solver` is a Python-based framework designed to facilitate the experimentation and analysis of Mixed Integer Programming (MIP) problems. The framework supports loading MPS files, permuting problem variables, and comparing the performance of solvers on original and permuted problems.
 
+
+
+## Pull the Repository
+
+Clone the repository to your local machine:
+
+```bash
+git clone https://github.com/lucapdr1/mip-solver
+cd mip-solver
+```
+
+## Installation
+
+### Option 1: Using Conda
+
+1. **Create the Conda environment**
+
+   Use the provided `environment-py311.yml` file to create a new Conda environment:
+
+   ```bash
+   conda env create -f environment-py311.yml
+   ```
+
+2. **Activate the environment**
+
+   Activate the new environment (here named `mip311`):
+
+   ```bash
+   conda activate mip311
+   ```
+
+### Option 2: Using Pip (Python venv)
+
+1. **Create the virtual environment**
+
+   Create a new virtual environment called `mip311`:
+
+   ```bash
+   python -m venv mip311
+   ```
+
+2. **Activate the environment**
+
+   - On macOS/Linux:
+
+     ```bash
+     source mip311/bin/activate
+     ```
+
+   - On Windows:
+
+     ```bash
+     mip311\Scripts\activate
+     ```
+
+3. **Install dependencies**
+
+   Install the required Python packages:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+## Usage
+
+1. **Activate the environment**
+
+   Ensure your environment is activated (either via Conda or the virtual environment).
+
+2. **Run the batch jobs**
+
+   In the root directory of the project, run the following command:
+
+   ```bash
+   sh ./runLocalBatchOfJobs.sh ./mip_lib/ ./batch_output/
+   ```
+
+   - `./mip_lib/` is the folder containing the miplib problems.
+   - `./batch_output/` is the folder where the results will be saved.
+   - **Note:** Remember to include the closing `/` at the end of each folder name.
+
+--------------
+
 ## Features
 
 - **Load and Solve MIP Problems**: Read problems from MPS files and solve them using the Gurobi solver.

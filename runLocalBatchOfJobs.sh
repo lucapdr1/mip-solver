@@ -1,13 +1,14 @@
 #!/bin/bash
+#usage: sh ./runLocalBatchOfJobs.sh ./mip_lib/ ./batch_output/
 
 # Set default values if arguments are not provided
-DEFAULT_INPUT_DIR="./input"
-DEFAULT_OUTPUT_DIR="./output"
+DEFAULT_INPUT_DIR="./input/"
+DEFAULT_OUTPUT_DIR="./output/"
 DEFAULT_NUMBER_OF_PERMUTATIONS=4
 
 # Use provided arguments or default values
-INPUT_DIR="${1:-$DEFAULT_INPUT_DIR}/"
-OUTPUT_DIR="${2:-$DEFAULT_OUTPUT_DIR}/"
+INPUT_DIR="${1:-$DEFAULT_INPUT_DIR}"
+OUTPUT_DIR="${2:-$DEFAULT_OUTPUT_DIR}"
 
 # Initialize variables for rules folder and number of permutations.
 RULES_FOLDER=""
