@@ -5,9 +5,7 @@ import time
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
-import boto3
 import tempfile
-from botocore.exceptions import ClientError
 
 from utils.logging_handler import LoggingHandler
 from core.problem_transform.problem_permutator import ProblemPermutator
@@ -229,6 +227,9 @@ class OptimizationExperiment:
         Load the optimization problem from LP/MPS file, either locally or from S3.
         """
         if PRODUCTION:
+            import boto3
+            from botocore.exceptions import ClientError
+
             if not self.file_path:
                 raise ValueError("File path cannot be empty in production mode.")
             key = f"{self.file_path}"
