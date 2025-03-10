@@ -15,7 +15,8 @@ from core.post_processing.performance_evaluator import PerformanceEvaluator
 from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
-from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES
+from utils.plots_handler import save_all_plots
+from utils.config import LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -31,6 +32,10 @@ class OptimizationExperiment:
 
         self.permutator = ProblemPermutator(gp_env, self.original_model)
         self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule)
+
+         # Lists to store figures
+        self.permuted_matrices = []
+        self.canonical_matrices = []
     
     def run_experiment(self, num_iterations):
             """Run multiple iterations with detailed logging and solving functionality"""
@@ -40,6 +45,8 @@ class OptimizationExperiment:
             # Solve the original problem once
             self.logger.info("Solving Original Problem")
             original_result = self.solve_problem(self.original_model)
+            if LOG_MATRIX:
+                self.permuted_matrices.append(self.original_model.getA())
 
             # Generate the canonical form of the original model once
             self.logger.lazy_debug("Generating canonical form for the original model...")
@@ -48,6 +55,9 @@ class OptimizationExperiment:
             #ProblemPrinterlog_model(original_canonical, self.logger, level="DEBUG")
             
             ordered_canonical_model = self.permutator.apply_permutation(self.original_model, original_canonical_var_order, original_canonical_constr_order)
+            if LOG_MATRIX:
+                self.canonical_matrices.append(ordered_canonical_model.getA())
+            
             self.logger.info("Solving Canonical from Original Problem")
             canonical_from_original_result = self.solve_problem(ordered_canonical_model)
             
@@ -71,6 +81,8 @@ class OptimizationExperiment:
             if RECURSIVE_RULES:
                 stats = self.ordering_rule.get_granularity_statistics()
                 IterationLogger().log_granularity_stats(stats)
+            if LOG_MATRIX:
+                save_all_plots(self.permuted_matrices, self.canonical_matrices, self.file_path, "experiment_plots.png")
             return results
 
 
@@ -83,6 +95,8 @@ class OptimizationExperiment:
             self.logger.info("Creating Permuted Problem")
             permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem()
             #ProblemPrinterlog_model(permuted_model, self.logger, level="DEBUG")
+            if LOG_MATRIX:
+                self.permuted_matrices.append(permuted_model.getA())
 
             # Compute permutation distance BEFORE canonicalization (using unscaled permuted model)
             self.logger.info("Computing Permutation Distance before Canonicalization...")
@@ -179,6 +193,9 @@ class OptimizationExperiment:
             # === 4. Apply final canonical ordering to the unscaled permuted model and solve it ===
             self.logger.info("Applying final canonical ordering to permuted model and solving it")
             ordered_permuted_model = self.permutator.apply_permutation(permuted_model, permuted_canonical_var_order, permuted_canonical_constr_order)
+            if LOG_MATRIX:
+                self.canonical_matrices.append(ordered_permuted_model.getA())
+            
             self.logger.info("Solving Reordering Form from Permuted Model")
             final_ordered_result = self.solve_problem(ordered_permuted_model)
             #ProblemPrinterlog_model(ordered_permuted_model, self.logger, level="DEBUG")
