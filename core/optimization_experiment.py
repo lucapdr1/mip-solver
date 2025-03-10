@@ -300,3 +300,4 @@ class OptimizationExperiment:
         except gp.GurobiError as e:
             self.logger.error(f"Gurobi Error: {e}")
             raise
+        
