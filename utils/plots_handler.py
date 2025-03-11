@@ -2,42 +2,41 @@ import io
 import os
 from datetime import datetime
 import matplotlib.pyplot as plt
-import seaborn as sns
 from scipy.sparse import issparse
 from PIL import Image
 import numpy as np
 from utils.config import OUTPUT_DIR
 
-
 def plot_sparse_structure(sparse_matrix, title, cmap='Greys'):
     """
     Visualizes sparse matrices clearly by filling squares.
     Nonzero entries in black, zeros in white.
+    Uses imshow for a crisp rendering, especially for large matrices.
     """
-    fig, ax = plt.subplots(figsize=(10, 8))
-
     # Convert to dense binary matrix (handle both sparse and dense)
     if issparse(sparse_matrix):
         binary_matrix = (sparse_matrix != 0).astype(int).toarray()
     else:
         binary_matrix = (np.array(sparse_matrix) != 0).astype(int)
-
-    sns.heatmap(
-        binary_matrix,
-        cmap=cmap,
-        cbar=False,
-        linewidths=0.05,
-        linecolor='lightgray',
-        ax=ax
-    )
-
+    
+    # Determine matrix dimensions
+    n_rows, n_cols = binary_matrix.shape
+    # Dynamically adjust figure size: use a scaling factor (0.1 inches per cell)
+    # with limits to avoid extremes.
+    fig_width = min(max(n_cols * 0.1, 10), 20)
+    fig_height = min(max(n_rows * 0.1, 8), 16)
+    
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    
+    # Render the matrix using imshow with no interpolation between pixels
+    ax.imshow(binary_matrix, cmap=cmap, interpolation='nearest')
+    
     ax.set_title(title, fontsize=16, fontweight='bold')
     ax.set_xlabel("Columns", fontsize=14)
     ax.set_ylabel("Rows", fontsize=14)
     ax.invert_yaxis()
     plt.tight_layout()
     return fig
-
 
 def fig_to_pil_image(fig):
     """
@@ -57,7 +56,6 @@ def resize_images_to_height(images, target_height):
     for img in images:
         w, h = img.size
         new_width = int(w * target_height / h)
-        # Use Image.Resampling.LANCZOS instead of Image.ANTIALIAS
         resized.append(img.resize((new_width, target_height), Image.Resampling.LANCZOS))
     return resized
 
@@ -92,7 +90,7 @@ def vertically_concatenate(images, bg_color=(255,255,255)):
 
 def save_all_plots(permuted_matrices, canonical_matrices, file_path, filename="experiment_composite_plots.PNG"):
     """
-    Save a composite page into a single PDF file.
+    Save a composite page into a single PNG file.
     
     Top row: All permuted figures (the first element is the original figure) arranged horizontally.
     Bottom row: All canonical figures arranged horizontally.
@@ -100,13 +98,13 @@ def save_all_plots(permuted_matrices, canonical_matrices, file_path, filename="e
     The two rows are then concatenated vertically.
     """
     # Convert permuted figures to PIL images (top row).
-    top_figures =[plot_sparse_structure(matrix, f"Permuted Matrix {i}") 
+    top_figures = [plot_sparse_structure(matrix, f"Permuted Matrix {i}") 
                    for i, matrix in enumerate(permuted_matrices)]
     # Convert canonical figures to PIL images (bottom row).
     bottom_figures = [plot_sparse_structure(matrix, f"Canonical Matrix {i}") 
-                   for i, matrix in enumerate(canonical_matrices)]
+                      for i, matrix in enumerate(canonical_matrices)]
     
-       # Convert figures to PIL images.
+    # Convert figures to PIL images.
     top_imgs = [fig_to_pil_image(fig) for fig in top_figures]
     bottom_imgs = [fig_to_pil_image(fig) for fig in bottom_figures]
     
@@ -144,17 +142,16 @@ def save_all_plots(permuted_matrices, canonical_matrices, file_path, filename="e
     
     # Create a figure to display the composite image.
     fig, ax = plt.subplots(figsize=(16, 12))
-    ax.imshow(np.array(final_composite))
+    ax.imshow(np.array(final_composite), cmap='Greys', interpolation='nearest')
     ax.axis('off')
     fig.tight_layout()
 
     # Generate filename components
-    base_name = os.path.basename(file_path)  
-    base_name = os.path.splitext(base_name)[0]            
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")    
-    filename =  os.path.join(OUTPUT_DIR, f"{base_name}_{timestamp}.png") 
+    base_name = os.path.basename(file_path)
+    base_name = os.path.splitext(base_name)[0]
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = os.path.join(OUTPUT_DIR, f"{base_name}_{timestamp}.png")
     
-    fig.savefig(filename)
+    fig.savefig(filename, dpi=300)
     
     print(f"Composite plot has been saved to {filename}")
-
