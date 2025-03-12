@@ -30,7 +30,11 @@ class ProblemPermutator:
             P[row_idx, col_idx] = 1
             return P 
 
-    def create_permuted_problem(self):
+    def create_permuted_problem(self, 
+                                var_group_size=1, 
+                                constr_group_size=1, 
+                                var_group_percent=None, 
+                                constr_group_percent=None):
         """
         Create a permuted Gurobi model, returning:
           - permuted_model: a new Gurobi model with permuted variables & constraints
@@ -38,12 +42,30 @@ class ProblemPermutator:
           - constr_permutation: the permutation array for rows
           - P_col: the column-permutation matrix
           - P_row: the row-permutation matrix
+
+        The full list of indices is always used, but the permutation is done by grouping:
+         • Fixed-size groups: set var_group_size or constr_group_size to a desired block size (e.g. 2).
+         • Percentage groups: set var_group_percent or constr_group_percent (e.g. 20 for 20% of indices per block);
+           this divides the indices into ceil(100/percentage) blocks.
         """
-        # --- Generate random permutations ---
+        # --- Determine sizes ---
         num_vars = self.original_model.NumVars
         num_constrs = self.original_model.NumConstrs
-        var_permutation = np.random.permutation(num_vars)
-        constr_permutation = np.random.permutation(num_constrs)
+
+        # --- Generate variable permutation ---
+        if var_group_percent is not None:
+            # Calculate block size so that each block is approximately var_group_percent of the total
+            block_size = int(np.ceil(num_vars * (var_group_percent / 100.0)))
+            var_permutation = self.group_permutation(num_vars, block_size)
+        else:
+            var_permutation = self.group_permutation(num_vars, var_group_size)
+
+        # --- Generate constraint permutation ---
+        if constr_group_percent is not None:
+            block_size = int(np.ceil(num_constrs * (constr_group_percent / 100.0)))
+            constr_permutation = self.group_permutation(num_constrs, block_size)
+        else:
+            constr_permutation = self.group_permutation(num_constrs, constr_group_size)
 
         # --- Apply permutation using the helper method ---
         permuted_model = self.apply_permutation(self.original_model, var_permutation, constr_permutation)
@@ -52,6 +74,21 @@ class ProblemPermutator:
         P_col = self.permutation_matrix(var_permutation, sparse=True)
         P_row = self.permutation_matrix(constr_permutation, sparse=True)
         return permuted_model, var_permutation, constr_permutation, P_col, P_row
+
+    def group_permutation(self, n, group_size):
+        """
+        Partition n indices into contiguous groups of size 'group_size' 
+        (the last group may be smaller) and randomly permute the order of these groups.
+        The resulting permutation is the concatenation of the permuted groups.
+        """
+        indices = np.arange(n)
+        # Partition indices into groups
+        groups = [list(indices[i: i + group_size]) for i in range(0, n, group_size)]
+        # Permute the groups randomly
+        np.random.shuffle(groups)
+        # Flatten the list of groups back into a single permutation list
+        new_perm = [idx for group in groups for idx in group]
+        return np.array(new_perm)
 
     def apply_permutation(self, model, var_permutation, constr_permutation):
         """

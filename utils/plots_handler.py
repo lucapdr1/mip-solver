@@ -34,7 +34,6 @@ def plot_sparse_structure(sparse_matrix, title, cmap='Greys'):
     ax.set_title(title, fontsize=16, fontweight='bold')
     ax.set_xlabel("Columns", fontsize=14)
     ax.set_ylabel("Rows", fontsize=14)
-    ax.invert_yaxis()
     plt.tight_layout()
     return fig
 
