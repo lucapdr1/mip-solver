@@ -22,6 +22,7 @@ INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")
 
+PERMUTE_ORIGINAL = os.getenv('PERMUTE_ORIGINAL', 'True').lower() == 'true'
 NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 3))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
 SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
