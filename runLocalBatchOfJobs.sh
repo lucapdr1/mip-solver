@@ -4,7 +4,7 @@
 # Set default values if arguments are not provided
 DEFAULT_INPUT_DIR="./input/"
 DEFAULT_OUTPUT_DIR="./output/"
-DEFAULT_NUMBER_OF_PERMUTATIONS=4
+DEFAULT_NUMBER_OF_PERMUTATIONS=3
 DEFAULT_PARALLEL_INSTANCES=1
 
 # Use provided arguments or default values
