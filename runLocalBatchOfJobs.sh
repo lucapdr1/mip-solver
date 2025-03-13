@@ -1,29 +1,31 @@
 #!/bin/bash
-#usage: sh ./runLocalBatchOfJobs.sh ./mip_lib/ ./batch_output/
+#usage: bash ./runLocalBatchOfJobs.sh <input_dir> <output_dir> [rules_folder|parallel_instances] [parallel_instances if rules_folder provided]
 
 # Set default values if arguments are not provided
 DEFAULT_INPUT_DIR="./input/"
 DEFAULT_OUTPUT_DIR="./output/"
 DEFAULT_NUMBER_OF_PERMUTATIONS=4
+DEFAULT_PARALLEL_INSTANCES=1
 
 # Use provided arguments or default values
 INPUT_DIR="${1:-$DEFAULT_INPUT_DIR}"
 OUTPUT_DIR="${2:-$DEFAULT_OUTPUT_DIR}"
 
-# Initialize variables for rules folder and number of permutations.
+# Initialize variables for rules folder and parallel instances.
 RULES_FOLDER=""
 NUMBER_OF_PERMUTATIONS=$DEFAULT_NUMBER_OF_PERMUTATIONS
+PARALLEL_INSTANCES=$DEFAULT_PARALLEL_INSTANCES
 
-# Determine if the third parameter is a directory (rules folder) or a permutation number.
+# Determine if the third parameter is a directory (rules folder) or parallel instances number.
 if [ ! -z "$3" ]; then
     if [ -d "$3" ]; then
         RULES_FOLDER="$3"
-        # If a fourth parameter is provided, use it as NUMBER_OF_PERMUTATIONS.
+        # If a fourth parameter is provided, use it as PARALLEL_INSTANCES.
         if [ ! -z "$4" ]; then
-            NUMBER_OF_PERMUTATIONS="$4"
+            PARALLEL_INSTANCES="$4"
         fi
     else
-        NUMBER_OF_PERMUTATIONS="$3"
+        PARALLEL_INSTANCES="$3"
     fi
 fi
 
@@ -47,8 +49,10 @@ process_input_files() {
     # Collect file sizes and paths from the input folder
     find "$INPUT_DIR" -maxdepth 1 -type f -exec sh -c 'printf "%s %s\n" "$(wc -c < "$1")" "$1"' sh {} \; > "$tmpfile"
     
-    # Process files in order of increasing size
-    sort -n "$tmpfile" | cut -d ' ' -f 2- | while IFS= read -r file; do
+    # Read sorted file list into an array to preserve spaces in filenames
+    mapfile -t files < <(sort -n "$tmpfile" | cut -d ' ' -f 2-)
+    
+    for file in "${files[@]}"; do
         if [ -f "$file" ]; then
             INPUT_PROBLEM="$(basename "$file")"
             echo "Processing file: $INPUT_PROBLEM using rule file: $(basename "$json_file")"
@@ -56,9 +60,17 @@ process_input_files() {
                 INPUT_DIR="$INPUT_DIR" \
                 OUTPUT_DIR="$current_output_dir" \
                 NUMBER_OF_PERMUTATIONS="$NUMBER_OF_PERMUTATIONS" \
-                python main.py "$json_file"
+                python main.py "$json_file" &
+            
+            # If the number of background jobs equals/exceeds the limit, wait for one to finish.
+            while [ "$(jobs -r | wc -l)" -ge "$PARALLEL_INSTANCES" ]; do
+                sleep 0.1
+            done
         fi
     done
+    
+    # Wait for all background processes to finish
+    wait
     
     # Cleanup the temporary file
     rm "$tmpfile"
