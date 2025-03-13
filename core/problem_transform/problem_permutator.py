@@ -30,28 +30,77 @@ class ProblemPermutator:
             P[row_idx, col_idx] = 1
             return P 
 
-    def create_permuted_problem(self):
+    def create_permuted_problem(self, num_subblocks):
         """
-        Create a permuted Gurobi model, returning:
-          - permuted_model: a new Gurobi model with permuted variables & constraints
-          - var_permutation: the permutation array for columns
-          - constr_permutation: the permutation array for rows
-          - P_col: the column-permutation matrix
-          - P_row: the row-permutation matrix
+        Create a permuted Gurobi model where both variables and constraints 
+        are partitioned into groups that are then randomly shuffled.
+        
+        Parameters:
+            num_subblocks : int or str
+                - If an integer, it is used to determine the number of subblocks for both variables and constraints.
+                  For each dimension, if the provided number is greater than or equal to the number of elements,
+                  it falls back to the special case where each element is individually permuted.
+                - If a string (e.g., "full"), then every variable and constraint is individually permuted.
+                
+        Returns:
+            permuted_model : A new Gurobi model with permuted variables and constraints.
+            var_permutation : The permutation array for variables.
+            constr_permutation : The permutation array for constraints.
+            P_col : The column permutation matrix.
+            P_row : The row permutation matrix.
         """
-        # --- Generate random permutations ---
         num_vars = self.original_model.NumVars
         num_constrs = self.original_model.NumConstrs
-        var_permutation = np.random.permutation(num_vars)
-        constr_permutation = np.random.permutation(num_constrs)
 
-        # --- Apply permutation using the helper method ---
+        # First, convert num_subblocks if it's a string.
+        if isinstance(num_subblocks, str):
+            try:
+                num_subblocks = int(num_subblocks)
+            except ValueError:
+                if num_subblocks.lower() in ["full", "all", "individual"]:
+                    # Special case: full permutation
+                    var_group_size = 1
+                    constr_group_size = 1
+                else:
+                    raise ValueError("Invalid string value for num_subblocks. Use 'full' for full permutation or provide a numeric value.")
+
+        # Now, if num_subblocks is an int, compute the group sizes.
+        if isinstance(num_subblocks, int):
+            if num_subblocks >= num_vars:
+                var_group_size = 1
+            else:
+                var_group_size = int(np.ceil(num_vars / num_subblocks))
+            if num_subblocks >= num_constrs:
+                constr_group_size = 1
+            else:
+                constr_group_size = int(np.ceil(num_constrs / num_subblocks))
+
+        # Generate permutations by grouping indices into blocks of the computed size.
+        var_permutation = self.group_permutation(num_vars, var_group_size)
+        constr_permutation = self.group_permutation(num_constrs, constr_group_size)
+
+        # Apply the permutations to create the new model.
         permuted_model = self.apply_permutation(self.original_model, var_permutation, constr_permutation)
 
-        # Build permutation matrices (for analysis or reconstruction if needed)
+        # Build permutation matrices for potential further analysis.
         P_col = self.permutation_matrix(var_permutation, sparse=True)
         P_row = self.permutation_matrix(constr_permutation, sparse=True)
         return permuted_model, var_permutation, constr_permutation, P_col, P_row
+
+    def group_permutation(self, n, group_size):
+        """
+        Partition n indices into contiguous groups of size 'group_size' 
+        (the last group may be smaller) and randomly permute the order of these groups.
+        The resulting permutation is the concatenation of the permuted groups.
+        """
+        indices = np.arange(n)
+        # Partition indices into groups
+        groups = [list(indices[i: i + group_size]) for i in range(0, n, group_size)]
+        # Permute the groups randomly
+        np.random.shuffle(groups)
+        # Flatten the list of groups back into a single permutation list
+        new_perm = [idx for group in groups for idx in group]
+        return np.array(new_perm)
 
     def apply_permutation(self, model, var_permutation, constr_permutation):
         """

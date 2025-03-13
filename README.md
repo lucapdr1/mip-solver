@@ -76,11 +76,13 @@ cd mip-solver
    In the root directory of the project, run the following command:
 
    ```bash
-   sh ./runLocalBatchOfJobs.sh ./mip_lib/ ./batch_output/
+   bash ./runLocalBatchOfJobs.sh ./mip_lib/ ./batch_output/ 4
    ```
+   Since the file is executable it should also work omitting the bash command at the beginnig
 
    - `./mip_lib/` is the folder containing the miplib problems.
    - `./batch_output/` is the folder where the results will be saved.
+   - 4 is the numer of parallel instances
    - **Note:** Remember to include the closing `/` at the end of each folder name.
 
 --------------

@@ -7,7 +7,7 @@ from core.ordering.constraints.row_coefficient_rule import RowCoefficientRule
 from core.ordering.recursive.cardinality_rule import NonZeroCountRule, ObjectiveNonZeroCountRule, RHSNonZeroCountRule
 from core.ordering.recursive.scale_Invariant_rules import BothBoundsFiniteCountRule, BothBoundsInfiniteCountRule, ConstraintContinuousCountRule, ConstraintIntegerCountRule, OneBoundFiniteCountRule
 from core.ordering.recursive.sign_pattern_rule import SignPatternRule
-from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule
+from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule, SetPackingRHSRule, UnscaledObjectiveOrderingRule
 from core.ordering.variables.cols_bound_category_rule import BoundCategoryRule
 from core.ordering.variables.cols_coefficient_rule import ColumnsCoefficientRule
 from core.ordering.variables.objective_coefficient_rule import ObjectiveCoefficientRule
@@ -34,7 +34,10 @@ RULE_MAP = {
     "VariableOccurrenceRule": VariableOccurrenceRule(1),
     "RowCoefficientRule": RowCoefficientRule(1),
     "RHSValueRule": RHSValueRule(100),
-    "ConstraintRangeRule": ConstraintRangeRule(1)
+    "ConstraintRangeRule": ConstraintRangeRule(1),
+    "SetPackingRHSRule" : SetPackingRHSRule(),
+    "UnscaledObjectiveOrderingRule" : UnscaledObjectiveOrderingRule()
+
 }
 
 def load_rules_from_json(file_path):

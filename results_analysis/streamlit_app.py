@@ -36,14 +36,18 @@ if uploaded_files:
     # Build a sorted list of unique tags for filtering
     all_tags = sorted({tag for tags in df['tags_list'] for tag in tags})
 
-    # Create a sidebar widget for tag selection
-    selected_tags = st.sidebar.multiselect("Select Tags", all_tags)
+    # Create sidebar widgets for tag inclusion and exclusion
+    include_tags = st.sidebar.multiselect("Select Tags to Include", all_tags)
+    exclude_tags = st.sidebar.multiselect("Select Tags to Exclude", all_tags)
 
-    # Filter the DataFrame based on the selected tags
-    if selected_tags:
-        filtered_df = df[df['tags_list'].apply(lambda tags: any(tag in tags for tag in selected_tags))]
-    else:
-        filtered_df = df
+    # Filter the DataFrame based on the selected include and exclude tags
+    filtered_df = df.copy()
+
+    if include_tags:
+        filtered_df = filtered_df[filtered_df['tags_list'].apply(lambda tags: any(tag in tags for tag in include_tags))]
+    
+    if exclude_tags:
+        filtered_df = filtered_df[filtered_df['tags_list'].apply(lambda tags: not any(tag in tags for tag in exclude_tags))]
 
     st.write("### Filtered Data")
     st.dataframe(filtered_df)

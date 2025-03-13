@@ -1,5 +1,5 @@
 from utils.logging_handler import LoggingHandler
-from utils.config import LOG_LEVEL, INPUT_DIR, OUTPUT_DIR, INPUT_PROBLEM, NUMBER_OF_PERMUTATIONS, NORMALIZATION_ACTIVE, MATRICES_TO_CSV, LOG_MATRIX, LOG_MODEL_COMPARISON, PRODUCTION, RECURSIVE_RULES, DISABLE_SOLVING
+from utils.config import LOG_LEVEL, INPUT_DIR, OUTPUT_DIR, INPUT_PROBLEM, PERMUTE_ORIGINAL, PERMUTE_K_SUBBLOCKS, NUMBER_OF_PERMUTATIONS, NORMALIZATION_ACTIVE, MATRICES_TO_CSV, LOG_MATRIX, LOG_MODEL_COMPARISON, PRODUCTION, RECURSIVE_RULES, DISABLE_SOLVING, MAX_SOLVE_TIME
 
 class IterationLogger:
     def __init__(self):
@@ -14,6 +14,9 @@ class IterationLogger:
         self.logger.info(f"- LOG_LEVEL: {LOG_LEVEL}")
         self.logger.info(f"- OUTPUT_DIR: {OUTPUT_DIR}")
         self.logger.info(f"- INPUT_PROBLEM: {INPUT_PROBLEM}")
+        self.logger.info(f"- PERMUTE_ORIGINAL: {PERMUTE_ORIGINAL}")
+        self.logger.info(f"- PERMUTE_K_SUBBLOCKS: {PERMUTE_K_SUBBLOCKS}")
+        self.logger.info(f"- NUMBER_OF_PERMUTATIONS: {NUMBER_OF_PERMUTATIONS}")
         self.logger.info(f"- NUMBER_OF_PERMUTATIONS: {NUMBER_OF_PERMUTATIONS}")
         self.logger.info(f"- NORMALIZATION_ACTIVE: {NORMALIZATION_ACTIVE}")
         self.logger.info(f"- MATRICES_TO_CSV: {MATRICES_TO_CSV}")
@@ -22,6 +25,7 @@ class IterationLogger:
         self.logger.info(f"- PRODUCTION: {PRODUCTION}")
         self.logger.info(f"- RECURSIVE_RULES: {RECURSIVE_RULES}")
         self.logger.info(f"- DISABLE_SOLVING: {DISABLE_SOLVING}")
+        self.logger.info(f"- MAX_SOLVE_TIME: {MAX_SOLVE_TIME}")
 
     def log_model_info(self, model, file_path):
         self.logger.info(f"Successfully loaded problem from {file_path}")
