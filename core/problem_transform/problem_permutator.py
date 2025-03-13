@@ -30,47 +30,59 @@ class ProblemPermutator:
             P[row_idx, col_idx] = 1
             return P 
 
-    def create_permuted_problem(self, 
-                                var_group_size=1, 
-                                constr_group_size=1, 
-                                var_group_percent=None, 
-                                constr_group_percent=None):
+    def create_permuted_problem(self, num_subblocks):
         """
-        Create a permuted Gurobi model, returning:
-          - permuted_model: a new Gurobi model with permuted variables & constraints
-          - var_permutation: the permutation array for columns
-          - constr_permutation: the permutation array for rows
-          - P_col: the column-permutation matrix
-          - P_row: the row-permutation matrix
-
-        The full list of indices is always used, but the permutation is done by grouping:
-         • Fixed-size groups: set var_group_size or constr_group_size to a desired block size (e.g. 2).
-         • Percentage groups: set var_group_percent or constr_group_percent (e.g. 20 for 20% of indices per block);
-           this divides the indices into ceil(100/percentage) blocks.
+        Create a permuted Gurobi model where both variables and constraints 
+        are partitioned into groups that are then randomly shuffled.
+        
+        Parameters:
+            num_subblocks : int or str
+                - If an integer, it is used to determine the number of subblocks for both variables and constraints.
+                  For each dimension, if the provided number is greater than or equal to the number of elements,
+                  it falls back to the special case where each element is individually permuted.
+                - If a string (e.g., "full"), then every variable and constraint is individually permuted.
+                
+        Returns:
+            permuted_model : A new Gurobi model with permuted variables and constraints.
+            var_permutation : The permutation array for variables.
+            constr_permutation : The permutation array for constraints.
+            P_col : The column permutation matrix.
+            P_row : The row permutation matrix.
         """
-        # --- Determine sizes ---
         num_vars = self.original_model.NumVars
         num_constrs = self.original_model.NumConstrs
 
-        # --- Generate variable permutation ---
-        if var_group_percent is not None:
-            # Calculate block size so that each block is approximately var_group_percent of the total
-            block_size = int(np.ceil(num_vars * (var_group_percent / 100.0)))
-            var_permutation = self.group_permutation(num_vars, block_size)
-        else:
-            var_permutation = self.group_permutation(num_vars, var_group_size)
+        # First, convert num_subblocks if it's a string.
+        if isinstance(num_subblocks, str):
+            try:
+                num_subblocks = int(num_subblocks)
+            except ValueError:
+                if num_subblocks.lower() in ["full", "all", "individual"]:
+                    # Special case: full permutation
+                    var_group_size = 1
+                    constr_group_size = 1
+                else:
+                    raise ValueError("Invalid string value for num_subblocks. Use 'full' for full permutation or provide a numeric value.")
 
-        # --- Generate constraint permutation ---
-        if constr_group_percent is not None:
-            block_size = int(np.ceil(num_constrs * (constr_group_percent / 100.0)))
-            constr_permutation = self.group_permutation(num_constrs, block_size)
-        else:
-            constr_permutation = self.group_permutation(num_constrs, constr_group_size)
+        # Now, if num_subblocks is an int, compute the group sizes.
+        if isinstance(num_subblocks, int):
+            if num_subblocks >= num_vars:
+                var_group_size = 1
+            else:
+                var_group_size = int(np.ceil(num_vars / num_subblocks))
+            if num_subblocks >= num_constrs:
+                constr_group_size = 1
+            else:
+                constr_group_size = int(np.ceil(num_constrs / num_subblocks))
 
-        # --- Apply permutation using the helper method ---
+        # Generate permutations by grouping indices into blocks of the computed size.
+        var_permutation = self.group_permutation(num_vars, var_group_size)
+        constr_permutation = self.group_permutation(num_constrs, constr_group_size)
+
+        # Apply the permutations to create the new model.
         permuted_model = self.apply_permutation(self.original_model, var_permutation, constr_permutation)
 
-        # Build permutation matrices (for analysis or reconstruction if needed)
+        # Build permutation matrices for potential further analysis.
         P_col = self.permutation_matrix(var_permutation, sparse=True)
         P_row = self.permutation_matrix(constr_permutation, sparse=True)
         return permuted_model, var_permutation, constr_permutation, P_col, P_row
