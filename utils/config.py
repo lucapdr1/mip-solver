@@ -23,7 +23,7 @@ INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-911970.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")
 
 PERMUTE_ORIGINAL = os.getenv('PERMUTE_ORIGINAL', 'True').lower() == 'true'
-PERMUTE_K_SUBBLOCKS = os.getenv('PERMUTE_K_SUBBLOCKS', "all")# "all" to permute all
+PERMUTE_K_SUBBLOCKS = os.getenv('PERMUTE_K_SUBBLOCKS', "all")# "all" to permute all, any integer K e.g 10 to define 1O subblocks
 NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 3))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
 SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
