@@ -50,7 +50,7 @@ class VariableTypeRule(OrderingRule):
         mask_cont     = (vtypes == GRB.CONTINUOUS)
         
         # Apply scores based on type.
-        scores[mask_semicont] = 4
+        scores[mask_semicont] = 5
         scores[mask_semiint] = 4
         scores[mask_binary] = 3
         scores[mask_cont] = 1
