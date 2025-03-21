@@ -85,13 +85,8 @@ class ProblemPermutator:
                 constr_group_size = int(np.ceil(num_constrs / num_subblocks))
 
         # Generate permutations by grouping indices into blocks of the computed size.
-<<<<<<< HEAD
-        var_permutation = self.group_permutation(num_vars, var_group_size)
-        constr_permutation = self.group_permutation(num_constrs, constr_group_size)
-=======
         var_permutation = self.group_permutation(num_vars, var_group_size, rng)
         constr_permutation = self.group_permutation(num_constrs, constr_group_size, rng)
->>>>>>> 5b64d786ac78b9e62ae6bc223ef4619e71bf5428
 
         # Apply the permutations to create the new model.
         permuted_model = self.apply_permutation(self.original_model, var_permutation, constr_permutation)
@@ -101,11 +96,7 @@ class ProblemPermutator:
         P_row = self.permutation_matrix(constr_permutation, sparse=True)
         return permuted_model, var_permutation, constr_permutation, P_col, P_row
 
-<<<<<<< HEAD
-    def group_permutation(self, n, group_size):
-=======
     def group_permutation(self, n, group_size, rng):
->>>>>>> 5b64d786ac78b9e62ae6bc223ef4619e71bf5428
         """
         Partition n indices into contiguous groups of size 'group_size' 
         (the last group may be smaller) and randomly permute the order of these groups.
@@ -114,13 +105,8 @@ class ProblemPermutator:
         indices = np.arange(n)
         # Partition indices into groups
         groups = [list(indices[i: i + group_size]) for i in range(0, n, group_size)]
-<<<<<<< HEAD
-        # Permute the groups randomly
-        np.random.shuffle(groups)
-=======
         # Permute the groups randomly using the provided random generator
         rng.shuffle(groups)
->>>>>>> 5b64d786ac78b9e62ae6bc223ef4619e71bf5428
         # Flatten the list of groups back into a single permutation list
         new_perm = [idx for group in groups for idx in group]
         return np.array(new_perm)
