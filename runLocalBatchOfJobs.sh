@@ -2,16 +2,45 @@
 # Usage:
 #   bash ./runLocalBatchOfJobs.sh [--input_dir=<dir>] [--output_dir=<dir>] [--rules_folder=<dir>]
 #                                  [--parallel_instances=<num>] [--number_of_permutations=<num>]
-#                                  [--permute_k_subblocks=<value>]
-#                                                                                                                 --permute_granularity=50
-# parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ --output_dir=./batch_output/ --parallel_instances=2 --permute_granularity={} ::: 50 5
+#                                  [--permute_granularity=<value>]
+#
+# Example (using GNU parallel):
+#   parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ --output_dir=./batch_output/granularity_{} --parallel_instances=2 --permute_granularity={} ::: 50 5
 #
 # Default values:
 DEFAULT_INPUT_DIR="./input/"
 DEFAULT_OUTPUT_DIR="./output/"
 DEFAULT_NUMBER_OF_PERMUTATIONS=3
 DEFAULT_PARALLEL_INSTANCES=1
-DEFAULT_PERMUTE_GRANULARITY_K=0
+DEFAULT_PERMUTE_GRANULARITY_K="all"
+
+# Function to display help message.
+print_help() {
+    echo "Usage: bash ./runLocalBatchOfJobs.sh [--input_dir=<dir>] [--output_dir=<dir>] [--rules_folder=<dir>]"
+    echo "                                  [--parallel_instances=<num>] [--number_of_permutations=<num>]"
+    echo "                                  [--permute_granularity=<value>]"
+    echo ""
+    echo "Default values:"
+    echo "  INPUT_DIR: ${DEFAULT_INPUT_DIR}"
+    echo "  OUTPUT_DIR: ${DEFAULT_OUTPUT_DIR}"
+    echo "  NUMBER_OF_PERMUTATIONS: ${DEFAULT_NUMBER_OF_PERMUTATIONS}"
+    echo "  PARALLEL_INSTANCES: ${DEFAULT_PARALLEL_INSTANCES}"
+    echo "  PERMUTE_GRANULARITY_K: ${DEFAULT_PERMUTE_GRANULARITY_K}"
+    echo ""
+    echo "Example (using GNU parallel):"
+    echo "  parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ \\"
+    echo "         --output_dir=./batch_output/granularity_{} --parallel_instances=2 --permute_granularity={} ::: 50 5"
+}
+
+# Check if help is requested.
+for arg in "$@"; do
+    case $arg in
+        --help|-h)
+            print_help
+            exit 0
+            ;;
+    esac
+done
 
 # Initialize variables with default values.
 INPUT_DIR="$DEFAULT_INPUT_DIR"

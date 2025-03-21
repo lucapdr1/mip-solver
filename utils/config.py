@@ -29,7 +29,7 @@ NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'tr
 SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
 
 MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
-LOG_MATRIX = os.getenv('LOG_MATRIX', 'True').lower() == 'true'
+LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'
 LOG_MODEL_COMPARISON = os.getenv('LOG_MODEL_COMPARISON', 'False').lower() == 'true'
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'True').lower() == 'true'
