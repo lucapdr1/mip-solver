@@ -30,7 +30,7 @@ class ProblemPermutator:
             P[row_idx, col_idx] = 1
             return P 
 
-    def create_permuted_problem(self, num_subblocks):
+    def create_permuted_problem(self, num_subblocks, seed=None):
         """
         Create a permuted Gurobi model where both variables and constraints 
         are partitioned into groups that are then randomly shuffled.
@@ -41,6 +41,9 @@ class ProblemPermutator:
                   For each dimension, if the provided number is greater than or equal to the number of elements,
                   it falls back to the special case where each element is individually permuted.
                 - If a string (e.g., "full"), then every variable and constraint is individually permuted.
+            seed : int, optional
+                The random seed used to generate the permutation. If provided, the permutation
+                will be reproducible.
                 
         Returns:
             permuted_model : A new Gurobi model with permuted variables and constraints.
@@ -51,6 +54,12 @@ class ProblemPermutator:
         """
         num_vars = self.original_model.NumVars
         num_constrs = self.original_model.NumConstrs
+
+        # Log the seed if provided
+        if seed is not None:
+            rng = np.random.default_rng(seed)
+        else:
+            rng = np.random.default_rng()
 
         # First, convert num_subblocks if it's a string.
         if isinstance(num_subblocks, str):
@@ -76,8 +85,8 @@ class ProblemPermutator:
                 constr_group_size = int(np.ceil(num_constrs / num_subblocks))
 
         # Generate permutations by grouping indices into blocks of the computed size.
-        var_permutation = self.group_permutation(num_vars, var_group_size)
-        constr_permutation = self.group_permutation(num_constrs, constr_group_size)
+        var_permutation = self.group_permutation(num_vars, var_group_size, rng)
+        constr_permutation = self.group_permutation(num_constrs, constr_group_size, rng)
 
         # Apply the permutations to create the new model.
         permuted_model = self.apply_permutation(self.original_model, var_permutation, constr_permutation)
@@ -87,7 +96,7 @@ class ProblemPermutator:
         P_row = self.permutation_matrix(constr_permutation, sparse=True)
         return permuted_model, var_permutation, constr_permutation, P_col, P_row
 
-    def group_permutation(self, n, group_size):
+    def group_permutation(self, n, group_size, rng):
         """
         Partition n indices into contiguous groups of size 'group_size' 
         (the last group may be smaller) and randomly permute the order of these groups.
@@ -96,8 +105,8 @@ class ProblemPermutator:
         indices = np.arange(n)
         # Partition indices into groups
         groups = [list(indices[i: i + group_size]) for i in range(0, n, group_size)]
-        # Permute the groups randomly
-        np.random.shuffle(groups)
+        # Permute the groups randomly using the provided random generator
+        rng.shuffle(groups)
         # Flatten the list of groups back into a single permutation list
         new_perm = [idx for group in groups for idx in group]
         return np.array(new_perm)
