@@ -1,12 +1,12 @@
 #!/bin/bash
 # Usage:
-#   bash ./runLocalBatchOfJobs.sh [--input_dir=<dir>] [--output_dir=<dir>] [--rules_folder=<dir>]
-#                                  [--parallel_instances=<num>] [--number_of_permutations=<num>]
-#                                  [--permute_granularity=<value>] [--time_limit=<value>]
+#   bash ./runLocalBatchOfJobs.sh [--input-dir=<dir>] [--output-dir=<dir>] [--rules-folder=<dir>]
+#                                  [--parallel-instances=<num>] [--number-of-permutations=<num>]
+#                                  [--permute-granularity=<value>] [--time-limit=<value>]
 #
 # Example (using GNU parallel):
-#   parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ --output_dir=./batch_output/granularity_{} \
-#           --parallel_instances=2 --permute_granularity={} --time_limit=3600 ::: 5 6 8 10 12 15 20 33 all
+#   parallel ./runLocalBatchOfJobs.sh --input-dir=./batch_easy/ --output-dir=./batch_output/granularity_{} \
+#           --parallel-instances=2 --permute-granularity={} --time-limit=3600 ::: 5 6 8 10 12 15 20 33 all
 #
 # Default values:
 DEFAULT_INPUT_DIR="./input/"
@@ -18,9 +18,9 @@ DEFAULT_TIME_LIMIT=3600
 
 # Function to display help message.
 print_help() {
-    echo "Usage: bash ./runLocalBatchOfJobs.sh [--input_dir=<dir>] [--output_dir=<dir>] [--rules_folder=<dir>]"
-    echo "                                  [--parallel_instances=<num>] [--number_of_permutations=<num>]"
-    echo "                                  [--permute_granularity=<value>] [--time_limit=<value>]"
+    echo "Usage: bash ./runLocalBatchOfJobs.sh [--input-dir=<dir>] [--output-dir=<dir>] [--rules-folder=<dir>]"
+    echo "                                  [--parallel-instances=<num>] [--number-of-permutations=<num>]"
+    echo "                                  [--permute-granularity=<value>] [--time-limit=<value>]"
     echo ""
     echo "Default values:"
     echo "  INPUT_DIR: ${DEFAULT_INPUT_DIR}"
@@ -31,9 +31,9 @@ print_help() {
     echo "  TIME_LIMIT: ${DEFAULT_TIME_LIMIT}"
     echo ""
     echo "Example (using GNU parallel):"
-    echo "  parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ \\"
-    echo "         --output_dir=./batch_output/granularity_{} --parallel_instances=2 \\"
-    echo "         --permute_granularity={} --time_limit=3600 ::: 5 6 8 10 12 15 20 33 all"
+    echo "  parallel ./runLocalBatchOfJobs.sh --input-dir=./batch_easy/ \\"
+    echo "         --output-dir=./batch_output/granularity_{} --parallel-instances=2 \\"
+    echo "         --permute-granularity={} --time-limit=3600 ::: 5 6 8 10 12 15 20 33 all"
 }
 
 # Check if help is requested.
@@ -58,31 +58,31 @@ TIME_LIMIT="$DEFAULT_TIME_LIMIT"
 # Parse named parameters.
 for arg in "$@"; do
     case $arg in
-        --input_dir=*)
+        --input-dir=*)
             INPUT_DIR="${arg#*=}"
             shift
             ;;
-        --output_dir=*)
+        --output-dir=*)
             OUTPUT_DIR="${arg#*=}"
             shift
             ;;
-        --rules_folder=*)
+        --rules-folder=*)
             RULES_FOLDER="${arg#*=}"
             shift
             ;;
-        --parallel_instances=*)
+        --parallel-instances=*)
             PARALLEL_INSTANCES="${arg#*=}"
             shift
             ;;
-        --number_of_permutations=*)
+        --number-of-permutations=*)
             NUMBER_OF_PERMUTATIONS="${arg#*=}"
             shift
             ;;
-        --permute_granularity=*)
+        --permute-granularity=*)
             PERMUTE_GRANULARITY_K="${arg#*=}"
             shift
             ;;
-        --time_limit=*)
+        --time-limit=*)
             TIME_LIMIT="${arg#*=}"
             shift
             ;;

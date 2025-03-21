@@ -84,32 +84,32 @@ The script will process **all** files (instances) found in the input folder you 
 In the root directory of the project, you can run the script with named parameters. For example:
 
 ```bash
-bash ./runLocalBatchOfJobs.sh --input_dir=./mip_lib/ --output_dir=./batch_output/ --parallel_instances=4
+bash ./runLocalBatchOfJobs.sh --input-dir=./mip_lib/ --output-dir=./batch_output/ --parallel-instances=4
 ```
 
 Since the file is executable, you can also omit the `bash` command:
 
 ```bash
-./runLocalBatchOfJobs.sh --input_dir=./mip_lib/ --output_dir=./batch_output/ --parallel_instances=4
+./runLocalBatchOfJobs.sh --input-dir=./mip_lib/ --output-dir=./batch_output/ --parallel-instances=4
 ```
 
-- `--input_dir=./mip_lib/` is the folder containing the miplib problems.
-- `--output_dir=./batch_output/` is the folder where the results will be saved.
-- `--parallel_instances=4` sets the number of parallel jobs within the script, also 1 is a valid option.
+- `--input-dir=./mip_lib/` is the folder containing the miplib problems.
+- `--output-dir=./batch_output/` is the folder where the results will be saved.
+- `--parallel-instances=4` sets the number of parallel jobs within the script (note that 1 is a valid option).
 - **Note:** Remember to include the closing `/` at the end of each folder name.
 
 ### Execution Using GNU Parallel
 
-You can also run multiple experiments in parallel with different parameters. For example, if you want to test experiments with two or more different granularity values (e.g., 50 and 5), use GNU parallel as follows:
+You can also run multiple experiments in parallel with different parameters. For example, if you want to test experiments with two or more different granularity values (e.g., 5, 6, 8, 10, 12, 15, 20, 33, and all), use GNU parallel as follows:
 
 ```bash
-parallel ./runLocalBatchOfJobs.sh --input_dir=./mip_lib/ --output_dir=./batch_output/granularity_{} --parallel_instances=4 --permute_granularity={} --time_limit=3600 ::: 5 6 8 10 12 15 20 33 all
+parallel ./runLocalBatchOfJobs.sh --input-dir=./mip_lib/ --output-dir=./batch_output/granularity_{} --parallel-instances=4 --permute-granularity={} --time-limit=3600 ::: 5 6 8 10 12 15 20 33 all
 ```
 
 In this command:
 - `{}` is replaced by the granularity value for each job.
-- The output directories will be created as `./batch_output/granularity_50/` and `./batch_output/granularity_5/` respectively.
-- The script will process all files in the `./mip_lib/` folder. If you wish to run the experiment on only a subset of instances, create a folder with only those instances and provide that folder as the `--input_dir` parameter.
+- The output directories will be created as, for example, `./batch_output/granularity_5/` and `./batch_output/granularity_all/` respectively.
+- The script will process all files in the `./mip_lib/` folder. If you wish to run the experiment on only a subset of instances, create a folder with only those instances and provide that folder as the `--input-dir` parameter.
 
 --------------
 
