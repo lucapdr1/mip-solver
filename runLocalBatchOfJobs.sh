@@ -3,6 +3,8 @@
 #   bash ./runLocalBatchOfJobs.sh [--input_dir=<dir>] [--output_dir=<dir>] [--rules_folder=<dir>]
 #                                  [--parallel_instances=<num>] [--number_of_permutations=<num>]
 #                                  [--permute_k_subblocks=<value>]
+#                                                                                                                 --permute_granularity=50
+# parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ --output_dir=./batch_output/ --parallel_instances=2 --permute_granularity={} ::: 50 5
 #
 # Default values:
 DEFAULT_INPUT_DIR="./input/"
@@ -42,7 +44,7 @@ for arg in "$@"; do
             NUMBER_OF_PERMUTATIONS="${arg#*=}"
             shift
             ;;
-        --permute_k_subblocks=*)
+        --permute_granularity=*)
             PERMUTE_GRANULARITY_K="${arg#*=}"
             shift
             ;;
