@@ -6,7 +6,7 @@
 #
 # Example (using GNU parallel):
 #   parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ --output_dir=./batch_output/granularity_{} \
-#           --parallel_instances=2 --permute_granularity={} --time_limit=3600 ::: 50 5
+#           --parallel_instances=2 --permute_granularity={} --time_limit=3600 ::: 5 6 8 10 12 15 20 33 all
 #
 # Default values:
 DEFAULT_INPUT_DIR="./input/"
@@ -33,7 +33,7 @@ print_help() {
     echo "Example (using GNU parallel):"
     echo "  parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ \\"
     echo "         --output_dir=./batch_output/granularity_{} --parallel_instances=2 \\"
-    echo "         --permute_granularity={} --time_limit=3600 ::: 50 5"
+    echo "         --permute_granularity={} --time_limit=3600 ::: 5 6 8 10 12 15 20 33 all"
 }
 
 # Check if help is requested.
