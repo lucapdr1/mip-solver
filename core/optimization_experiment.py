@@ -16,7 +16,7 @@ from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
 from utils.plots_handler import save_all_plots
-from utils.config import PERMUTE_ORIGINAL, PERMUTE_K_SUBBLOCKS, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
+from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -47,7 +47,7 @@ class OptimizationExperiment:
         if PERMUTE_ORIGINAL:
             self.logger.info("Calculating baseline from a permuted problem (skipping original).")
             #Change parameters to use percentage instead of number of variables per block
-            baseline_model, baseline_var_order, baseline_constr_order, _, _ = self.permutator.create_permuted_problem(PERMUTE_K_SUBBLOCKS)
+            baseline_model, baseline_var_order, baseline_constr_order, _, _ = self.permutator.create_permuted_problem(PERMUTE_GRANULARITY_K, PERMUTE_SEED)
         else:
             self.logger.info("Solving Original Problem")
             baseline_model = self.original_model
@@ -84,7 +84,7 @@ class OptimizationExperiment:
             try:
                 (permuted_canonical, permuted_result, final_ordered_result,
                 permuted_distance, canonical_distance) = self.run_single_iteration(
-                    baseline_var_order, baseline_constr_order, final_canonical_var_order, final_canonical_constr_order
+                    baseline_var_order, baseline_constr_order, final_canonical_var_order, final_canonical_constr_order, (i+1)
                 )
                 iteration_result = self.build_iteration_result(
                     baseline_canonical, permuted_canonical,
@@ -110,13 +110,13 @@ class OptimizationExperiment:
             save_all_plots(self.permuted_matrices, self.canonical_matrices, self.file_path, "experiment_plots.png")
         return results
 
-    def run_single_iteration(self, baseline_var_order, baseline_constr_order, original_canonical_var_order, original_canonical_constr_order):
+    def run_single_iteration(self, baseline_var_order, baseline_constr_order, original_canonical_var_order, original_canonical_constr_order, index):
         try:
             self.logger.lazy_debug("Starting new iteration...")
 
             # === 1. Create the permuted problem (unscaled) ===
             self.logger.info("Creating Permuted Problem")
-            permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem(PERMUTE_K_SUBBLOCKS)
+            permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem(PERMUTE_GRANULARITY_K, (PERMUTE_SEED+index))
             #ProblemPrinterlog_model(permuted_model, self.logger, level="DEBUG")
             if LOG_MATRIX:
                 self.permuted_matrices.append(permuted_model.getA())
