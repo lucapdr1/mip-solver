@@ -100,10 +100,10 @@ Since the file is executable, you can also omit the `bash` command:
 
 ### Execution Using GNU Parallel
 
-You can also run multiple experiments in parallel with different parameters. For example, if you want to test experiments with two or more different granularity values (e.g., 5, 6, 8, 10, 12, 15, 20, 33, and all), use GNU parallel as follows:
+You can also run multiple experiments in parallel with different parameters. For example, if you want to test experiments with two or more different granularity values (e.g., 4, 5, 6, 8, 10, 12, 15, 20, 33, and all), use GNU parallel as follows:
 
 ```bash
-parallel ./runLocalBatchOfJobs.sh --input-dir=./mip_lib/ --output-dir=./batch_output/granularity_{} --parallel-instances=4 --permute-granularity={} --time-limit=3600 ::: 5 6 8 10 12 15 20 33 all
+parallel ./runLocalBatchOfJobs.sh --input-dir=./mip_lib/ --output-dir=./batch_output/granularity_{} --parallel-instances=4 --permute-granularity={} --time-limit=3600 ::: 4 5 6 8 10 12 15 20 33 all
 ```
 
 In this command:
