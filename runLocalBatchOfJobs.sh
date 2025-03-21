@@ -2,10 +2,11 @@
 # Usage:
 #   bash ./runLocalBatchOfJobs.sh [--input_dir=<dir>] [--output_dir=<dir>] [--rules_folder=<dir>]
 #                                  [--parallel_instances=<num>] [--number_of_permutations=<num>]
-#                                  [--permute_granularity=<value>]
+#                                  [--permute_granularity=<value>] [--time_limit=<value>]
 #
 # Example (using GNU parallel):
-#   parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ --output_dir=./batch_output/granularity_{} --parallel_instances=2 --permute_granularity={} ::: 50 5
+#   parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ --output_dir=./batch_output/granularity_{} \
+#           --parallel_instances=2 --permute_granularity={} --time_limit=3600 ::: 50 5
 #
 # Default values:
 DEFAULT_INPUT_DIR="./input/"
@@ -13,12 +14,13 @@ DEFAULT_OUTPUT_DIR="./output/"
 DEFAULT_NUMBER_OF_PERMUTATIONS=3
 DEFAULT_PARALLEL_INSTANCES=1
 DEFAULT_PERMUTE_GRANULARITY_K="all"
+DEFAULT_TIME_LIMIT=3600
 
 # Function to display help message.
 print_help() {
     echo "Usage: bash ./runLocalBatchOfJobs.sh [--input_dir=<dir>] [--output_dir=<dir>] [--rules_folder=<dir>]"
     echo "                                  [--parallel_instances=<num>] [--number_of_permutations=<num>]"
-    echo "                                  [--permute_granularity=<value>]"
+    echo "                                  [--permute_granularity=<value>] [--time_limit=<value>]"
     echo ""
     echo "Default values:"
     echo "  INPUT_DIR: ${DEFAULT_INPUT_DIR}"
@@ -26,10 +28,12 @@ print_help() {
     echo "  NUMBER_OF_PERMUTATIONS: ${DEFAULT_NUMBER_OF_PERMUTATIONS}"
     echo "  PARALLEL_INSTANCES: ${DEFAULT_PARALLEL_INSTANCES}"
     echo "  PERMUTE_GRANULARITY_K: ${DEFAULT_PERMUTE_GRANULARITY_K}"
+    echo "  TIME_LIMIT: ${DEFAULT_TIME_LIMIT}"
     echo ""
     echo "Example (using GNU parallel):"
     echo "  parallel ./runLocalBatchOfJobs.sh --input_dir=./batch_easy/ \\"
-    echo "         --output_dir=./batch_output/granularity_{} --parallel_instances=2 --permute_granularity={} ::: 50 5"
+    echo "         --output_dir=./batch_output/granularity_{} --parallel_instances=2 \\"
+    echo "         --permute_granularity={} --time_limit=3600 ::: 50 5"
 }
 
 # Check if help is requested.
@@ -49,6 +53,7 @@ RULES_FOLDER=""
 NUMBER_OF_PERMUTATIONS="$DEFAULT_NUMBER_OF_PERMUTATIONS"
 PARALLEL_INSTANCES="$DEFAULT_PARALLEL_INSTANCES"
 PERMUTE_GRANULARITY_K="$DEFAULT_PERMUTE_GRANULARITY_K"
+TIME_LIMIT="$DEFAULT_TIME_LIMIT"
 
 # Parse named parameters.
 for arg in "$@"; do
@@ -75,6 +80,10 @@ for arg in "$@"; do
             ;;
         --permute_granularity=*)
             PERMUTE_GRANULARITY_K="${arg#*=}"
+            shift
+            ;;
+        --time_limit=*)
+            TIME_LIMIT="${arg#*=}"
             shift
             ;;
         *)
@@ -117,6 +126,7 @@ process_input_files() {
                 OUTPUT_DIR="$current_output_dir" \
                 NUMBER_OF_PERMUTATIONS="$NUMBER_OF_PERMUTATIONS" \
                 PERMUTE_GRANULARITY_K="$PERMUTE_GRANULARITY_K" \
+                MAX_SOLVE_TIME="$TIME_LIMIT" \
                 python main.py "$json_file" &
             
             # Wait if the number of background jobs equals or exceeds the parallel instances limit.
