@@ -1,6 +1,6 @@
 from core.ordering.ordering_rule_interface import OrderingRule
 import numpy as np
-from scipy.sparse.csgraph import reverse_cuthill_mckee
+from scipy.sparse.csgraph import reverse_cuthill_mckee, connected_components
 
 class ReverseCuthillMcKeeRule(OrderingRule):
     """
@@ -156,3 +156,109 @@ class ReverseCuthillMcKeeRule(OrderingRule):
             partition_map[label] = (var_indices, constr_groups[score])
             label += 1
         return partition_map
+
+class AdjacencyClusteringRule(OrderingRule):
+    """
+    An ordering rule that clusters constraints based on their adjacency.
+    
+    Steps:
+      1. Build the constraint adjacency graph via G = A_csr * A_csrᵀ.
+         (Convert to LIL to set the diagonal to zero, then back to CSR.)
+      2. Compute connected components (clusters) using the graph.
+      3. Compute the degree of each constraint (number of adjacent constraints).
+      4. Assign each constraint a composite score:
+             score[i] = scaling * ( cluster_sizes[comp[i]] * factor + degree[i] )
+         where factor is chosen (e.g., max_degree + 1) to make cluster size dominate.
+      5. In score_matrix, group constraint indices by their computed scores (in descending order),
+         while leaving the variable indices unchanged.
+    """
+    def __init__(self, scaling=1):
+        self.scaling = scaling
+
+    def score_variables(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        # This rule does not affect variable ordering.
+        return np.zeros(len(vars), dtype=int)
+
+    def score_constraints(self, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Computes composite scores for constraints based on clustering and connectivity.
+        
+        Steps:
+          1. Compute the constraint adjacency graph: G = A_csr * A_csrᵀ.
+          2. Convert G to LIL for efficient modifications, zero its diagonal, convert back to CSR.
+          3. Compute connected components of G to identify clusters.
+          4. For each constraint, compute its degree (number of nonzero entries in its row).
+          5. Let factor = (max_degree + 1) so that cluster size differences dominate.
+          6. For each constraint i, assign:
+                   score[i] = scaling * (cluster_sizes[component[i]] * factor + degree[i])
+        """
+        # Build the constraint adjacency graph.
+        G = A_csr.dot(A_csr.transpose())
+        G = G.tolil()         # Convert to LIL for efficient diagonal modification.
+        G.setdiag(0)          # Remove self-loops.
+        G = G.tocsr()         # Convert back to CSR.
+        G.eliminate_zeros()
+        
+        # Compute connected components (clusters) of the constraint graph.
+        n_components, labels = connected_components(G, directed=False, connection='weak')
+        # Compute cluster sizes: how many constraints belong to each component.
+        cluster_sizes = np.bincount(labels)
+        
+        # Compute the degree for each constraint.
+        degrees = np.array(G.getnnz(axis=1)).flatten()
+        factor = degrees.max() + 1  # Choose a factor to ensure cluster size differences dominate.
+        
+        n = len(labels)
+        scores = np.empty(n, dtype=int)
+        for i in range(n):
+            scores[i] = self.scaling * (cluster_sizes[labels[i]] * factor + degrees[i])
+        return scores
+
+    def score_matrix_for_variable(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        # This rule does not affect the ordering of variables.
+        return (0,)
+
+    def score_matrix_for_constraint(self, idx, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Returns a tuple with the score for constraint at index idx by calling score_constraints.
+        """
+        scores = self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs)
+        return (scores[idx],)
+
+    def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
+        """
+        Partitions the block defined by var_indices and constr_indices based on the
+        composite clustering scores computed on A.
+        
+        Steps:
+          1. Compute the constraint scores via score_constraints.
+          2. Group the original constraint indices by these scores.
+          3. Since this rule does not differentiate variables, group all var_indices together.
+          4. Sort the unique scores in descending order.
+          5. Form the partition map as a dictionary where each key maps to a tuple:
+             (var_indices, corresponding sorted constraint indices).
+        
+        Returns:
+            A dictionary mapping block labels to tuples of NumPy arrays.
+        """
+        # Compute constraint scores.
+        sub_scores = np.array(self.score_constraints(vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs))
+        
+        # Group the original constraint indices by their computed scores.
+        unique_scores = np.unique(sub_scores)
+        constr_groups = {}
+        for score in unique_scores:
+            mask = (sub_scores == score)
+            constr_groups[score] = constr_indices[mask]
+        
+        # Sort unique scores in descending order.
+        sorted_scores = np.sort(np.array(list(constr_groups.keys())))[::-1]
+        
+        # Form the partition map: each block gets all var_indices and its associated constraints.
+        partition_map = {}
+        label = 0
+        for score in sorted_scores:
+            partition_map[label] = (var_indices, constr_groups[score])
+            label += 1
+        return partition_map
+

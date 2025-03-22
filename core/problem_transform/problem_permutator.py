@@ -3,6 +3,7 @@ from gurobipy import GRB
 import numpy as np
 from scipy.sparse import coo_matrix
 from utils.logging_handler import LoggingHandler
+from core.problem_transform.distance import DistanceMetric
 
 class ProblemPermutator:
     def __init__(self, gp_env, original_model):
@@ -184,103 +185,16 @@ class ProblemPermutator:
         new_model.update()
         return new_model
 
-    def permutation_distance(self, row_perm1, col_perm1, row_perm2, col_perm2,
-                         row_dist_method="kendall_tau",
-                         col_dist_method="kendall_tau",
-                         alpha=1.0, beta=1.0,
-                         row_adjacency=None,
-                         col_adjacency=None):
+    def permutation_distance(self, row_perm1, col_perm1, row_perm2, col_perm2, row_metric: DistanceMetric, col_metric: DistanceMetric,
+                         alpha=1.0, beta=1.0):
         """
-        Compute a combined distance between two pairs of permutations.
-        
-        The distance function for rows and columns can be chosen from:
-        - "kendall_tau"
-        - "hamming"
-        - "adjacency"   (requires an adjacency dictionary to be provided)
-        
-        For "adjacency", use:
-        - row_adjacency for row (constraint) permutations
-        - col_adjacency for column (variable) permutations
-        
-        The final distance is given by:
-            alpha * (row distance) + beta * (column distance)
+        Compute the overall distance as a weighted sum of row and column distances.
+        If column permutations are not provided, only row distance is computed.
         """
-        # Select row distance function
-        if row_dist_method == "kendall_tau":
-            dist_fn_rows = self.kendall_tau_distance
-        elif row_dist_method == "hamming":
-            dist_fn_rows = self.hamming_distance
-        elif row_dist_method == "adjacency":
-            if row_adjacency is None:
-                raise ValueError("row_adjacency dictionary must be provided when using adjacency distance for rows.")
-            dist_fn_rows = lambda p1, p2: self.adjacency_aware_distance(p1, p2, row_adjacency)
-        else:
-            raise ValueError(f"Unknown row_dist_method: {row_dist_method}")
-
-        # Select column distance function
-        if col_dist_method == "kendall_tau":
-            dist_fn_cols = self.kendall_tau_distance
-        elif col_dist_method == "hamming":
-            dist_fn_cols = self.hamming_distance
-        elif col_dist_method == "adjacency":
-            if col_adjacency is None:
-                raise ValueError("col_adjacency dictionary must be provided when using adjacency distance for columns.")
-            dist_fn_cols = lambda p1, p2: self.adjacency_aware_distance(p1, p2, col_adjacency)
-        else:
-            raise ValueError(f"Unknown col_dist_method: {col_dist_method}")
-
-        d_rows = dist_fn_rows(row_perm1, row_perm2)
-        d_cols = dist_fn_cols(col_perm1, col_perm2)
+        d_rows = row_metric.compute(row_perm1, row_perm2)
+        d_cols = col_metric.compute(col_perm1, col_perm2)
         return alpha * d_rows + beta * d_cols
 
-    def hamming_distance(self, perm1, perm2):
-        if len(perm1) != len(perm2):
-            raise ValueError("Permutations must be the same length.")
-        return np.sum(np.array(perm1) != np.array(perm2))
-
-    def kendall_tau_distance(self, perm1, perm2):
-        n = len(perm1)
-        if len(perm2) != n:
-            raise ValueError("Permutations must be the same length.")
-
-        # Map elements of perm2 to their positions
-        pos_in_perm2 = [0] * n
-        for i, val in enumerate(perm2):
-            pos_in_perm2[val] = i
-
-        # Transform perm1 into the positions from perm2
-        transformed = [pos_in_perm2[val] for val in perm1]
-
-        # Use a merge sort based inversion count
-        _, inv_count = self._count_inversions(transformed)
-        return inv_count
-
-    def _count_inversions(self, arr):
-        # Base case: a single element has zero inversions
-        if len(arr) <= 1:
-            return arr, 0
-        mid = len(arr) // 2
-        left, inv_left = self._count_inversions(arr[:mid])
-        right, inv_right = self._count_inversions(arr[mid:])
-        merged, inv_split = self._merge_count(left, right)
-        return merged, inv_left + inv_right + inv_split
-
-    def _merge_count(self, left, right):
-        merged = []
-        inv_count = 0
-        i = j = 0
-        while i < len(left) and j < len(right):
-            if left[i] <= right[j]:
-                merged.append(left[i])
-                i += 1
-            else:
-                merged.append(right[j])
-                inv_count += len(left) - i  # Count inversions: all remaining left items are greater
-                j += 1
-        # Append remaining elements (no inversions added)
-        merged.extend(left[i:])
-        merged.extend(right[j:])
-        return merged, inv_count
 
     # --------------------------------------------------------------------------
     # ------------------ NEW METHODS: BUILD ADJACENCY + DISTANCE ---------------
@@ -349,35 +263,4 @@ class ProblemPermutator:
 
         return adjacency
 
-    def adjacency_aware_distance(self, perm1, perm2, adjacency):
-        """
-        Compare two permutations by how they place 'adjacent' constraints.
-        
-        For each pair (i, j) in adjacency, we look at the positions of i and j 
-        in perm1 and perm2, and sum the difference of their distances.
-        
-        i.e. sum( abs( (pos1[i] - pos1[j]) - (pos2[i] - pos2[j]) ) ) over all i in [n], j in adjacency[i].
-        
-        We'll count only j > i to avoid double-counting in an undirected adjacency.
-        """
-        n = len(perm1)
-        if len(perm2) != n:
-            raise ValueError("Permutations must be same length.")
-
-        # Build position lookups
-        pos1 = [0] * n
-        pos2 = [0] * n
-        for idx, val in enumerate(perm1):
-            pos1[val] = idx
-        for idx, val in enumerate(perm2):
-            pos2[val] = idx
-        
-        distance = 0
-        # accumulate differences for adjacency pairs
-        for i in range(n):
-            for j in adjacency[i]:
-                if j > i:  # to avoid double-counting i->j and j->i
-                    diff_pos1 = abs(pos1[i] - pos1[j])
-                    diff_pos2 = abs(pos2[i] - pos2[j])
-                    distance += abs(diff_pos1 - diff_pos2)
-        return distance
+    

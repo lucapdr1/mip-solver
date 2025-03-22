@@ -14,6 +14,7 @@ from utils.iteration_logger import IterationLogger
 from core.post_processing.performance_evaluator import PerformanceEvaluator
 from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
+from core.problem_transform.distance import KendallTauDistance
 from utils.problem_printer import ProblemPrinter
 from utils.plots_handler import save_all_plots
 from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
@@ -36,6 +37,9 @@ class OptimizationExperiment:
          # Lists to store figures
         self.permuted_matrices = []
         self.canonical_matrices = []
+
+        self.col_distance_metric = KendallTauDistance()
+        self.row_distance_metric = KendallTauDistance()
     
     def run_experiment(self, num_iterations):
         """Run multiple iterations with detailed logging and solving functionality.
@@ -84,7 +88,7 @@ class OptimizationExperiment:
             self.logger.info(f"Running iteration {i+1}/{num_iterations}")
             try:
                 (permuted_canonical, permuted_result, final_ordered_result,
-                permuted_distance, canonical_distance) = self.run_single_iteration(row_adjacency,
+                permuted_distance, canonical_distance) = self.run_single_iteration(
                     baseline_var_order, baseline_constr_order, final_canonical_var_order, final_canonical_constr_order, (i+1)
                 )
                 iteration_result = self.build_iteration_result(
@@ -111,7 +115,7 @@ class OptimizationExperiment:
             save_all_plots(self.permuted_matrices, self.canonical_matrices, self.file_path, "experiment_plots.png")
         return results
 
-    def run_single_iteration(self, row_adjacency, baseline_var_order, baseline_constr_order, original_canonical_var_order, original_canonical_constr_order, index):
+    def run_single_iteration(self, baseline_var_order, baseline_constr_order, original_canonical_var_order, original_canonical_constr_order, index):
         try:
             self.logger.lazy_debug("Starting new iteration...")
 
@@ -133,11 +137,10 @@ class OptimizationExperiment:
             permuted_distance = self.permutator.permutation_distance(
                 baseline_constr_order, baseline_var_order,
                 constr_permutation, var_permutation,
-                row_dist_method="adjacency",
-                col_dist_method="kendall_tau",
+                self.row_distance_metric,
+                self.col_distance_metric,
                 alpha=1.0, 
-                beta=0.0,
-                row_adjacency=row_adjacency
+                beta=1.0
             )
             self.logger.info(f"Permutation Distance Before Canonicalization: {permuted_distance}")
 
@@ -207,11 +210,10 @@ class OptimizationExperiment:
             canonical_distance = self.permutator.permutation_distance(
                 original_canonical_constr_order, original_canonical_var_order,
                 final_constr_order, final_var_order,
-                row_dist_method="adjacency",
-                col_dist_method="kendall_tau",
+                self.row_distance_metric,
+                self.col_distance_metric,
                 alpha=1.0, 
-                beta=0.0,
-                row_adjacency=row_adjacency
+                beta=1.0,
             )
             self.logger.info(f"Permutation Distance After Canonicalization: {canonical_distance}")
 

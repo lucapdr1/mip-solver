@@ -20,7 +20,7 @@ from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCount
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
 from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule, SetPackingRHSRule, UnscaledObjectiveOrderingRule
 from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
-from core.ordering.recursive.adjacency_aware import ReverseCuthillMcKeeRule
+from core.ordering.recursive.adjacency_aware import ReverseCuthillMcKeeRule, AdjacencyClusteringRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
 from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES
@@ -61,6 +61,8 @@ def create_hierarchical_ordering():
 def create_recursive_hierarchical_ordering(json_file=None):
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
+        AdjacencyClusteringRule(),
+        ReverseCuthillMcKeeRule(),
         VariableTypeRule(),
         BoundCategoryRule(),
         ConstraintCompositionRule(),
@@ -71,22 +73,22 @@ def create_recursive_hierarchical_ordering(json_file=None):
         matrix_repatable_rules = load_rules_from_json(json_file)
     else:
         matrix_repatable_rules = [
-            #Rules that likely are producing blocks only on very few instances
-            AllBinaryVariablesRule(),
-            AllCoefficientsOneRule(),
-            ##All the other rules
-            NonZeroCountRule(),
-            #ObjectiveNonZeroCountRule(),
-            #RHSNonZeroCountRule(),
-            SignPatternRule(),
-            ConstraintIntegerCountRule(),
-            ConstraintContinuousCountRule(),
-            BothBoundsFiniteCountRule(),
-            BothBoundsInfiniteCountRule(),
-            OneBoundFiniteCountRule(),
-            #Specific for setpacking and setcovering
-            SetPackingRHSRule(),
-            UnscaledObjectiveOrderingRule(),
+            ##Rules that likely are producing blocks only on very few instances
+            #AllBinaryVariablesRule(),
+            #AllCoefficientsOneRule(),
+            ###All the other rules
+            #NonZeroCountRule(),
+            ##ObjectiveNonZeroCountRule(),
+            ##RHSNonZeroCountRule(),
+            #SignPatternRule(),
+            #ConstraintIntegerCountRule(),
+            #ConstraintContinuousCountRule(),
+            #BothBoundsFiniteCountRule(),
+            #BothBoundsInfiniteCountRule(),
+            #OneBoundFiniteCountRule(),
+            ##Specific for setpacking and setcovering
+            #SetPackingRHSRule(),
+            #UnscaledObjectiveOrderingRule(),
             
         ]
 
