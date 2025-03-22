@@ -61,8 +61,8 @@ def create_hierarchical_ordering():
 def create_recursive_hierarchical_ordering(json_file=None):
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
-        AdjacencyClusteringRule(),
-        ReverseCuthillMcKeeRule(),
+        #AdjacencyClusteringRule(),
+        #ReverseCuthillMcKeeRule(),
         VariableTypeRule(),
         BoundCategoryRule(),
         ConstraintCompositionRule(),
@@ -73,22 +73,22 @@ def create_recursive_hierarchical_ordering(json_file=None):
         matrix_repatable_rules = load_rules_from_json(json_file)
     else:
         matrix_repatable_rules = [
-            ##Rules that likely are producing blocks only on very few instances
-            #AllBinaryVariablesRule(),
-            #AllCoefficientsOneRule(),
-            ###All the other rules
-            #NonZeroCountRule(),
-            ##ObjectiveNonZeroCountRule(),
-            ##RHSNonZeroCountRule(),
-            #SignPatternRule(),
-            #ConstraintIntegerCountRule(),
-            #ConstraintContinuousCountRule(),
-            #BothBoundsFiniteCountRule(),
-            #BothBoundsInfiniteCountRule(),
-            #OneBoundFiniteCountRule(),
-            ##Specific for setpacking and setcovering
-            #SetPackingRHSRule(),
-            #UnscaledObjectiveOrderingRule(),
+            #Rules that likely are producing blocks only on very few instances
+            AllBinaryVariablesRule(),
+            AllCoefficientsOneRule(),
+            ##All the other rules
+            NonZeroCountRule(),
+            #ObjectiveNonZeroCountRule(),
+            #RHSNonZeroCountRule(),
+            SignPatternRule(),
+            ConstraintIntegerCountRule(),
+            ConstraintContinuousCountRule(),
+            BothBoundsFiniteCountRule(),
+            BothBoundsInfiniteCountRule(),
+            OneBoundFiniteCountRule(),
+            #Specific for setpacking and setcovering
+            SetPackingRHSRule(),
+            UnscaledObjectiveOrderingRule(),
             
         ]
 
