@@ -185,22 +185,49 @@ class ProblemPermutator:
         return new_model
 
     def permutation_distance(self, row_perm1, col_perm1, row_perm2, col_perm2,
-                             row_dist_method="kendall_tau",
-                             col_dist_method="kendall_tau",
-                             alpha=1.0, beta=1.0):
+                         row_dist_method="kendall_tau",
+                         col_dist_method="kendall_tau",
+                         alpha=1.0, beta=1.0,
+                         row_adjacency=None,
+                         col_adjacency=None):
         """
         Compute a combined distance between two pairs of permutations.
-        row_dist_method and col_dist_method can be 'kendall_tau', 'hamming', etc.
+        
+        The distance function for rows and columns can be chosen from:
+        - "kendall_tau"
+        - "hamming"
+        - "adjacency"   (requires an adjacency dictionary to be provided)
+        
+        For "adjacency", use:
+        - row_adjacency for row (constraint) permutations
+        - col_adjacency for column (variable) permutations
+        
+        The final distance is given by:
+            alpha * (row distance) + beta * (column distance)
         """
+        # Select row distance function
         if row_dist_method == "kendall_tau":
             dist_fn_rows = self.kendall_tau_distance
-        else:
+        elif row_dist_method == "hamming":
             dist_fn_rows = self.hamming_distance
+        elif row_dist_method == "adjacency":
+            if row_adjacency is None:
+                raise ValueError("row_adjacency dictionary must be provided when using adjacency distance for rows.")
+            dist_fn_rows = lambda p1, p2: self.adjacency_aware_distance(p1, p2, row_adjacency)
+        else:
+            raise ValueError(f"Unknown row_dist_method: {row_dist_method}")
 
+        # Select column distance function
         if col_dist_method == "kendall_tau":
             dist_fn_cols = self.kendall_tau_distance
-        else:
+        elif col_dist_method == "hamming":
             dist_fn_cols = self.hamming_distance
+        elif col_dist_method == "adjacency":
+            if col_adjacency is None:
+                raise ValueError("col_adjacency dictionary must be provided when using adjacency distance for columns.")
+            dist_fn_cols = lambda p1, p2: self.adjacency_aware_distance(p1, p2, col_adjacency)
+        else:
+            raise ValueError(f"Unknown col_dist_method: {col_dist_method}")
 
         d_rows = dist_fn_rows(row_perm1, row_perm2)
         d_cols = dist_fn_cols(col_perm1, col_perm2)
@@ -254,3 +281,103 @@ class ProblemPermutator:
         merged.extend(left[i:])
         merged.extend(right[j:])
         return merged, inv_count
+
+    # --------------------------------------------------------------------------
+    # ------------------ NEW METHODS: BUILD ADJACENCY + DISTANCE ---------------
+    # --------------------------------------------------------------------------
+    def get_variable_adjacency(self, model):
+        """
+        Build an adjacency dictionary for variables.
+        Two variables are considered adjacent if they appear together in at least one constraint.
+        
+        Returns:
+            adjacency: dict
+                For each variable index j, adjacency[j] is a set of variable indices that
+                appear in at least one common constraint with j.
+        """
+        A = model.getA().tocoo()  # Get constraint matrix in COO format
+        num_vars = model.NumVars
+
+        # Build a mapping from each constraint to the set of variables in that constraint.
+        constr_vars = {}
+        for row, col, value in zip(A.row, A.col, A.data):
+            if value != 0:
+                constr_vars.setdefault(row, set()).add(col)
+        
+        # Build variable adjacency: two variables are adjacent if they appear in the same constraint.
+        adjacency = {j: set() for j in range(num_vars)}
+        for var_set in constr_vars.values():
+            for j in var_set:
+                for k in var_set:
+                    if j != k:
+                        adjacency[j].add(k)
+        return adjacency
+    
+    def get_constraint_adjacency(self, model):
+        """
+        Build an adjacency dictionary for constraints.
+        Two constraints are considered adjacent if they share at least one variable.
+        
+        Returns:
+            adjacency: dict
+                adjacency[i] is a set of constraint indices that share >=1 var with constraint i
+        """
+        A = model.getA().tocoo()  # get constraint matrix in COO format
+        num_constrs = model.NumConstrs
+        num_vars = model.NumVars
+
+        # 1) For each constraint i, record which variables appear
+        constr_vars = {i: set() for i in range(num_constrs)}
+        for row_idx, col_idx, value in zip(A.row, A.col, A.data):
+            if value != 0:
+                constr_vars[row_idx].add(col_idx)
+
+        # 2) Build adjacency by union over shared variables
+        adjacency = {i: set() for i in range(num_constrs)}
+        # For each variable, we gather all constraints it appears in, then mark them adjacent.
+        var_to_constrs = {}
+        for c_idx in range(num_constrs):
+            for v_idx in constr_vars[c_idx]:
+                var_to_constrs.setdefault(v_idx, []).append(c_idx)
+
+        # Now fill adjacency
+        for v, c_list in var_to_constrs.items():
+            for c1 in c_list:
+                for c2 in c_list:
+                    if c1 != c2:
+                        adjacency[c1].add(c2)
+
+        return adjacency
+
+    def adjacency_aware_distance(self, perm1, perm2, adjacency):
+        """
+        Compare two permutations by how they place 'adjacent' constraints.
+        
+        For each pair (i, j) in adjacency, we look at the positions of i and j 
+        in perm1 and perm2, and sum the difference of their distances.
+        
+        i.e. sum( abs( (pos1[i] - pos1[j]) - (pos2[i] - pos2[j]) ) ) over all i in [n], j in adjacency[i].
+        
+        We'll count only j > i to avoid double-counting in an undirected adjacency.
+        """
+        n = len(perm1)
+        if len(perm2) != n:
+            raise ValueError("Permutations must be same length.")
+
+        # Build position lookups
+        pos1 = [0] * n
+        pos2 = [0] * n
+        for idx, val in enumerate(perm1):
+            pos1[val] = idx
+        for idx, val in enumerate(perm2):
+            pos2[val] = idx
+        
+        distance = 0
+        # accumulate differences for adjacency pairs
+        for i in range(n):
+            for j in adjacency[i]:
+                if j > i:  # to avoid double-counting i->j and j->i
+                    diff_pos1 = abs(pos1[i] - pos1[j])
+                    diff_pos2 = abs(pos2[i] - pos2[j])
+                    distance += abs(diff_pos1 - diff_pos2)
+        return distance

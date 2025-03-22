@@ -57,6 +57,7 @@ class OptimizationExperiment:
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())
 
+        row_adjacency = self.permutator.get_constraint_adjacency(baseline_model)
         # Solve the baseline problem (either original or permuted)
         baseline_result = self.solve_problem(baseline_model)
 
@@ -83,7 +84,7 @@ class OptimizationExperiment:
             self.logger.info(f"Running iteration {i+1}/{num_iterations}")
             try:
                 (permuted_canonical, permuted_result, final_ordered_result,
-                permuted_distance, canonical_distance) = self.run_single_iteration(
+                permuted_distance, canonical_distance) = self.run_single_iteration(row_adjacency,
                     baseline_var_order, baseline_constr_order, final_canonical_var_order, final_canonical_constr_order, (i+1)
                 )
                 iteration_result = self.build_iteration_result(
@@ -110,7 +111,7 @@ class OptimizationExperiment:
             save_all_plots(self.permuted_matrices, self.canonical_matrices, self.file_path, "experiment_plots.png")
         return results
 
-    def run_single_iteration(self, baseline_var_order, baseline_constr_order, original_canonical_var_order, original_canonical_constr_order, index):
+    def run_single_iteration(self, row_adjacency, baseline_var_order, baseline_constr_order, original_canonical_var_order, original_canonical_constr_order, index):
         try:
             self.logger.lazy_debug("Starting new iteration...")
 
@@ -132,10 +133,11 @@ class OptimizationExperiment:
             permuted_distance = self.permutator.permutation_distance(
                 baseline_constr_order, baseline_var_order,
                 constr_permutation, var_permutation,
-                row_dist_method="kendall_tau",
+                row_dist_method="adjacency",
                 col_dist_method="kendall_tau",
                 alpha=1.0, 
-                beta=1.0
+                beta=0.0,
+                row_adjacency=row_adjacency
             )
             self.logger.info(f"Permutation Distance Before Canonicalization: {permuted_distance}")
 
@@ -205,10 +207,11 @@ class OptimizationExperiment:
             canonical_distance = self.permutator.permutation_distance(
                 original_canonical_constr_order, original_canonical_var_order,
                 final_constr_order, final_var_order,
-                row_dist_method="kendall_tau",
+                row_dist_method="adjacency",
                 col_dist_method="kendall_tau",
                 alpha=1.0, 
-                beta=1.0
+                beta=0.0,
+                row_adjacency=row_adjacency
             )
             self.logger.info(f"Permutation Distance After Canonicalization: {canonical_distance}")
 
