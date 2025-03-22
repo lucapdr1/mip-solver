@@ -2,6 +2,7 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import connected_components
 from utils.logging_handler import LoggingHandler
 from core.problem_transform.distance import DistanceMetric
 
@@ -262,5 +263,48 @@ class ProblemPermutator:
                         adjacency[c1].add(c2)
 
         return adjacency
+
+    def get_rcm_adjacency(self, A_csr):
+        """
+        Given a constraint matrix in CSR format (A_csr), this function constructs
+        a symmetric constraint graph G = A_csr * A_csrᵀ (with self-edges removed)
+        and returns an adjacency dictionary mapping each row index to a set of 
+        neighboring row indices.
+        """
+        # Build the symmetric graph and remove self-loops.
+        G = A_csr.dot(A_csr.transpose())
+        G = G.tolil()       # Use LIL for efficient modifications.
+        G.setdiag(0)        # Remove self-edges.
+        G = G.tocsr()       # Convert back to CSR.
+        G.eliminate_zeros()
+        
+        # Build the adjacency dictionary.
+        rcm_adjacency = {}
+        for i in range(G.shape[0]):
+            # Extract the indices for nonzero entries in row i.
+            start = G.indptr[i]
+            end = G.indptr[i+1]
+            rcm_adjacency[i] = set(G.indices[start:end])
+        return rcm_adjacency
+
+    def get_cluster_assignments(self,A_csr):
+        """
+        Given a constraint matrix in CSR format (A_csr), build the symmetric
+        constraint graph, remove self-loops, and compute its connected components.
+        
+        Returns:
+            labels: an array where labels[i] is the cluster assignment of row i.
+        """
+        # Build the symmetric graph: each constraint is a node.
+        G = A_csr.dot(A_csr.transpose())
+        G = G.tolil()   # Efficient for modifying sparsity structure.
+        G.setdiag(0)    # Remove self-loops.
+        G = G.tocsr()   # Convert back to CSR.
+        G.eliminate_zeros()
+        
+        # Compute connected components; labels is an array of cluster assignments.
+        n_components, labels = connected_components(G, directed=False, connection='weak')
+        return labels   
+
 
     

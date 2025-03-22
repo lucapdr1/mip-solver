@@ -14,7 +14,7 @@ from utils.iteration_logger import IterationLogger
 from core.post_processing.performance_evaluator import PerformanceEvaluator
 from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
-from core.problem_transform.distance import KendallTauDistance
+from core.problem_transform.distance import KendallTauDistance, AdjacencyAwareDistance, CompositeDistance
 from utils.problem_printer import ProblemPrinter
 from utils.plots_handler import save_all_plots
 from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
@@ -38,8 +38,8 @@ class OptimizationExperiment:
         self.permuted_matrices = []
         self.canonical_matrices = []
 
-        self.col_distance_metric = KendallTauDistance()
-        self.row_distance_metric = KendallTauDistance()
+        self.row_distance_metric = None
+        self.col_distance_metric = None
     
     def run_experiment(self, num_iterations):
         """Run multiple iterations with detailed logging and solving functionality.
@@ -62,6 +62,15 @@ class OptimizationExperiment:
             self.permuted_matrices.append(baseline_model.getA())
 
         row_adjacency = self.permutator.get_constraint_adjacency(baseline_model)
+        cols_adjacency = self.permutator.get_variable_adjacency(baseline_model)
+        A_csr = baseline_model.getA().tocsr()
+        rcm_adjacency = self.permutator.get_rcm_adjacency(A_csr)
+        cluster_assignments = self.permutator.get_cluster_assignments(A_csr)
+
+        self.row_distance_metric = CompositeDistance(cluster_assignments, rcm_adjacency, alpha_cluster=1.0, beta_local=1.0)
+
+        self.col_distance_metric = KendallTauDistance()
+
         # Solve the baseline problem (either original or permuted)
         baseline_result = self.solve_problem(baseline_model)
 
