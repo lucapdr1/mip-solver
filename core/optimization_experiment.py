@@ -17,6 +17,7 @@ from core.problem_transform.problem_normalizer import ProblemNormalizer
 from core.problem_transform.distance import KendallTauDistance, AdjacencyAwareDistance, CompositeDistance
 from utils.problem_printer import ProblemPrinter
 from utils.plots_handler import save_all_plots
+from utils.gcg_preprocess import preprocess_with_gcg
 from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
 
 class OptimizationExperiment:
@@ -52,11 +53,16 @@ class OptimizationExperiment:
             self.logger.info("Calculating baseline from a permuted problem (skipping original).")
             #Change parameters to use percentage instead of number of variables per block
             baseline_model, baseline_var_order, baseline_constr_order, _, _ = self.permutator.create_permuted_problem(PERMUTE_GRANULARITY_K, PERMUTE_SEED)
+        
         else:
             self.logger.info("Solving Original Problem")
             baseline_model = self.original_model
             baseline_var_order = np.arange(self.original_model.NumVars)
             baseline_constr_order = np.arange(self.original_model.NumConstrs)
+        
+        if True:
+            print("Preprocessing with gcg")
+            baseline_model = preprocess_with_gcg(baseline_model, self.gp_env)
             
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())
@@ -86,6 +92,8 @@ class OptimizationExperiment:
         ordered_baseline_model = self.permutator.apply_permutation(
             baseline_model, baseline_canonical_var_order, baseline_canonical_constr_order
         )
+
+        
         if LOG_MATRIX:
             self.canonical_matrices.append(ordered_baseline_model.getA())
 
