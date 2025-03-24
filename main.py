@@ -63,8 +63,8 @@ def create_hierarchical_ordering():
 def create_recursive_hierarchical_ordering(json_file=None):
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
-        AdjacencyClusteringRule(),
-        ReverseCuthillMcKeeRule(),
+        #AdjacencyClusteringRule(),
+        #ReverseCuthillMcKeeRule(),
         VariableTypeRule(),
         BoundCategoryRule(),
         ConstraintCompositionRule(),
