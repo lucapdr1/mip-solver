@@ -38,7 +38,7 @@ RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'True').lower() == 'true'
 DISABLE_SOLVING = os.getenv('DISABLE_SOLVING', 'True').lower() == 'true'
 MAX_SOLVE_TIME = int(os.getenv('MAX_SOLVE_TIME', 3600))
 
-GCG_PREPROCESS = os.getenv('GCG_PREPROCESS', 'False').lower() == 'true'
+GCG_PREPROCESS = os.getenv('GCG_PREPROCESS', 'True').lower() == 'true'
 
 #AWS
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'lucapolimi-experiments')

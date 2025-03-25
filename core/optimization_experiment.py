@@ -62,7 +62,8 @@ class OptimizationExperiment:
         
         if GCG_PREPROCESS:
             print("Preprocessing with gcg")
-            baseline_model = preprocess_with_gcg(baseline_model, self.gp_env)    
+            gcg_constr_order = preprocess_with_gcg(baseline_model, self.gp_env)    
+            baseline_model = self.permutator.apply_permutation(baseline_model, np.arange(len(baseline_model.getVars())), gcg_constr_order)
             
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())
@@ -143,7 +144,8 @@ class OptimizationExperiment:
             
             if GCG_PREPROCESS:
                 print("Preprocessing with gcg")
-                permuted_model = preprocess_with_gcg(permuted_model, self.gp_env)
+                gcg_constr_order = preprocess_with_gcg(permuted_model, self.gp_env)
+                permuted_model = self.permutator.apply_permutation(permuted_model, var_permutation, gcg_constr_order)
             
             if LOG_MATRIX:
                 self.permuted_matrices.append(permuted_model.getA())
