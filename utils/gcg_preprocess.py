@@ -27,7 +27,7 @@ def rename_generated_pdf(output_dir: str, base_name: str) -> str:
     to include the base_name. Returns the final PDF file path.
     """
     pdf_files = [f for f in os.listdir(output_dir)
-                 if f.endswith('.pdf') and f.startswith('_MPS_')]
+                 if f.endswith('.pdf')]
     if pdf_files:
         original_pdf = os.path.join(output_dir, pdf_files[0])
         final_pdf = os.path.join(output_dir, f"{base_name}_decomposition.pdf")
@@ -102,6 +102,7 @@ def create_cmd_file(temp_input: str, output_dir: str, unique_id: str) -> str:
         f.write('set detection enabled TRUE\n')
         f.write('detect\n')
         f.write('explore\n')
+        f.write('score 5\n') #max-white
         f.write('select 0\n')
         f.write('export 0\n')
         f.write('quit\n')
@@ -158,11 +159,4 @@ def preprocess_with_gcg(model, gp_env):
         # Compute the constraint permutation using the dec file.
         constr_perm = constraint_permutation_from_dec(original_model, dec_file_path)
         return constr_perm
-    
-        # Apply the permutation.
-        perm_util = ProblemPermutator(gp_env=gp_env, original_model=original_model)
-        permuted_model, _ = perm_util.apply_dec_permutation(original_model, constr_perm)
-        
-        # Return the permuted model in memory.
-        return permuted_model
 
