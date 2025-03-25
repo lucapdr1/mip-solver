@@ -185,6 +185,28 @@ class ProblemPermutator:
                 new_model.ModelSense = model.ModelSense
         new_model.update()
         return new_model
+    
+    def apply_dec_permutation(self, model, constr_perm):
+        """
+        Returns a new model obtained by reordering the constraints of the given model
+        according to the order specified in the dec file.
+
+        Parameters:
+            model : gurobipy.Model
+                The model whose constraint ordering is to be permuted.
+            dec_file : str
+                Path to the .dec file containing the desired ordering.
+                
+        Returns:
+            permuted_model : A new gurobipy.Model with constraints reordered.
+            constr_perm : A NumPy array representing the new order of constraints.
+        """
+        # Keep variable order unchanged.
+        num_vars = model.NumVars
+        var_permutation = np.arange(num_vars)
+        permuted_model = self.apply_permutation(model, var_permutation, constr_perm)
+        return permuted_model, constr_perm
+
 
     def permutation_distance(self, row_perm1, col_perm1, row_perm2, col_perm2, row_metric: DistanceMetric, col_metric: DistanceMetric,
                          alpha=1.0, beta=1.0):

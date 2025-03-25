@@ -25,8 +25,8 @@ INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "exp-1-500-5-5.mps")
 
 PERMUTE_ORIGINAL = os.getenv('PERMUTE_ORIGINAL', 'False').lower() == 'true'
 PERMUTE_SEED = int(os.getenv('PERMUTE_SEED', 12345))
-PERMUTE_GRANULARITY_K = os.getenv('PERMUTE_GRANULARITY_K', "all")# "all" to permute all, any integer K e.g 10 to define 1O subblocks
-NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 1))
+PERMUTE_GRANULARITY_K = os.getenv('PERMUTE_GRANULARITY_K', 10)# "all" to permute all, any integer K e.g 10 to define 1O subblocks
+NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 2))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
 SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
 
