@@ -18,7 +18,7 @@ from core.problem_transform.distance import KendallTauDistance, AdjacencyAwareDi
 from utils.problem_printer import ProblemPrinter
 from utils.plots_handler import save_all_plots
 from utils.gcg_preprocess import preprocess_with_gcg
-from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
+from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME, GCG_PREPROCESS
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -60,9 +60,9 @@ class OptimizationExperiment:
             baseline_var_order = np.arange(self.original_model.NumVars)
             baseline_constr_order = np.arange(self.original_model.NumConstrs)
         
-        if True:
+        if GCG_PREPROCESS:
             print("Preprocessing with gcg")
-            baseline_model = preprocess_with_gcg(baseline_model, self.gp_env)
+            baseline_model = preprocess_with_gcg(baseline_model, self.gp_env)    
             
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())
@@ -140,6 +140,11 @@ class OptimizationExperiment:
             self.logger.info("Creating Permuted Problem")
             permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem(PERMUTE_GRANULARITY_K, (PERMUTE_SEED+index))
             #ProblemPrinterlog_model(permuted_model, self.logger, level="DEBUG")
+            
+            if GCG_PREPROCESS:
+                print("Preprocessing with gcg")
+                permuted_model = preprocess_with_gcg(permuted_model, self.gp_env)
+            
             if LOG_MATRIX:
                 self.permuted_matrices.append(permuted_model.getA())
 
