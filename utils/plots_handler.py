@@ -87,32 +87,43 @@ def vertically_concatenate(images, bg_color=(255,255,255)):
         y_offset += img.height
     return composite
 
-def save_all_plots(permuted_matrices, canonical_matrices, file_path, filename="experiment_composite_plots.PNG"):
+def save_all_plots(permuted_matrices, canonical_matrices, presolved_matrices, file_path, filename="experiment_composite_plots.PNG"):
     """
     Save a composite page into a single PNG file.
     
-    Top row: All permuted figures (the first element is the original figure) arranged horizontally.
+    Top row: All permuted figures arranged horizontally.
+    Middle row (optional): All presolved figures arranged horizontally.
     Bottom row: All canonical figures arranged horizontally.
     
-    The two rows are then concatenated vertically.
+    The rows are then concatenated vertically. If presolved_matrices is empty,
+    only the top and bottom rows are used.
     """
-    # Convert permuted figures to PIL images (top row).
+    # --- Process top row: Permuted matrices ---
     top_figures = [plot_sparse_structure(matrix, f"Permuted Matrix {i}") 
                    for i, matrix in enumerate(permuted_matrices)]
-    # Convert canonical figures to PIL images (bottom row).
-    bottom_figures = [plot_sparse_structure(matrix, f"Canonical Matrix {i}") 
-                      for i, matrix in enumerate(canonical_matrices)]
-    
-    # Convert figures to PIL images.
     top_imgs = [fig_to_pil_image(fig) for fig in top_figures]
-    bottom_imgs = [fig_to_pil_image(fig) for fig in bottom_figures]
-    
-    # Resize top row images so that they all have the same height.
     min_height_top = min(img.height for img in top_imgs)
     top_row_resized = resize_images_to_height(top_imgs, min_height_top)
     top_row_composite = horizontally_concatenate(top_row_resized)
     
-    # Resize bottom row images if any, so that they all have the same height.
+    # --- Process middle row: Presolved matrices (if provided) ---
+    if presolved_matrices:
+        middle_figures = [plot_sparse_structure(matrix, f"Presolved Matrix {i}") 
+                          for i, matrix in enumerate(presolved_matrices)]
+        middle_imgs = [fig_to_pil_image(fig) for fig in middle_figures]
+        if middle_imgs:
+            min_height_middle = min(img.height for img in middle_imgs)
+            middle_row_resized = resize_images_to_height(middle_imgs, min_height_middle)
+            middle_row_composite = horizontally_concatenate(middle_row_resized)
+        else:
+            middle_row_composite = None
+    else:
+        middle_row_composite = None
+
+    # --- Process bottom row: Canonical matrices ---
+    bottom_figures = [plot_sparse_structure(matrix, f"Canonical Matrix {i}") 
+                       for i, matrix in enumerate(canonical_matrices)]
+    bottom_imgs = [fig_to_pil_image(fig) for fig in bottom_figures]
     if bottom_imgs:
         min_height_bottom = min(img.height for img in bottom_imgs)
         bottom_row_resized = resize_images_to_height(bottom_imgs, min_height_bottom)
@@ -120,32 +131,33 @@ def save_all_plots(permuted_matrices, canonical_matrices, file_path, filename="e
     else:
         bottom_row_composite = None
 
-    # Pad the narrower row if widths differ.
-    top_width = top_row_composite.width
+    # --- Pad rows to have the same width ---
+    rows = [top_row_composite]
+    if middle_row_composite is not None:
+        rows.append(middle_row_composite)
     if bottom_row_composite is not None:
-        bottom_width = bottom_row_composite.width
-        if top_width > bottom_width:
-            padded_bottom = Image.new('RGB', (top_width, bottom_row_composite.height), color=(255,255,255))
-            padded_bottom.paste(bottom_row_composite, (0, 0))
-            bottom_row_composite = padded_bottom
-        elif bottom_width > top_width:
-            padded_top = Image.new('RGB', (bottom_width, top_row_composite.height), color=(255,255,255))
-            padded_top.paste(top_row_composite, (0, 0))
-            top_row_composite = padded_top
+        rows.append(bottom_row_composite)
     
-    # Vertically stack the two rows.
-    if bottom_row_composite is not None:
-        final_composite = vertically_concatenate([top_row_composite, bottom_row_composite])
-    else:
-        final_composite = top_row_composite
+    max_width = max(row.width for row in rows)
+    padded_rows = []
+    for row in rows:
+        if row.width < max_width:
+            padded = Image.new('RGB', (max_width, row.height), color=(255,255,255))
+            padded.paste(row, (0, 0))
+            padded_rows.append(padded)
+        else:
+            padded_rows.append(row)
     
-    # Create a figure to display the composite image.
+    # --- Vertically concatenate the rows ---
+    final_composite = vertically_concatenate(padded_rows)
+    
+    # --- Create a figure to display the composite image ---
     fig, ax = plt.subplots(figsize=(16, 12))
     ax.imshow(np.array(final_composite), cmap='Greys_r', interpolation='nearest')
     ax.axis('off')
     fig.tight_layout()
 
-    # Generate filename components
+    # --- Generate filename and save ---
     base_name = os.path.basename(file_path)
     base_name = os.path.splitext(base_name)[0]
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -154,3 +166,4 @@ def save_all_plots(permuted_matrices, canonical_matrices, file_path, filename="e
     fig.savefig(filename, dpi=300)
     
     print(f"Composite plot has been saved to {filename}")
+

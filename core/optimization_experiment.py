@@ -17,7 +17,7 @@ from core.problem_transform.problem_normalizer import ProblemNormalizer
 from core.problem_transform.distance import KendallTauDistance, AdjacencyAwareDistance, CompositeDistance
 from utils.problem_printer import ProblemPrinter
 from utils.plots_handler import save_all_plots
-from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
+from utils.config import PRESOLVE, PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -36,6 +36,7 @@ class OptimizationExperiment:
 
          # Lists to store figures
         self.permuted_matrices = []
+        self.presolved_matrices = []
         self.canonical_matrices = []
 
         self.row_distance_metric = None
@@ -60,6 +61,9 @@ class OptimizationExperiment:
             
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())
+        
+        if PRESOLVE:
+            baseline_model = self.apply_presolve(baseline_model)
 
         row_adjacency = self.permutator.get_constraint_adjacency(baseline_model)
         cols_adjacency = self.permutator.get_variable_adjacency(baseline_model)
@@ -121,7 +125,7 @@ class OptimizationExperiment:
             stats = self.ordering_rule.get_granularity_statistics()
             IterationLogger().log_granularity_stats(stats)
         if LOG_MATRIX:
-            save_all_plots(self.permuted_matrices, self.canonical_matrices, self.file_path, "experiment_plots.png")
+            save_all_plots(self.permuted_matrices, self.canonical_matrices, self.presolved_matrices, self.file_path, "experiment_plots.png")
         return results
 
     def run_single_iteration(self, baseline_var_order, baseline_constr_order, original_canonical_var_order, original_canonical_constr_order, index):
@@ -134,6 +138,10 @@ class OptimizationExperiment:
             #ProblemPrinterlog_model(permuted_model, self.logger, level="DEBUG")
             if LOG_MATRIX:
                 self.permuted_matrices.append(permuted_model.getA())
+            
+            if PRESOLVE:
+                permuted_model = self.apply_presolve(permuted_model)
+                #TODO: extract order
 
             # Compute permutation distance BEFORE canonicalization (using unscaled permuted model)
             self.logger.info("Computing Permutation Distance before Canonicalization...")
@@ -354,4 +362,31 @@ class OptimizationExperiment:
         except gp.GurobiError as e:
             self.logger.error(f"Gurobi Error: {e}")
             raise
+
+    def apply_presolve(self, model):
+        """
+        This function takes an original Gurobi model, runs presolve with a short time limit,
+        writes the presolved model to a file, reads it back, disables further presolve,
+        and returns the resulting model ready for modification and solving.
+        
+        Parameters:
+        model (gurobipy.Model): The original Gurobi model.
+        presolved_filename (str): Filename to store the presolved model.
+        timelimit (int or float): Time limit (in seconds) for the initial optimization (presolve phase).
+        
+        Returns:
+        gurobipy.Model: The presolved model with presolve disabled.
+        """
+        model.Params.Presolve = 1
+        presolved_model = model.presolve()
+
+        if LOG_MATRIX:
+            self.presolved_matrices.append(presolved_model.getA())
+        
+        # Disable further presolve to keep the model as is.
+        presolved_model.Params.Presolve = 0
+        
+        return presolved_model
+
+
         
