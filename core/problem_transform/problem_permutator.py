@@ -307,4 +307,40 @@ class ProblemPermutator:
         return labels   
 
 
+class PermutationStorage:
+    def __init__(self, permutator, row_metric, col_metric):
+        # Stores tuples of (constr_order, var_order) for permutations.
+        self.permutations = []
+        # Stores tuples of (constr_order, var_order) for canonical forms.
+        self.canonical_forms = []
+        self.row_metric = row_metric
+        self.col_metric = col_metric
+        self.permutatator = permutator
+
+    def __len__(self):
+        """Return the number of stored permutations."""
+        return len(self.permutations)
+
+    def add_permutation(self, constr_order, var_order):
+        """Add a new permutation tuple."""
+        self.permutations.append((constr_order, var_order))
+
+    def add_canonical_form(self, constr_order, var_order):
+        """Add a new canonical form tuple."""
+        self.canonical_forms.append((constr_order, var_order))
+
+    def get_permutation(self, index):
+        """Retrieve a permutation by its index."""
+        return self.permutations[index]
+
+    def get_canonical_form(self, index):
+        """Retrieve a canonical form by its index."""
+        return self.canonical_forms[index]
     
+    def compute_permutation_distance(self, row1, col1, row2, col2):
+        return self.permutatator.permutation_distance(
+            row1,col1,
+            row2,col2,
+            row_metric=self.row_metric,
+            col_metric=self.col_metric
+        )

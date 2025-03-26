@@ -8,7 +8,7 @@ import numpy as np
 import tempfile
 
 from utils.logging_handler import LoggingHandler
-from core.problem_transform.problem_permutator import ProblemPermutator
+from core.problem_transform.problem_permutator import ProblemPermutator, PermutationStorage
 from core.canonical_form_generator import CanonicalFormGenerator
 from utils.iteration_logger import IterationLogger
 from core.post_processing.performance_evaluator import PerformanceEvaluator
@@ -34,6 +34,7 @@ class OptimizationExperiment:
         self.permutator = ProblemPermutator(gp_env, self.original_model)
         self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule)
 
+        self.permut_storage = None
          # Lists to store figures
         self.permuted_matrices = []
         self.canonical_matrices = []
@@ -67,9 +68,12 @@ class OptimizationExperiment:
         rcm_adjacency = self.permutator.get_rcm_adjacency(A_csr)
         cluster_assignments = self.permutator.get_cluster_assignments(A_csr)
 
-        self.row_distance_metric = CompositeDistance(cluster_assignments, rcm_adjacency, alpha_cluster=1.0, beta_local=1.0)
-
+        #self.row_distance_metric = CompositeDistance(cluster_assignments, rcm_adjacency, alpha_cluster=1.0, beta_local=1.0)
+        self.row_distance_metric = KendallTauDistance()
         self.col_distance_metric = KendallTauDistance()
+
+        self.permut_storage = PermutationStorage(self.permutator, self.row_distance_metric, self.col_distance_metric)
+        self.permut_storage.add_permutation(baseline_constr_order, baseline_var_order)
 
         # Solve the baseline problem (either original or permuted)
         baseline_result = self.solve_problem(baseline_model)
@@ -82,6 +86,8 @@ class OptimizationExperiment:
         
         final_canonical_var_order = baseline_var_order[baseline_canonical_var_order]
         final_canonical_constr_order = baseline_constr_order[baseline_canonical_constr_order]
+
+        self.permut_storage.add_canonical_form(final_canonical_constr_order, final_canonical_var_order)
 
         ordered_baseline_model = self.permutator.apply_permutation(
             baseline_model, baseline_canonical_var_order, baseline_canonical_constr_order
@@ -115,7 +121,8 @@ class OptimizationExperiment:
         # Compute and log variability metrics
         PerformanceEvaluator().compute_solve_time_variability_std(results)
         PerformanceEvaluator().compute_work_unit_variability_std(results)
-        PerformanceEvaluator().compute_distance_variability_std(results)
+        PerformanceEvaluator().compute_simple_distance_variability_std(results)
+        PerformanceEvaluator().compute_all_pairs_distance_variability_std(self.permut_storage)
 
         if RECURSIVE_RULES:
             stats = self.ordering_rule.get_granularity_statistics()
@@ -134,6 +141,8 @@ class OptimizationExperiment:
             #ProblemPrinterlog_model(permuted_model, self.logger, level="DEBUG")
             if LOG_MATRIX:
                 self.permuted_matrices.append(permuted_model.getA())
+
+            self.permut_storage.add_permutation(constr_permutation, var_permutation)
 
             # Compute permutation distance BEFORE canonicalization (using unscaled permuted model)
             self.logger.info("Computing Permutation Distance before Canonicalization...")
@@ -209,6 +218,8 @@ class OptimizationExperiment:
             # Final ordering is the composition of the original permutation with the canonical ordering.
             final_var_order = var_permutation[permuted_canonical_var_order]
             final_constr_order = constr_permutation[permuted_canonical_constr_order]
+
+            self.permut_storage.add_canonical_form(final_constr_order, final_var_order)
 
             self.logger.info("Computing Permutation Distance after Canonicalization...")
             self.logger.lazy_debug(f"Original Canonical Constraint Order: {original_canonical_constr_order}")
