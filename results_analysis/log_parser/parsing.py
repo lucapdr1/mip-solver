@@ -1,6 +1,6 @@
 import re
 from typing import List, Optional
-from log_parser.model import ModelInfo, IterationMetrics, GranularityStats
+from log_parser.model import ModelInfo, IterationMetrics, GranularityStats, PairwiseDistances
 
 def parse_model_info(content: str, file_name: str) -> ModelInfo:
     """Extract general model information from the log content."""
@@ -87,6 +87,26 @@ def parse_iterations(content: str) -> List[IterationMetrics]:
         )
         iterations.append(iteration)
     return iterations
+
+def parse_pairwise_distances(content: str) -> Optional[PairwiseDistances]:
+    """
+    Parses the pairwise distances statistics block from the log content.
+    This block contains the standard deviation for all-pairs distances
+    before and after canonicalization.
+    """
+    pattern = re.compile(
+        r'All-Pairs Permutation Distance Variability \(Standard Deviation\):.*?'
+        r'- Std\(All-Pairs Distance Before Canonicalization\):\s*([\d.]+).*?'
+        r'- Std\(All-Pairs Distance After Canonicalization\):\s*([\d.]+)',
+        re.DOTALL
+    )
+    match = pattern.search(content)
+    if match:
+        return PairwiseDistances(
+            std_pairwise_distance_before=float(match.group(1)),
+            std_pairwise_distance_after=float(match.group(2))
+        )
+    return None
 
 def parse_granularity_stats(content: str) -> Optional[GranularityStats]:
     """
