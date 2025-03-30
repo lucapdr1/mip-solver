@@ -1,5 +1,5 @@
 from utils.logging_handler import LoggingHandler
-from utils.config import LOG_LEVEL, INPUT_DIR, OUTPUT_DIR, INPUT_PROBLEM, PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, NUMBER_OF_PERMUTATIONS, NORMALIZATION_ACTIVE, MATRICES_TO_CSV, LOG_MATRIX, LOG_MODEL_COMPARISON, PRODUCTION, RECURSIVE_RULES, DISABLE_SOLVING, MAX_SOLVE_TIME
+from utils.config import LOG_LEVEL, INPUT_DIR, OUTPUT_DIR, INPUT_PROBLEM, PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, NUMBER_OF_PERMUTATIONS, NORMALIZATION_ACTIVE, MATRICES_TO_CSV, LOG_MATRIX, LOG_MODEL_COMPARISON, PRODUCTION, RECURSIVE_RULES, DISABLE_SOLVING, MAX_SOLVE_TIME, NUMBER_OF_THREADS
 
 class IterationLogger:
     def __init__(self):
@@ -27,6 +27,7 @@ class IterationLogger:
         self.logger.info(f"- RECURSIVE_RULES: {RECURSIVE_RULES}")
         self.logger.info(f"- DISABLE_SOLVING: {DISABLE_SOLVING}")
         self.logger.info(f"- MAX_SOLVE_TIME: {MAX_SOLVE_TIME}")
+        self.logger.info(f"- NUMBER_OF_THREADS: {NUMBER_OF_THREADS}")
 
     def log_model_info(self, model, file_path):
         self.logger.info(f"Successfully loaded problem from {file_path}")

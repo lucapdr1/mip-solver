@@ -16,7 +16,7 @@ from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
 from utils.plots_handler import save_all_plots
-from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME
+from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME, NUMBER_OF_THREADS
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -312,6 +312,7 @@ class OptimizationExperiment:
             }
 
         try:
+            model.Params.Threads = NUMBER_OF_THREADS
             model.Params.TimeLimit = MAX_SOLVE_TIME
             start_time = time.time()
             model.optimize()

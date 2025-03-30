@@ -36,6 +36,7 @@ PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'True').lower() == 'true'
 DISABLE_SOLVING = os.getenv('DISABLE_SOLVING', 'False').lower() == 'true'
 MAX_SOLVE_TIME = int(os.getenv('MAX_SOLVE_TIME', 3600))
+NUMBER_OF_THREADS = int(os.getenv('NUMBER_OF_THREADS', 4))
 
 #AWS
 BUCKET_NAME = os.getenv('BUCKET_NAME', 'lucapolimi-experiments')

@@ -7,7 +7,7 @@ from PIL import Image
 import numpy as np
 from utils.config import OUTPUT_DIR
 
-def plot_sparse_structure(sparse_matrix, title, cmap='Greys'):
+def plot_sparse_structure(sparse_matrix, title, cmap='Greys_r'):
     """
     Visualizes sparse matrices clearly by filling squares.
     Nonzero entries in black, zeros in white.
@@ -141,7 +141,7 @@ def save_all_plots(permuted_matrices, canonical_matrices, file_path, filename="e
     
     # Create a figure to display the composite image.
     fig, ax = plt.subplots(figsize=(16, 12))
-    ax.imshow(np.array(final_composite), cmap='Greys', interpolation='nearest')
+    ax.imshow(np.array(final_composite), cmap='Greys_r', interpolation='nearest')
     ax.axis('off')
     fig.tight_layout()
 
