@@ -96,6 +96,7 @@ Since the file is executable, you can also omit the `bash` command:
 - `--input-dir=./mip_lib/` is the folder containing the miplib problems.
 - `--output-dir=./batch_output/` is the folder where the results will be saved.
 - `--parallel-instances=4` sets the number of parallel jobs within the script (note that 1 is a valid option).
+- `--threads=8` sets the number of threads withing a job (8 in not specified).
 - **Note:** Remember to include the closing `/` at the end of each folder name.
 
 ### Execution Using GNU Parallel
