@@ -69,8 +69,8 @@ class OptimizationExperiment:
         cluster_assignments = self.permutator.get_cluster_assignments(A_csr)
 
         #self.row_distance_metric = CompositeDistance(cluster_assignments, rcm_adjacency, alpha_cluster=1.0, beta_local=1.0)
-        self.row_distance_metric = WeightedKendallTauDistance()
-        self.col_distance_metric = WeightedKendallTauDistance()
+        self.row_distance_metric = KendallTauDistance()
+        self.col_distance_metric = KendallTauDistance()
 
         self.permut_storage = PermutationStorage(self.permutator, self.row_distance_metric, self.col_distance_metric)
         self.permut_storage.add_permutation(baseline_constr_order, baseline_var_order)
