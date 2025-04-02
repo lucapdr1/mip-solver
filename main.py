@@ -21,8 +21,10 @@ from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurre
 from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule, SetPackingRHSRule, UnscaledObjectiveOrderingRule
 from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
 from core.ordering.recursive.adjacency_aware import ReverseCuthillMcKeeRule, AdjacencyClusteringRule
+from core.ordering.constraints.decomposition_rule import DecompositionRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
+from utils.dec_parser import DecFileParser
 from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES
 
 
@@ -60,9 +62,12 @@ def create_hierarchical_ordering():
     )
 
 
-def create_recursive_hierarchical_ordering(json_file=None):
+def create_recursive_hierarchical_ordering(input_problem, json_file=None):
+    dec_parser = DecFileParser(input_problem)
+
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
+        DecompositionRule(dec_parser=dec_parser),
         VariableTypeRule(),
         BoundCategoryRule(),
         ConstraintCompositionRule(),
@@ -118,7 +123,7 @@ if __name__ == "__main__":
         # Check if a JSON file was passed as an argument
         json_file = sys.argv[1] if len(sys.argv) > 1 else None
 
-        ordering_rule = create_recursive_hierarchical_ordering(json_file) if RECURSIVE_RULES else create_hierarchical_ordering()
+        ordering_rule = create_recursive_hierarchical_ordering(input_problem, json_file) if RECURSIVE_RULES else create_hierarchical_ordering()
 
         experiment = OptimizationExperiment(gp_env, input_problem, ordering_rule)
         results = experiment.run_experiment(NUMBER_OF_PERMUTATIONS)
