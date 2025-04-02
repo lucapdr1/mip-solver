@@ -16,8 +16,9 @@ from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
 from core.problem_transform.distance import KendallTauDistance, WeightedKendallTauDistance, AdjacencyAwareDistance, CompositeDistance
 from utils.problem_printer import ProblemPrinter
+from utils.dec_parser import DecFileParser
 from utils.plots_handler import save_all_plots
-from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME, NUMBER_OF_THREADS
+from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, APPLY_DEC, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME, NUMBER_OF_THREADS
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -41,6 +42,8 @@ class OptimizationExperiment:
 
         self.row_distance_metric = None
         self.col_distance_metric = None
+
+        self.dec_parser = DecFileParser(self.file_path)
     
     def run_experiment(self, num_iterations):
         """Run multiple iterations with detailed logging and solving functionality.
@@ -58,7 +61,19 @@ class OptimizationExperiment:
             baseline_model = self.original_model
             baseline_var_order = np.arange(self.original_model.NumVars)
             baseline_constr_order = np.arange(self.original_model.NumConstrs)
-            
+
+        if APPLY_DEC:
+            print(".dec")
+            # Get dec-based permutations
+            constr_dec_perm, var_dec_perm = self.dec_parser.get_permutations(baseline_model)
+
+            # Compute the composite permutation: apply dec ordering on top of permuted ordering
+            final_var_dec_perm = baseline_var_order[var_dec_perm]
+            final_constr_dec_perm = baseline_constr_order[constr_dec_perm]
+            #TODO: use the effective order in perm distance computations
+            # Apply the final composite permutation
+            baseline_model = self.permutator.apply_permutation(baseline_model, var_dec_perm, constr_dec_perm)
+
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())
 

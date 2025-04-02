@@ -148,7 +148,7 @@ class ProblemPermutator:
                 ub=old_var.UB,
                 obj=old_var.Obj,
                 vtype=old_var.VType,
-                name=f"x{new_idx+1}"
+                name=old_var.VarName
             )
             new_vars.append(new_var)
         new_model.update()
@@ -176,11 +176,11 @@ class ProblemPermutator:
                 expr.add(new_vars[col_idx], float(coeff))
             rhs_value = old_constr.RHS
             if old_constr.Sense == GRB.LESS_EQUAL:
-                new_model.addConstr(expr <= rhs_value)
+                new_model.addConstr(expr <= rhs_value, name=old_constr.ConstrName)
             elif old_constr.Sense == GRB.GREATER_EQUAL:
-                new_model.addConstr(expr >= rhs_value)
+                new_model.addConstr(expr >= rhs_value, name=old_constr.ConstrName)
             else:  # GRB.EQUAL
-                new_model.addConstr(expr == rhs_value)
+                new_model.addConstr(expr == rhs_value, name=old_constr.ConstrName)
 
                 new_model.ModelSense = model.ModelSense
         new_model.update()
