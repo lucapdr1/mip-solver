@@ -117,8 +117,8 @@ process_input_files() {
     # Create a temporary file to hold file sizes and paths.
     tmpfile=$(mktemp)
     
-    # Collect file sizes and paths from the input folder.
-    find "$INPUT_DIR" -maxdepth 1 -type f -exec sh -c 'printf "%s %s\n" "$(wc -c < "$1")" "$1"' sh {} \; > "$tmpfile"
+    # Collect file sizes and paths from the input folder, filtering for .mps files only
+    find "$INPUT_DIR" -maxdepth 1 -type f -name "*.mps" -exec sh -c 'printf "%s %s\n" "$(wc -c < "$1")" "$1"' sh {} \; > "$tmpfile"
     
     # Read sorted file list into an array (preserving spaces in filenames).
     mapfile -t files < <(sort -n "$tmpfile" | cut -d ' ' -f 2-)
