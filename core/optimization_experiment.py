@@ -43,7 +43,7 @@ class OptimizationExperiment:
         self.row_distance_metric = None
         self.col_distance_metric = None
 
-        self.dec_parser = DecFileParser(self.file_path)
+        #self.dec_parser = DecFileParser(self.file_path)
     
     def run_experiment(self, num_iterations):
         """Run multiple iterations with detailed logging and solving functionality.
@@ -62,6 +62,7 @@ class OptimizationExperiment:
             baseline_var_order = np.arange(self.original_model.NumVars)
             baseline_constr_order = np.arange(self.original_model.NumConstrs)
 
+        """
         if APPLY_DEC:
             print(".dec")
             # Get dec-based permutations
@@ -73,6 +74,7 @@ class OptimizationExperiment:
             #TODO: use the effective order in perm distance computations
             # Apply the final composite permutation
             baseline_model = self.permutator.apply_permutation(baseline_model, var_dec_perm, constr_dec_perm)
+        """
 
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())

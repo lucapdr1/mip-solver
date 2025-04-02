@@ -23,7 +23,7 @@ INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-911970.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-4306827-ravan.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "net12.mps")
 
-PERMUTE_ORIGINAL = os.getenv('PERMUTE_ORIGINAL', 'True').lower() == 'true'
+PERMUTE_ORIGINAL = os.getenv('PERMUTE_ORIGINAL', 'False').lower() == 'true'
 PERMUTE_SEED = int(os.getenv('PERMUTE_SEED', 12345))
 PERMUTE_GRANULARITY_K = os.getenv('PERMUTE_GRANULARITY_K', 10)# "all" to permute all, any integer K e.g 10 to define 1O subblocks
 APPLY_DEC = os.getenv('APPLY_DEC', 'True').lower() == 'true'
