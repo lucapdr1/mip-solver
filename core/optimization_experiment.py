@@ -8,12 +8,13 @@ import numpy as np
 import tempfile
 
 from utils.logging_handler import LoggingHandler
-from core.problem_transform.problem_permutator import ProblemPermutator
+from core.problem_transform.problem_permutator import ProblemPermutator, PermutationStorage
 from core.canonical_form_generator import CanonicalFormGenerator
 from utils.iteration_logger import IterationLogger
 from core.post_processing.performance_evaluator import PerformanceEvaluator
 from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
+from core.problem_transform.distance import KendallTauDistance, WeightedKendallTauDistance, AdjacencyAwareDistance, CompositeDistance
 from utils.problem_printer import ProblemPrinter
 from utils.plots_handler import save_all_plots
 from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME, NUMBER_OF_THREADS
@@ -33,9 +34,13 @@ class OptimizationExperiment:
         self.permutator = ProblemPermutator(gp_env, self.original_model)
         self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule)
 
+        self.permut_storage = None
          # Lists to store figures
         self.permuted_matrices = []
         self.canonical_matrices = []
+
+        self.row_distance_metric = None
+        self.col_distance_metric = None
     
     def run_experiment(self, num_iterations):
         """Run multiple iterations with detailed logging and solving functionality.
@@ -57,6 +62,19 @@ class OptimizationExperiment:
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())
 
+        row_adjacency = self.permutator.get_constraint_adjacency(baseline_model)
+        cols_adjacency = self.permutator.get_variable_adjacency(baseline_model)
+        A_csr = baseline_model.getA().tocsr()
+        rcm_adjacency = self.permutator.get_rcm_adjacency(A_csr)
+        cluster_assignments = self.permutator.get_cluster_assignments(A_csr)
+
+        #self.row_distance_metric = CompositeDistance(cluster_assignments, rcm_adjacency, alpha_cluster=1.0, beta_local=1.0)
+        self.row_distance_metric = KendallTauDistance()
+        self.col_distance_metric = KendallTauDistance()
+
+        self.permut_storage = PermutationStorage(self.permutator, self.row_distance_metric, self.col_distance_metric)
+        self.permut_storage.add_permutation(baseline_constr_order, baseline_var_order)
+
         # Solve the baseline problem (either original or permuted)
         baseline_result = self.solve_problem(baseline_model)
 
@@ -68,6 +86,8 @@ class OptimizationExperiment:
         
         final_canonical_var_order = baseline_var_order[baseline_canonical_var_order]
         final_canonical_constr_order = baseline_constr_order[baseline_canonical_constr_order]
+
+        self.permut_storage.add_canonical_form(final_canonical_constr_order, final_canonical_var_order)
 
         ordered_baseline_model = self.permutator.apply_permutation(
             baseline_model, baseline_canonical_var_order, baseline_canonical_constr_order
@@ -101,7 +121,8 @@ class OptimizationExperiment:
         # Compute and log variability metrics
         PerformanceEvaluator().compute_solve_time_variability_std(results)
         PerformanceEvaluator().compute_work_unit_variability_std(results)
-        PerformanceEvaluator().compute_distance_variability_std(results)
+        PerformanceEvaluator().compute_simple_distance_variability_std(results)
+        PerformanceEvaluator().compute_all_pairs_distance_variability_std(self.permut_storage)
 
         if RECURSIVE_RULES:
             stats = self.ordering_rule.get_granularity_statistics()
@@ -121,6 +142,8 @@ class OptimizationExperiment:
             if LOG_MATRIX:
                 self.permuted_matrices.append(permuted_model.getA())
 
+            self.permut_storage.add_permutation(constr_permutation, var_permutation)
+
             # Compute permutation distance BEFORE canonicalization (using unscaled permuted model)
             self.logger.info("Computing Permutation Distance before Canonicalization...")
 
@@ -132,8 +155,8 @@ class OptimizationExperiment:
             permuted_distance = self.permutator.permutation_distance(
                 baseline_constr_order, baseline_var_order,
                 constr_permutation, var_permutation,
-                row_dist_method="kendall_tau",
-                col_dist_method="kendall_tau",
+                self.row_distance_metric,
+                self.col_distance_metric,
                 alpha=1.0, 
                 beta=1.0
             )
@@ -196,6 +219,8 @@ class OptimizationExperiment:
             final_var_order = var_permutation[permuted_canonical_var_order]
             final_constr_order = constr_permutation[permuted_canonical_constr_order]
 
+            self.permut_storage.add_canonical_form(final_constr_order, final_var_order)
+
             self.logger.info("Computing Permutation Distance after Canonicalization...")
             self.logger.lazy_debug(f"Original Canonical Constraint Order: {original_canonical_constr_order}")
             self.logger.lazy_debug(f"Permuted Canonical Constraint Order: {final_constr_order}")
@@ -205,10 +230,10 @@ class OptimizationExperiment:
             canonical_distance = self.permutator.permutation_distance(
                 original_canonical_constr_order, original_canonical_var_order,
                 final_constr_order, final_var_order,
-                row_dist_method="kendall_tau",
-                col_dist_method="kendall_tau",
+                self.row_distance_metric,
+                self.col_distance_metric,
                 alpha=1.0, 
-                beta=1.0
+                beta=1.0,
             )
             self.logger.info(f"Permutation Distance After Canonicalization: {canonical_distance}")
 

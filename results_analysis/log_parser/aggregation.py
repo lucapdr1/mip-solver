@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List
-from log_parser.model import IterationMetrics, AggregatedMetrics, AggregatedGranularityMetrics
+from log_parser.model import ModelInfo, IterationMetrics, PairwiseDistances, GranularityStats, AggregatedMetrics, AggragatedPairwiseDistances, AggregatedGranularityMetrics
 from log_parser.parsing import parse_model_info, parse_iterations
 
 
@@ -80,7 +80,22 @@ def compute_aggregated_metrics(iterations: List[IterationMetrics]) -> Aggregated
     
     return agg
 
-def compute_granularity_metrics(granularity_stats, model_info):
+def compute_pairwise_metrics(pairwise_stats : PairwiseDistances):
+    agg = AggragatedPairwiseDistances()
+    try:
+        if pairwise_stats.std_pairwise_distance_before:
+            agg.std_pairwise_distance_reduction_pct = round((
+                    (pairwise_stats.std_pairwise_distance_before - pairwise_stats.std_pairwise_distance_after) /
+                    pairwise_stats.std_pairwise_distance_before * 100
+                ),2)
+        else:
+            agg.std_pairwise_distance_reduction_pct = None
+        
+    except Exception as e:
+        print(f"Error computing aggregated metrics: {e}")
+    return agg
+
+def compute_granularity_metrics(granularity_stats : GranularityStats, model_info : ModelInfo):
     agg = AggregatedGranularityMetrics()
     try:
         agg.avg_block_percentage = granularity_stats.avg_block_size / (model_info.variables * model_info.constraints) * 100

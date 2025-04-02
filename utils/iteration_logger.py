@@ -18,7 +18,6 @@ class IterationLogger:
         self.logger.info(f"- PERMUTE_SEED: {PERMUTE_SEED}")
         self.logger.info(f"- PERMUTE_GRANULARITY_K: {PERMUTE_GRANULARITY_K}")
         self.logger.info(f"- NUMBER_OF_PERMUTATIONS: {NUMBER_OF_PERMUTATIONS}")
-        self.logger.info(f"- NUMBER_OF_PERMUTATIONS: {NUMBER_OF_PERMUTATIONS}")
         self.logger.info(f"- NORMALIZATION_ACTIVE: {NORMALIZATION_ACTIVE}")
         self.logger.info(f"- MATRICES_TO_CSV: {MATRICES_TO_CSV}")
         self.logger.info(f"- LOG_MATRIX: {LOG_MATRIX}")

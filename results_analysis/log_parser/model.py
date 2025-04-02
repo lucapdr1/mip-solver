@@ -48,6 +48,15 @@ class AggregatedMetrics:
     constraint_counts_match_pct: Optional[float] = None
 
 @dataclass
+class PairwiseDistances:
+    std_pairwise_distance_before :  Optional[float] = None
+    std_pairwise_distance_after :  Optional[float] = None
+
+@dataclass
+class AggragatedPairwiseDistances:
+    std_pairwise_distance_reduction_pct: Optional[float] = None
+
+@dataclass
 class GranularityStats:
     total_blocks: Optional[int] = None
     avg_block_size: Optional[float] = None
@@ -64,5 +73,7 @@ class LogMetrics:
     model_info: ModelInfo
     iterations: List[IterationMetrics] = field(default_factory=list)
     aggregated_metrics: AggregatedMetrics = field(default_factory=AggregatedMetrics)
+    pairwise_distances: Optional[PairwiseDistances] = None
+    pairwise_metrics : Optional[AggragatedPairwiseDistances] = None
     granularity_stats: Optional[GranularityStats] = None 
     granularity_metrics : Optional[AggregatedGranularityMetrics] = None

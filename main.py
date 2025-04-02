@@ -20,6 +20,7 @@ from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCount
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
 from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule, SetPackingRHSRule, UnscaledObjectiveOrderingRule
 from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
+from core.ordering.recursive.adjacency_aware import ReverseCuthillMcKeeRule, AdjacencyClusteringRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
 from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES
@@ -39,6 +40,8 @@ def create_hierarchical_ordering():
     ]
 
     constr_block_rules = [
+        AdjacencyClusteringRule(),
+        ReverseCuthillMcKeeRule(),
         ConstraintSenseRule(1),
         ConstraintCompositionRule(1)
     ]

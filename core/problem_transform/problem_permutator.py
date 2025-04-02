@@ -2,7 +2,9 @@ import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
 from scipy.sparse import coo_matrix
+from scipy.sparse.csgraph import connected_components
 from utils.logging_handler import LoggingHandler
+from core.problem_transform.distance import DistanceMetric
 
 class ProblemPermutator:
     def __init__(self, gp_env, original_model):
@@ -184,73 +186,161 @@ class ProblemPermutator:
         new_model.update()
         return new_model
 
-    def permutation_distance(self, row_perm1, col_perm1, row_perm2, col_perm2,
-                             row_dist_method="kendall_tau",
-                             col_dist_method="kendall_tau",
-                             alpha=1.0, beta=1.0):
+    def permutation_distance(self, row_perm1, col_perm1, row_perm2, col_perm2, row_metric: DistanceMetric, col_metric: DistanceMetric,
+                         alpha=1.0, beta=1.0):
         """
-        Compute a combined distance between two pairs of permutations.
-        row_dist_method and col_dist_method can be 'kendall_tau', 'hamming', etc.
+        Compute the overall distance as a weighted sum of row and column distances.
+        If column permutations are not provided, only row distance is computed.
         """
-        if row_dist_method == "kendall_tau":
-            dist_fn_rows = self.kendall_tau_distance
-        else:
-            dist_fn_rows = self.hamming_distance
-
-        if col_dist_method == "kendall_tau":
-            dist_fn_cols = self.kendall_tau_distance
-        else:
-            dist_fn_cols = self.hamming_distance
-
-        d_rows = dist_fn_rows(row_perm1, row_perm2)
-        d_cols = dist_fn_cols(col_perm1, col_perm2)
+        d_rows = row_metric.compute(row_perm1, row_perm2)
+        d_cols = col_metric.compute(col_perm1, col_perm2)
         return alpha * d_rows + beta * d_cols
 
-    def hamming_distance(self, perm1, perm2):
-        if len(perm1) != len(perm2):
-            raise ValueError("Permutations must be the same length.")
-        return np.sum(np.array(perm1) != np.array(perm2))
 
-    def kendall_tau_distance(self, perm1, perm2):
-        n = len(perm1)
-        if len(perm2) != n:
-            raise ValueError("Permutations must be the same length.")
+    # --------------------------------------------------------------------------
+    # ------------------ NEW METHODS: BUILD ADJACENCY + DISTANCE ---------------
+    # --------------------------------------------------------------------------
+    def get_variable_adjacency(self, model):
+        """
+        Build an adjacency dictionary for variables.
+        Two variables are considered adjacent if they appear together in at least one constraint.
+        
+        Returns:
+            adjacency: dict
+                For each variable index j, adjacency[j] is a set of variable indices that
+                appear in at least one common constraint with j.
+        """
+        A = model.getA().tocoo()  # Get constraint matrix in COO format
+        num_vars = model.NumVars
 
-        # Map elements of perm2 to their positions
-        pos_in_perm2 = [0] * n
-        for i, val in enumerate(perm2):
-            pos_in_perm2[val] = i
+        # Build a mapping from each constraint to the set of variables in that constraint.
+        constr_vars = {}
+        for row, col, value in zip(A.row, A.col, A.data):
+            if value != 0:
+                constr_vars.setdefault(row, set()).add(col)
+        
+        # Build variable adjacency: two variables are adjacent if they appear in the same constraint.
+        adjacency = {j: set() for j in range(num_vars)}
+        for var_set in constr_vars.values():
+            for j in var_set:
+                for k in var_set:
+                    if j != k:
+                        adjacency[j].add(k)
+        return adjacency
+    
+    def get_constraint_adjacency(self, model):
+        """
+        Build an adjacency dictionary for constraints.
+        Two constraints are considered adjacent if they share at least one variable.
+        
+        Returns:
+            adjacency: dict
+                adjacency[i] is a set of constraint indices that share >=1 var with constraint i
+        """
+        A = model.getA().tocoo()  # get constraint matrix in COO format
+        num_constrs = model.NumConstrs
+        num_vars = model.NumVars
 
-        # Transform perm1 into the positions from perm2
-        transformed = [pos_in_perm2[val] for val in perm1]
+        # 1) For each constraint i, record which variables appear
+        constr_vars = {i: set() for i in range(num_constrs)}
+        for row_idx, col_idx, value in zip(A.row, A.col, A.data):
+            if value != 0:
+                constr_vars[row_idx].add(col_idx)
 
-        # Use a merge sort based inversion count
-        _, inv_count = self._count_inversions(transformed)
-        return inv_count
+        # 2) Build adjacency by union over shared variables
+        adjacency = {i: set() for i in range(num_constrs)}
+        # For each variable, we gather all constraints it appears in, then mark them adjacent.
+        var_to_constrs = {}
+        for c_idx in range(num_constrs):
+            for v_idx in constr_vars[c_idx]:
+                var_to_constrs.setdefault(v_idx, []).append(c_idx)
 
-    def _count_inversions(self, arr):
-        # Base case: a single element has zero inversions
-        if len(arr) <= 1:
-            return arr, 0
-        mid = len(arr) // 2
-        left, inv_left = self._count_inversions(arr[:mid])
-        right, inv_right = self._count_inversions(arr[mid:])
-        merged, inv_split = self._merge_count(left, right)
-        return merged, inv_left + inv_right + inv_split
+        # Now fill adjacency
+        for v, c_list in var_to_constrs.items():
+            for c1 in c_list:
+                for c2 in c_list:
+                    if c1 != c2:
+                        adjacency[c1].add(c2)
 
-    def _merge_count(self, left, right):
-        merged = []
-        inv_count = 0
-        i = j = 0
-        while i < len(left) and j < len(right):
-            if left[i] <= right[j]:
-                merged.append(left[i])
-                i += 1
-            else:
-                merged.append(right[j])
-                inv_count += len(left) - i  # Count inversions: all remaining left items are greater
-                j += 1
-        # Append remaining elements (no inversions added)
-        merged.extend(left[i:])
-        merged.extend(right[j:])
-        return merged, inv_count
+        return adjacency
+
+    def get_rcm_adjacency(self, A_csr):
+        """
+        Given a constraint matrix in CSR format (A_csr), this function constructs
+        a symmetric constraint graph G = A_csr * A_csrᵀ (with self-edges removed)
+        and returns an adjacency dictionary mapping each row index to a set of 
+        neighboring row indices.
+        """
+        # Build the symmetric graph and remove self-loops.
+        G = A_csr.dot(A_csr.transpose())
+        G = G.tolil()       # Use LIL for efficient modifications.
+        G.setdiag(0)        # Remove self-edges.
+        G = G.tocsr()       # Convert back to CSR.
+        G.eliminate_zeros()
+        
+        # Build the adjacency dictionary.
+        rcm_adjacency = {}
+        for i in range(G.shape[0]):
+            # Extract the indices for nonzero entries in row i.
+            start = G.indptr[i]
+            end = G.indptr[i+1]
+            rcm_adjacency[i] = set(G.indices[start:end])
+        return rcm_adjacency
+
+    def get_cluster_assignments(self,A_csr):
+        """
+        Given a constraint matrix in CSR format (A_csr), build the symmetric
+        constraint graph, remove self-loops, and compute its connected components.
+        
+        Returns:
+            labels: an array where labels[i] is the cluster assignment of row i.
+        """
+        # Build the symmetric graph: each constraint is a node.
+        G = A_csr.dot(A_csr.transpose())
+        G = G.tolil()   # Efficient for modifying sparsity structure.
+        G.setdiag(0)    # Remove self-loops.
+        G = G.tocsr()   # Convert back to CSR.
+        G.eliminate_zeros()
+        
+        # Compute connected components; labels is an array of cluster assignments.
+        n_components, labels = connected_components(G, directed=False, connection='weak')
+        return labels   
+
+
+class PermutationStorage:
+    def __init__(self, permutator, row_metric, col_metric):
+        # Stores tuples of (constr_order, var_order) for permutations.
+        self.permutations = []
+        # Stores tuples of (constr_order, var_order) for canonical forms.
+        self.canonical_forms = []
+        self.row_metric = row_metric
+        self.col_metric = col_metric
+        self.permutatator = permutator
+
+    def __len__(self):
+        """Return the number of stored permutations."""
+        return len(self.permutations)
+
+    def add_permutation(self, constr_order, var_order):
+        """Add a new permutation tuple."""
+        self.permutations.append((constr_order, var_order))
+
+    def add_canonical_form(self, constr_order, var_order):
+        """Add a new canonical form tuple."""
+        self.canonical_forms.append((constr_order, var_order))
+
+    def get_permutation(self, index):
+        """Retrieve a permutation by its index."""
+        return self.permutations[index]
+
+    def get_canonical_form(self, index):
+        """Retrieve a canonical form by its index."""
+        return self.canonical_forms[index]
+    
+    def compute_permutation_distance(self, row1, col1, row2, col2):
+        return self.permutatator.permutation_distance(
+            row1,col1,
+            row2,col2,
+            row_metric=self.row_metric,
+            col_metric=self.col_metric
+        )
