@@ -110,7 +110,8 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
 
     def _recursive_block_matrix(self, level, var_indices, constr_indices,
                             vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
-                            parent_rules, child_rules, intra_rules):
+                            parent_rules, child_rules, intra_rules,
+                            applied_decomposition_rules=None):
         """
         Recursively partitions the block (var_indices, constr_indices) using the provided block rules.
         
@@ -119,7 +120,13 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         
         If neither set of rules partitions the block (i.e. each returns a single block), recursion stops 
         for that block (intra rules or identity ordering are applied).
+        
+        DecompositionRule instances are only applied once.
         """
+        # Initialize the set of applied decomposition rules if not provided
+        if applied_decomposition_rules is None:
+            applied_decomposition_rules = set()
+            
         logger.lazy_debug("Recursion level %d: var_indices: %s, constr_indices: %s",
                     level, var_indices, constr_indices)
         
@@ -136,7 +143,14 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         # First try parent's rules.
         effective_partition = None
         used_rule = None
-        for rule in parent_rules:
+        
+        # Filter out DecompositionRule instances that have already been applied
+        filtered_parent_rules = [
+            rule for rule in parent_rules 
+            if not (rule.__class__.__name__ == "DecompositionRule" and rule.__class__.__name__ in applied_decomposition_rules)
+        ]
+        
+        for rule in filtered_parent_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
                                                         vars_sub, obj_coeffs_sub, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub)
             logger.lazy_debug("Level %d: Parent rule %s produced partition_map with %d blocks.",
@@ -144,7 +158,13 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
             if len(partition_map) > 1:
                 effective_partition = partition_map
                 used_rule = rule
+                
+                # If this is a DecompositionRule, add it to the set of applied rules
+                if rule.__class__.__name__ == "DecompositionRule":
+                    applied_decomposition_rules.add(rule.__class__.__name__)
+                    logger.lazy_debug("Level %d: DecompositionRule applied and marked as used.", level)
                 break
+
         if effective_partition is not None:
             logger.lazy_debug("Level %d: Using parent's rule %s that produced an effective partition.", 
                         level, used_rule.__class__.__name__)
@@ -169,9 +189,10 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                     np.array(sub_var_indices),
                     np.array(sub_constr_indices),
                     vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
-                    parent_rules, child_rules, intra_rules
+                    parent_rules, child_rules, intra_rules,
+                    applied_decomposition_rules.copy()  # Pass a copy of the set to track across branches
                 )
-                # Convert sub-results to numpy arrays if they aren’t already.
+                # Convert sub-results to numpy arrays if they aren't already.
                 ordered_vars_list.append(np.array(sub_ordered_vars))
                 ordered_constr_list.append(np.array(sub_ordered_constr))
             # Concatenate all sub-results using NumPy's optimized routines.
@@ -185,11 +206,17 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                         level, ordered_vars, ordered_constr)
             return ordered_vars, ordered_constr
 
-        # --- (Child branch would be modified similarly) ---
         # If no parent's rule was effective, try child's rules.
         effective_partition = None
         used_rule = None
-        for rule in child_rules:
+        
+        # Filter out DecompositionRule instances that have already been applied
+        filtered_child_rules = [
+            rule for rule in child_rules 
+            if not (rule.__class__.__name__ == "DecompositionRule" and rule.__class__.__name__ in applied_decomposition_rules)
+        ]
+        
+        for rule in filtered_child_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
                                                         vars_sub, obj_coeffs_sub, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub)
             logger.lazy_debug("Level %d: Child rule %s produced partition_map with %d blocks.",
@@ -197,7 +224,13 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
             if len(partition_map) > 1:
                 effective_partition = partition_map
                 used_rule = rule
+                
+                # If this is a DecompositionRule, add it to the set of applied rules
+                if rule.__class__.__name__ == "DecompositionRule":
+                    applied_decomposition_rules.add(rule.__class__.__name__)
+                    logger.lazy_debug("Level %d: DecompositionRule applied and marked as used.", level)
                 break
+                
         if effective_partition is not None:
             logger.lazy_debug("Level %d: Using child's rule %s that produced an effective partition.", 
                         level, used_rule.__class__.__name__)
@@ -210,8 +243,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
             sorted_indices = np.argsort(sizes)[::-1]
             # Index the blocks array to obtain a sorted array.
             sorted_blocks = blocks[sorted_indices]
-            
-
+                      
             ordered_vars_list = []
             ordered_constr_list = []
             rotated_child_rules = rotate(child_rules)
@@ -223,7 +255,8 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                     np.array(sub_var_indices),
                     np.array(sub_constr_indices),
                     vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
-                    rotated_child_rules, rotated_child_rules, intra_rules
+                    rotated_child_rules, rotated_child_rules, intra_rules,
+                    applied_decomposition_rules.copy()  # Pass a copy of the set to track across branches
                 )
                 ordered_vars_list.append(np.array(sub_ordered_vars))
                 ordered_constr_list.append(np.array(sub_ordered_constr))
