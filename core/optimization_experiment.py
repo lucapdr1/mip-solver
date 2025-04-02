@@ -43,8 +43,6 @@ class OptimizationExperiment:
         self.row_distance_metric = None
         self.col_distance_metric = None
 
-        #self.dec_parser = DecFileParser(self.file_path)
-    
     def run_experiment(self, num_iterations):
         """Run multiple iterations with detailed logging and solving functionality.
         If include_initial is False, the baseline used in comparisons will be generated
