@@ -62,20 +62,6 @@ class OptimizationExperiment:
             baseline_var_order = np.arange(self.original_model.NumVars)
             baseline_constr_order = np.arange(self.original_model.NumConstrs)
 
-        """
-        if APPLY_DEC:
-            print(".dec")
-            # Get dec-based permutations
-            constr_dec_perm, var_dec_perm = self.dec_parser.get_permutations(baseline_model)
-
-            # Compute the composite permutation: apply dec ordering on top of permuted ordering
-            final_var_dec_perm = baseline_var_order[var_dec_perm]
-            final_constr_dec_perm = baseline_constr_order[constr_dec_perm]
-            #TODO: use the effective order in perm distance computations
-            # Apply the final composite permutation
-            baseline_model = self.permutator.apply_permutation(baseline_model, var_dec_perm, constr_dec_perm)
-        """
-
         if LOG_MATRIX:
             self.permuted_matrices.append(baseline_model.getA())
 
