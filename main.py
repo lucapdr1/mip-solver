@@ -23,6 +23,7 @@ from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
 from core.ordering.recursive.adjacency_aware import ReverseCuthillMcKeeRule, AdjacencyClusteringRule
 from core.ordering.constraints.decomposition_rule import DecompositionRule
 from core.ordering.blocks.block_rules import IdentityBlockOrderingRule, SizeBlockOrderingRule, DensityBlockOrderingRule
+from core.ordering.blocks.block_rules_factory import BlockOrderingFactory
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
 from utils.dec_parser import DecFileParser
@@ -109,7 +110,9 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
     ]
 
     block_ordering_rules = [
-        SizeBlockOrderingRule()
+        BlockOrderingFactory.lexicographic(
+            BlockOrderingFactory.from_ordering_rule(ConstraintCompositionRule()),
+        )
     ]
 
     return RecursiveHierarchicalRuleComposition(

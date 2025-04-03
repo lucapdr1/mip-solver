@@ -211,6 +211,19 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                 break
 
         if effective_partition is not None:
+            # Here we update each block ordering rule with the subblock's problem data
+            for rule in self.block_ordering_rules:
+                if hasattr(rule, "set_problem_data"):
+                    rule.set_problem_data(
+                        vars=vars_sub,
+                        obj_coeffs=obj_coeffs_sub,
+                        bounds=bounds_sub,
+                        A=sub_csr,      # Pass the submatrix (e.g., CSR submatrix) as A
+                        A_csc=sub_csc,
+                        A_csr=sub_csr,
+                        constraints=constr_sub,
+                        rhs=rhs_sub
+                    )
             logger.lazy_debug("Level %d: Using parent's rule %s that produced an effective partition.", 
                         level, used_rule.__class__.__name__)
             sorted_blocks = self._order_blocks(effective_partition, level, is_parent_rule=True)
@@ -269,6 +282,19 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                 break
                 
         if effective_partition is not None:
+            # Here we update each block ordering rule with the subblock's problem data
+            for rule in self.block_ordering_rules:
+                if hasattr(rule, "set_problem_data"):
+                    rule.set_problem_data(
+                        vars=vars_sub,
+                        obj_coeffs=obj_coeffs_sub,
+                        bounds=bounds_sub,
+                        A=sub_csr,      # Pass the submatrix (e.g., CSR submatrix) as A
+                        A_csc=sub_csc,
+                        A_csr=sub_csr,
+                        constraints=constr_sub,
+                        rhs=rhs_sub
+                    )
             logger.lazy_debug("Level %d: Using child's rule %s that produced an effective partition.", 
                         level, used_rule.__class__.__name__)
             
