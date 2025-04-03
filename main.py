@@ -22,6 +22,8 @@ from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCo
 from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
 from core.ordering.recursive.adjacency_aware import ReverseCuthillMcKeeRule, AdjacencyClusteringRule
 from core.ordering.constraints.decomposition_rule import DecompositionRule
+from core.ordering.blocks.block_rules import IdentityBlockOrderingRule, SizeBlockOrderingRule, DensityBlockOrderingRule
+from core.ordering.blocks.block_rules_factory import BlockOrderingFactory
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
 from utils.dec_parser import DecFileParser
@@ -68,9 +70,9 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
         DecompositionRule(dec_parser=dec_parser),
-        VariableTypeRule(),
-        BoundCategoryRule(),
-        ConstraintCompositionRule(),
+        #VariableTypeRule(),
+        #BoundCategoryRule(),
+        #ConstraintCompositionRule(),
     ]
 
     if json_file:
@@ -79,21 +81,21 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
     else:
         matrix_repatable_rules = [
             #Rules that likely are producing blocks only on very few instances
-            AllBinaryVariablesRule(),
-            AllCoefficientsOneRule(),
-            ##All the other rules
-            NonZeroCountRule(),
-            #ObjectiveNonZeroCountRule(),
-            #RHSNonZeroCountRule(),
-            SignPatternRule(),
-            ConstraintIntegerCountRule(),
-            ConstraintContinuousCountRule(),
-            BothBoundsFiniteCountRule(),
-            BothBoundsInfiniteCountRule(),
-            OneBoundFiniteCountRule(),
-            #Specific for setpacking and setcovering
-            SetPackingRHSRule(),
-            UnscaledObjectiveOrderingRule(),
+            #AllBinaryVariablesRule(),
+            #AllCoefficientsOneRule(),
+            ###All the other rules
+            #NonZeroCountRule(),
+            ##ObjectiveNonZeroCountRule(),
+            ##RHSNonZeroCountRule(),
+            #SignPatternRule(),
+            #ConstraintIntegerCountRule(),
+            #ConstraintContinuousCountRule(),
+            #BothBoundsFiniteCountRule(),
+            #BothBoundsInfiniteCountRule(),
+            #OneBoundFiniteCountRule(),
+            ##Specific for setpacking and setcovering
+            #SetPackingRHSRule(),
+            #UnscaledObjectiveOrderingRule(),
             
         ]
 
@@ -107,10 +109,26 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
         #ConstraintRangeRule(1)
     ]
 
+    block_ordering_rules = [
+        BlockOrderingFactory.lexicographic(
+            # Structured subproblems (set packing, etc.)
+            BlockOrderingFactory.from_ordering_rule(AllCoefficientsOneRule()),  
+            BlockOrderingFactory.from_ordering_rule(SetPackingRHSRule()),  
+            # Bounds and sparsity
+            BlockOrderingFactory.from_ordering_rule(BothBoundsFiniteCountRule()),  
+            BlockOrderingFactory.from_ordering_rule(OneBoundFiniteCountRule()),  
+            BlockOrderingFactory.from_ordering_rule(NonZeroCountRule(), descending=False),  
+            # Objective and homogeneity
+            BlockOrderingFactory.from_ordering_rule(ObjectiveNonZeroCountRule()),  
+            BlockOrderingFactory.from_ordering_rule(VariableTypeRule()),  
+        )
+    ]
+
     return RecursiveHierarchicalRuleComposition(
         matrix_block_rules_parent=matrix_block_rules,
         matrix_block_rules_child=matrix_repatable_rules,
         matrix_intra_rules=matrix_intra_rules,
+        block_ordering_rules=block_ordering_rules,
         max_depth=50
     )
 

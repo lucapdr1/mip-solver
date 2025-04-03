@@ -3,13 +3,13 @@ from collections import defaultdict
 from utils.logging_handler import LoggingHandler
 from core.ordering.ordering_rule_interface import OrderingRule
 from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
+from core.ordering.blocks.block_rules import SizeBlockOrderingRule, HierarchicalBlockOrderingRule
 
 logger = LoggingHandler().get_logger()
 
 def rotate(lst):
     """Rotate a list by one element: [a, b, c] -> [b, c, a]."""
-    return lst
-    #return lst[1:] + lst[:1] if lst else lst
+    return lst[1:] + lst[:1]
 
 class RecursiveHierarchicalRuleComposition(OrderingRule):
     """
@@ -22,6 +22,8 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
     Intra rules (matrix_intra_rules) are used to order indices when no rule (neither parent's nor child's)
     produces an effective partition.
     
+    Block ordering rules (block_ordering_rules) are used to determine the order in which blocks are processed.
+    
     If all rules have been tried on a block and no change happens (i.e. each returns only one block),
     the recursion stops for that block.
     
@@ -29,16 +31,22 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
     """
     
     def __init__(self, matrix_block_rules_parent=None, matrix_block_rules_child=None,
-                 matrix_intra_rules=None, max_depth=10):
+                 matrix_intra_rules=None, block_ordering_rules=None, max_depth=10):
         """
         :param matrix_block_rules_parent: List of block rules to apply at the current block.
         :param matrix_block_rules_child: List of block rules to try if parent's rules fail.
         :param matrix_intra_rules: List of intra rules used to order indices when no partitioning occurs.
+        :param block_ordering_rules: List of rules to determine block ordering in a partition.
+                                    If None, default to SizeBlockOrderingRule.
         :param max_depth: Maximum recursion depth.
         """
         self.matrix_block_rules_parent = matrix_block_rules_parent or []
         self.matrix_block_rules_child = matrix_block_rules_child or []
         self.matrix_intra_rules = matrix_intra_rules or []
+        
+        # Default to size-based block ordering if none provided
+        self.block_ordering_rules = block_ordering_rules or [SizeBlockOrderingRule()]
+        
         self.max_depth = max_depth
 
         # Cached computed ordering (if desired, you can disable caching between different problem instances)
@@ -108,6 +116,43 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         self.reset_cache()
         return scores
 
+    def _order_blocks(self, partition_map, level, is_parent_rule):
+        """
+        Orders the blocks from a partition_map based on the block ordering rules.
+        
+        :param partition_map: Dictionary {label: (var_indices, constr_indices)} from a partitioning rule.
+        :param level: Current recursion depth.
+        :param is_parent_rule: True if the partition was created by a parent rule, False if by a child rule.
+        :return: Ordered list of (label, (var_indices, constr_indices)) tuples.
+        """
+        if not self.block_ordering_rules:
+            # Default to size-based ordering if no rules are specified
+            items = list(partition_map.items())
+            sorted_items = sorted(items, key=lambda item: -(len(item[1][0]) + len(item[1][1])))
+            return sorted_items
+
+        # If we have multiple rules, use HierarchicalBlockOrderingRule to combine them
+        # Otherwise, use the single rule directly
+        if len(self.block_ordering_rules) > 1:
+            combined_rule = HierarchicalBlockOrderingRule(self.block_ordering_rules)
+            scores = combined_rule.score_blocks(partition_map, level, is_parent_rule)
+        else:
+            scores = self.block_ordering_rules[0].score_blocks(partition_map, level, is_parent_rule)
+        
+        # Convert to list of tuples and sort by scores (in descending order)
+        items = list(partition_map.items())
+        
+        # Handle tuple scores for hierarchical rules
+        if all(isinstance(score, tuple) for score in scores.values()):
+            sorted_items = sorted(items, key=lambda item: scores[item[0]], reverse=True)
+        else:
+            sorted_items = sorted(items, key=lambda item: scores[item[0]], reverse=True)
+            
+        logger.lazy_debug("Level %d: Blocks ordered by rules: %s", 
+                     level, [(label, scores[label]) for label, _ in sorted_items])
+        
+        return sorted_items
+
     def _recursive_block_matrix(self, level, var_indices, constr_indices,
                             vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs,
                             parent_rules, child_rules, intra_rules,
@@ -166,18 +211,23 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                 break
 
         if effective_partition is not None:
+            # Here we update each block ordering rule with the subblock's problem data
+            for rule in self.block_ordering_rules:
+                if hasattr(rule, "set_problem_data"):
+                    rule.set_problem_data(
+                        vars=vars_sub,
+                        obj_coeffs=obj_coeffs_sub,
+                        bounds=bounds_sub,
+                        A=sub_csr,      # Pass the submatrix (e.g., CSR submatrix) as A
+                        A_csc=sub_csc,
+                        A_csr=sub_csr,
+                        constraints=constr_sub,
+                        rhs=rhs_sub
+                    )
             logger.lazy_debug("Level %d: Using parent's rule %s that produced an effective partition.", 
                         level, used_rule.__class__.__name__)
-            # Convert dictionary items into a NumPy array with dtype=object.
-            blocks = np.array(list(effective_partition.items()), dtype=object)
-            # Compute an array of block sizes.
-            sizes = np.array([len(block[1][0]) + len(block[1][1]) for block in blocks])
-            # Get the indices that sort the sizes in descending order.
-            sorted_indices = np.argsort(sizes)[::-1]
-            # Index the blocks array to obtain a sorted array.
-            sorted_blocks = blocks[sorted_indices]
+            sorted_blocks = self._order_blocks(effective_partition, level, is_parent_rule=True)
 
-            # Instead of extending Python lists, accumulate sub-results in a list of NumPy arrays.
             ordered_vars_list = []
             ordered_constr_list = []
             # For each subblock, restart parent's rule list.
@@ -232,17 +282,23 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                 break
                 
         if effective_partition is not None:
+            # Here we update each block ordering rule with the subblock's problem data
+            for rule in self.block_ordering_rules:
+                if hasattr(rule, "set_problem_data"):
+                    rule.set_problem_data(
+                        vars=vars_sub,
+                        obj_coeffs=obj_coeffs_sub,
+                        bounds=bounds_sub,
+                        A=sub_csr,      # Pass the submatrix (e.g., CSR submatrix) as A
+                        A_csc=sub_csc,
+                        A_csr=sub_csr,
+                        constraints=constr_sub,
+                        rhs=rhs_sub
+                    )
             logger.lazy_debug("Level %d: Using child's rule %s that produced an effective partition.", 
                         level, used_rule.__class__.__name__)
             
-            # Convert dictionary items into a NumPy array with dtype=object.
-            blocks = np.array(list(effective_partition.items()), dtype=object)
-            # Compute an array of block sizes.
-            sizes = np.array([len(block[1][0]) + len(block[1][1]) for block in blocks])
-            # Get the indices that sort the sizes in descending order.
-            sorted_indices = np.argsort(sizes)[::-1]
-            # Index the blocks array to obtain a sorted array.
-            sorted_blocks = blocks[sorted_indices]
+            sorted_blocks = self._order_blocks(effective_partition, level, is_parent_rule=False)
                       
             ordered_vars_list = []
             ordered_constr_list = []
@@ -276,7 +332,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
                                                 vars_sub, obj_coeffs_sub, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub,
                                                 intra_rules)
 
-
+    # The rest of the methods remain unchanged
     def _partition_by_rule_matrix(self, rule, var_indices, constr_indices,
                                   vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
