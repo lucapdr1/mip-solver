@@ -1,5 +1,5 @@
 from core.ordering.blocks.block_rules import HierarchicalBlockOrderingRule, SizeBlockOrderingRule
-from core.ordering.blocks.rules_adpter import OrderingRuleBlockAdapter
+from core.ordering.blocks.rules_adapter import OrderingRuleBlockAdapter
 
 class BlockOrderingFactory:
     """
