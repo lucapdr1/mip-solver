@@ -111,7 +111,9 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
 
     block_ordering_rules = [
         BlockOrderingFactory.lexicographic(
-            BlockOrderingFactory.from_ordering_rule(ConstraintCompositionRule()),
+            BlockOrderingFactory.from_ordering_rule(NonZeroCountRule()), #denser
+            BlockOrderingFactory.from_ordering_rule(BothBoundsFiniteCountRule()), #tighter bounds are better
+            BlockOrderingFactory.from_ordering_rule(VariableTypeRule()), #more homogeneus
         )
     ]
 
