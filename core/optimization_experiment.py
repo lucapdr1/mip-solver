@@ -5,9 +5,7 @@ import time
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
-import boto3
 import tempfile
-from botocore.exceptions import ClientError
 
 from utils.logging_handler import LoggingHandler
 from core.problem_transform.problem_permutator import ProblemPermutator
@@ -17,7 +15,8 @@ from core.post_processing.performance_evaluator import PerformanceEvaluator
 from core.problem_transform.problem_scaler import ProblemScaler
 from core.problem_transform.problem_normalizer import ProblemNormalizer
 from utils.problem_printer import ProblemPrinter
-from utils.config import LOG_MODEL_COMPARISON, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES
+from utils.plots_handler import save_all_plots
+from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME, NUMBER_OF_THREADS
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):
@@ -33,70 +32,105 @@ class OptimizationExperiment:
 
         self.permutator = ProblemPermutator(gp_env, self.original_model)
         self.canonical_generator = CanonicalFormGenerator(gp_env, self.original_model, self.ordering_rule)
+
+         # Lists to store figures
+        self.permuted_matrices = []
+        self.canonical_matrices = []
     
     def run_experiment(self, num_iterations):
-            """Run multiple iterations with detailed logging and solving functionality"""
-            #ProblemPrinterlog_model(self.original_model, self.logger, level="DEBUG")
-            results = []
+        """Run multiple iterations with detailed logging and solving functionality.
+        If include_initial is False, the baseline used in comparisons will be generated
+        as a permuted problem rather than using the original problem.
+        """
+        results = []
 
-            # Solve the original problem once
+        if PERMUTE_ORIGINAL:
+            self.logger.info("Calculating baseline from a permuted problem (skipping original).")
+            #Change parameters to use percentage instead of number of variables per block
+            baseline_model, baseline_var_order, baseline_constr_order, _, _ = self.permutator.create_permuted_problem(PERMUTE_GRANULARITY_K, PERMUTE_SEED)
+        else:
             self.logger.info("Solving Original Problem")
-            original_result = self.solve_problem(self.original_model)
+            baseline_model = self.original_model
+            baseline_var_order = np.arange(self.original_model.NumVars)
+            baseline_constr_order = np.arange(self.original_model.NumConstrs)
+            
+        if LOG_MATRIX:
+            self.permuted_matrices.append(baseline_model.getA())
 
-            # Generate the canonical form of the original model once
-            self.logger.lazy_debug("Generating canonical form for the original model...")
-  
-            original_canonical, original_canonical_var_order, original_canonical_constr_order = self.canonical_generator.get_canonical_form()
-            #ProblemPrinterlog_model(original_canonical, self.logger, level="DEBUG")
+        # Solve the baseline problem (either original or permuted)
+        baseline_result = self.solve_problem(baseline_model)
 
-            # Solve the Canonical from original once
-            self.logger.info("Solving Canonical from Original Problem")
-            canonical_from_original_result  = self.solve_problem(original_canonical)
+        # Generate the canonical form of the baseline model
+        self.logger.lazy_debug("Generating canonical form for the baseline model...")
+        canon_gen = CanonicalFormGenerator(self.gp_env, baseline_model, self.ordering_rule)
+        baseline_canonical, baseline_canonical_var_order, baseline_canonical_constr_order = \
+            canon_gen.get_canonical_form()
+        
+        final_canonical_var_order = baseline_var_order[baseline_canonical_var_order]
+        final_canonical_constr_order = baseline_constr_order[baseline_canonical_constr_order]
 
-            for i in range(num_iterations):
-                self.logger.info(f"Running iteration {i+1}/{num_iterations}")
-                try:
-                    permuted_canonical, permuted_result, final_ordered_result, permuted_distance, canonical_distance = self.run_single_iteration(original_result, canonical_from_original_result ,original_canonical, original_canonical_var_order, original_canonical_constr_order)
-                    iteration_result = self.build_iteration_result(original_canonical, permuted_canonical, original_result, permuted_result, canonical_from_original_result, final_ordered_result, permuted_distance, canonical_distance)
-                    results.append(iteration_result)
-                    IterationLogger().log_iteration_results(i + 1, iteration_result)
+        ordered_baseline_model = self.permutator.apply_permutation(
+            baseline_model, baseline_canonical_var_order, baseline_canonical_constr_order
+        )
+        if LOG_MATRIX:
+            self.canonical_matrices.append(ordered_baseline_model.getA())
 
-                except Exception as e:
-                    self.logger.error(f"Error in iteration {i+1}: {str(e)}")
-                    raise
+        self.logger.info("Solving Canonical from Baseline Problem")
+        baseline_canonical_result = self.solve_problem(ordered_baseline_model)
 
-            # Compute and log solve-time variability metrics
-            PerformanceEvaluator().compute_solve_time_variability_std(results) # Solve times
-            PerformanceEvaluator().compute_work_unit_variability_std(results) # WorkUnits
-            PerformanceEvaluator().compute_distance_variability_std(results) # Distances
+        # Use baseline values in subsequent iterations (named as "original" in later code)
+        for i in range(num_iterations):
+            self.logger.info(f"Running iteration {i+1}/{num_iterations}")
+            try:
+                (permuted_canonical, permuted_result, final_ordered_result,
+                permuted_distance, canonical_distance) = self.run_single_iteration(
+                    baseline_var_order, baseline_constr_order, final_canonical_var_order, final_canonical_constr_order, (i+1)
+                )
+                iteration_result = self.build_iteration_result(
+                    baseline_canonical, permuted_canonical,
+                    baseline_result, permuted_result,
+                    baseline_canonical_result, final_ordered_result,
+                    permuted_distance, canonical_distance
+                )
+                results.append(iteration_result)
+                IterationLogger().log_iteration_results(i + 1, iteration_result)
+            except Exception as e:
+                self.logger.error(f"Error in iteration {i+1}: {str(e)}")
+                raise
 
-            if RECURSIVE_RULES:
-                stats = self.ordering_rule.get_granularity_statistics()
-                IterationLogger().log_granularity_stats(stats)
-            return results
+        # Compute and log variability metrics
+        PerformanceEvaluator().compute_solve_time_variability_std(results)
+        PerformanceEvaluator().compute_work_unit_variability_std(results)
+        PerformanceEvaluator().compute_distance_variability_std(results)
 
+        if RECURSIVE_RULES:
+            stats = self.ordering_rule.get_granularity_statistics()
+            IterationLogger().log_granularity_stats(stats)
+        if LOG_MATRIX:
+            save_all_plots(self.permuted_matrices, self.canonical_matrices, self.file_path, "experiment_plots.png")
+        return results
 
-    def run_single_iteration(self, original_result, canonical_from_original_result, 
-                             original_canonical, original_canonical_var_order, original_canonical_constr_order):
+    def run_single_iteration(self, baseline_var_order, baseline_constr_order, original_canonical_var_order, original_canonical_constr_order, index):
         try:
             self.logger.lazy_debug("Starting new iteration...")
 
             # === 1. Create the permuted problem (unscaled) ===
             self.logger.info("Creating Permuted Problem")
-            permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem()
+            permuted_model, var_permutation, constr_permutation, _, _ = self.permutator.create_permuted_problem(PERMUTE_GRANULARITY_K, (PERMUTE_SEED+index))
             #ProblemPrinterlog_model(permuted_model, self.logger, level="DEBUG")
+            if LOG_MATRIX:
+                self.permuted_matrices.append(permuted_model.getA())
 
             # Compute permutation distance BEFORE canonicalization (using unscaled permuted model)
             self.logger.info("Computing Permutation Distance before Canonicalization...")
-            original_var_order = list(range(self.original_model.NumVars))
-            original_constr_order = list(range(self.original_model.NumConstrs))
-            self.logger.lazy_debug(f"Original Constraint Order: {original_constr_order}")
+
+            self.logger.lazy_debug(f"Original Constraint Order: {baseline_constr_order}")
             self.logger.lazy_debug(f"Permuted Constraint Order: {constr_permutation}")
-            self.logger.lazy_debug(f"Original Variable Order: {original_var_order}")
+            self.logger.lazy_debug(f"Original Variable Order: {baseline_var_order}")
             self.logger.lazy_debug(f"Permuted Variable Order: {var_permutation}")
 
             permuted_distance = self.permutator.permutation_distance(
-                original_constr_order, original_var_order,
+                baseline_constr_order, baseline_var_order,
                 constr_permutation, var_permutation,
                 row_dist_method="kendall_tau",
                 col_dist_method="kendall_tau",
@@ -181,6 +215,9 @@ class OptimizationExperiment:
             # === 4. Apply final canonical ordering to the unscaled permuted model and solve it ===
             self.logger.info("Applying final canonical ordering to permuted model and solving it")
             ordered_permuted_model = self.permutator.apply_permutation(permuted_model, permuted_canonical_var_order, permuted_canonical_constr_order)
+            if LOG_MATRIX:
+                self.canonical_matrices.append(ordered_permuted_model.getA())
+            
             self.logger.info("Solving Reordering Form from Permuted Model")
             final_ordered_result = self.solve_problem(ordered_permuted_model)
             #ProblemPrinterlog_model(ordered_permuted_model, self.logger, level="DEBUG")
@@ -229,6 +266,9 @@ class OptimizationExperiment:
         Load the optimization problem from LP/MPS file, either locally or from S3.
         """
         if PRODUCTION:
+            import boto3
+            from botocore.exceptions import ClientError
+
             if not self.file_path:
                 raise ValueError("File path cannot be empty in production mode.")
             key = f"{self.file_path}"
@@ -259,6 +299,7 @@ class OptimizationExperiment:
         """
         Solve the given optimization problem.
         """
+        print(model)
         if DISABLE_SOLVING:
             self.logger.info("Solving is disabled via environment variable. Returning placeholder result.")
             return {
@@ -271,6 +312,8 @@ class OptimizationExperiment:
             }
 
         try:
+            model.Params.Threads = NUMBER_OF_THREADS
+            model.Params.TimeLimit = MAX_SOLVE_TIME
             start_time = time.time()
             model.optimize()
             elapsed_time = time.time() - start_time
@@ -298,3 +341,4 @@ class OptimizationExperiment:
         except gp.GurobiError as e:
             self.logger.error(f"Gurobi Error: {e}")
             raise
+        

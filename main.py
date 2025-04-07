@@ -14,11 +14,11 @@ from core.ordering.constraints.constr_composition_rule import ConstraintComposit
 from core.ordering.constraints.rhs_value_rule import RHSValueRule
 from core.ordering.constraints.row_coefficient_rule import RowCoefficientRule
 from core.ordering.constraints.constraint_range_rule import ConstraintRangeRule
-from core.ordering.recursive.cardinality_rule import NonZeroCountRule, ObjectiveNonZeroCountRule
+from core.ordering.recursive.cardinality_rule import NonZeroCountRule, ObjectiveNonZeroCountRule, RHSNonZeroCountRule
 from core.ordering.recursive.sign_pattern_rule import SignPatternRule
 from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCountRule, ConstraintContinuousCountRule, BothBoundsFiniteCountRule, BothBoundsInfiniteCountRule, OneBoundFiniteCountRule
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
-from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule
+from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule, SetPackingRHSRule, UnscaledObjectiveOrderingRule
 from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
@@ -71,11 +71,12 @@ def create_recursive_hierarchical_ordering(json_file=None):
     else:
         matrix_repatable_rules = [
             #Rules that likely are producing blocks only on very few instances
-            AllCoefficientsOneRule(),
             AllBinaryVariablesRule(),
-            #All the other rules
+            AllCoefficientsOneRule(),
+            ##All the other rules
             NonZeroCountRule(),
-            ObjectiveNonZeroCountRule(),
+            #ObjectiveNonZeroCountRule(),
+            #RHSNonZeroCountRule(),
             SignPatternRule(),
             ConstraintIntegerCountRule(),
             ConstraintContinuousCountRule(),

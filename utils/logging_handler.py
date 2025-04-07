@@ -2,7 +2,6 @@
 import logging
 import os
 import atexit
-import boto3
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -30,6 +29,7 @@ class LoggingHandler:
         self._initialize_logging_core()
 
         if PRODUCTION and not self._production_initialized:
+            import boto3
             self._setup_production_features()
             LoggingHandler._production_initialized = True
 

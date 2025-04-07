@@ -111,74 +111,80 @@ def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
                 horizontalalignment='right', verticalalignment='top',
                 bbox=dict(facecolor='white', alpha=0.5))
     
-    # --- Subplot 4: Permutation Distance Reduction (%) ---
+    # --- Subplot 4: Permutation Distance Ratio (After/Before) ---
     reduction_values = df['std_perm_distance_reduction_pct']
-    numeric_reduction_values = reduction_values.apply(lambda x: x if x is not None else 0)
-    #leave out problems increase std
-    numeric_reduction_values = reduction_values.apply(lambda x: 0 if x < 0 else x)
-    reduction_colors = [
-        'green' if (val is not None and val > 0) else 
-        'red' if (val is not None and val < 0) else 'gray'
-        for val in reduction_values
+
+    # Compute ratio: if reduction is not None and >= 0 then ratio = 1 - (x/100), otherwise set ratio to 1.
+    ratio_values = reduction_values.apply(lambda x: 1 - x/100 if (x is not None) else 1)
+
+    # Color coding: now, all positive (or zero) reductions are green, negatives are red.
+    ratio_colors = [
+        'green' if (x is not None and x >= 0) else 'red'
+        for x in reduction_values
     ]
-    axs[3].bar(x, numeric_reduction_values, bar_width, color=reduction_colors)
-    avg_perm_dist_reduction = numeric_reduction_values.mean()
-    axs[3].axhline(avg_perm_dist_reduction, color='black', linestyle='--', label=f'Avg: {avg_perm_dist_reduction:.1f}%')
-    axs[3].set_title('Permutation Distance Reduction (%)')
-    axs[3].set_ylabel('Reduction Percentage (%)')
+
+    axs[3].bar(x, ratio_values, bar_width, color=ratio_colors)
+    # Compute geometric mean (clip to avoid log(0))
+    geom_mean = np.exp(np.mean(np.log(ratio_values.clip(lower=1e-10))))
+    axs[3].axhline(geom_mean, color='black', linestyle='--', label=f'Geom Mean: {geom_mean:.3f}')
+    axs[3].set_title('Permutation Distance Ratio (After/Before)')
+    axs[3].set_ylabel('Ratio (After/Before)')
     axs[3].set_xticks(x)
     axs[3].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
-    num_green = sum(1 for val in reduction_values if val is not None and val > 0)
+
+    # Count how many original reduction values are positive (or zero)
+    num_green = sum(1 for x in reduction_values if x is not None and x >= 0)
     percentage_green = (num_green / len(reduction_values)) * 100
     axs[3].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[3].transAxes,
                 horizontalalignment='right', verticalalignment='top',
                 bbox=dict(facecolor='white', alpha=0.5))
     axs[3].legend()
-    
-    # --- Subplot 5: Solve Time Reduction (%) ---
+
+
+    # --- Subplot 5: Solve Time Ratio (After/Before) ---
     reduction_values = df['std_solve_time_reduction_pct']
-    numeric_reduction_values = reduction_values.apply(lambda x: x if x is not None else 0)
-    reduction_colors = [
-        'green' if (val is not None and val > 0) else 
-        'red' if (val is not None and val < 0) else 'gray'
-        for val in reduction_values
+    ratio_values = reduction_values.apply(lambda x: 1 - x/100 if (x is not None) else 1)
+    ratio_colors = [
+        'green' if (x is not None and x >= 0) else 'red'
+        for x in reduction_values
     ]
-    axs[4].bar(x, numeric_reduction_values, bar_width, color=reduction_colors)
-    avg_solve_time_reduction = numeric_reduction_values.mean()
-    axs[4].axhline(avg_solve_time_reduction, color='black', linestyle='--', label=f'Avg: {avg_solve_time_reduction:.1f}%')
-    axs[4].set_title('Solve Time Reduction (%)')
-    axs[4].set_ylabel('Reduction Percentage (%)')
+    axs[4].bar(x, ratio_values, bar_width, color=ratio_colors)
+    geom_mean = np.exp(np.mean(np.log(ratio_values.clip(lower=1e-10))))
+    axs[4].axhline(geom_mean, color='black', linestyle='--', label=f'Geom Mean: {geom_mean:.3f}')
+    axs[4].set_title('Solve Time Ratio (After/Before)')
+    axs[4].set_ylabel('Ratio (After/Before)')
     axs[4].set_xticks(x)
     axs[4].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
-    num_green = sum(1 for val in reduction_values if val is not None and val > 0)
+    num_green = sum(1 for x in reduction_values if x is not None and x >= 0)
     percentage_green = (num_green / len(reduction_values)) * 100
     axs[4].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[4].transAxes,
                 horizontalalignment='right', verticalalignment='top',
                 bbox=dict(facecolor='white', alpha=0.5))
     axs[4].legend()
-    
-    # --- Subplot 6: Work Units Reduction (%) ---
+
+
+    # --- Subplot 6: Work Units Ratio (After/Before) ---
     reduction_values = df['std_work_units_reduction_pct']
-    numeric_reduction_values = reduction_values.apply(lambda x: x if x is not None else 0)
-    reduction_colors = [
-        'green' if (val is not None and val > 0) else 
-        'red' if (val is not None and val < 0) else 'gray'
-        for val in reduction_values
+    ratio_values = reduction_values.apply(lambda x: 1 - x/100 if (x is not None) else 1)
+    ratio_colors = [
+        'green' if (x is not None and x >= 0) else 'red'
+        for x in reduction_values
     ]
-    axs[5].bar(x, numeric_reduction_values, bar_width, color=reduction_colors)
-    avg_work_units_reduction = numeric_reduction_values.mean()
-    axs[5].axhline(avg_work_units_reduction, color='black', linestyle='--', label=f'Avg: {avg_work_units_reduction:.1f}%')
-    axs[5].set_title('Work Units Reduction (%)')
-    axs[5].set_ylabel('Reduction Percentage (%)')
+    axs[5].bar(x, ratio_values, bar_width, color=ratio_colors)
+    geom_mean = np.exp(np.mean(np.log(ratio_values.clip(lower=1e-10))))
+    axs[5].axhline(geom_mean, color='black', linestyle='--', label=f'Geom Mean: {geom_mean:.3f}')
+    axs[5].set_title('Work Units Ratio (After/Before)')
+    axs[5].set_ylabel('Ratio (After/Before)')
     axs[5].set_xticks(x)
     axs[5].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
-    num_green = sum(1 for val in reduction_values if val is not None and val > 0)
+    num_green = sum(1 for x in reduction_values if x is not None and x >= 0)
     percentage_green = (num_green / len(reduction_values)) * 100
     axs[5].text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=axs[5].transAxes,
                 horizontalalignment='right', verticalalignment='top',
                 bbox=dict(facecolor='white', alpha=0.5))
     axs[5].legend()
-    
+
+
     plt.tight_layout()
     plt.savefig(output_file)
     plt.close()

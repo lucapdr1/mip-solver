@@ -123,22 +123,22 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         logger.lazy_debug("Recursion level %d: var_indices: %s, constr_indices: %s",
                     level, var_indices, constr_indices)
         
-        (var_indices, constr_indices, vars_sub, bounds_sub,
+        (var_indices, constr_indices, vars_sub, obj_coeffs_sub, bounds_sub,
             constr_sub, rhs_sub, sub_csr, sub_csc) = self.extract_block_data(
-                vars, bounds, constraints, rhs, A_csr, var_indices, constr_indices)
+                vars, obj_coeffs, bounds, constraints, rhs, A_csr, var_indices, constr_indices)
 
         # Stop if max depth reached.
         if level >= self.max_depth:
             logger.lazy_debug("Level %d: Maximum depth reached; applying intra rules.", level)
             return self._apply_intra_rules_matrix(var_indices, constr_indices,
-                                                vars_sub, obj_coeffs, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub,
+                                                vars_sub, obj_coeffs_sub, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub,
                                                 intra_rules)
         # First try parent's rules.
         effective_partition = None
         used_rule = None
         for rule in parent_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
-                                                        vars_sub, obj_coeffs, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub)
+                                                        vars_sub, obj_coeffs_sub, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub)
             logger.lazy_debug("Level %d: Parent rule %s produced partition_map with %d blocks.",
                         level, rule.__class__.__name__, len(partition_map))
             if len(partition_map) > 1:
@@ -191,7 +191,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         used_rule = None
         for rule in child_rules:
             partition_map = self._partition_by_rule_matrix(rule, var_indices, constr_indices,
-                                                        vars_sub, obj_coeffs, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub)
+                                                        vars_sub, obj_coeffs_sub, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub)
             logger.lazy_debug("Level %d: Child rule %s produced partition_map with %d blocks.",
                         level, rule.__class__.__name__, len(partition_map))
             if len(partition_map) > 1:
@@ -240,7 +240,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         # If no effective partition from parent's or child's rules, apply intra rules.
         logger.lazy_debug("Level %d: No effective partition from parent's or child's rules; applying intra rules.", level)
         return self._apply_intra_rules_matrix(var_indices, constr_indices,
-                                                vars_sub, obj_coeffs, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub,
+                                                vars_sub, obj_coeffs_sub, bounds_sub, sub_csr, sub_csc, sub_csr, constr_sub, rhs_sub,
                                                 intra_rules)
 
 
@@ -361,7 +361,7 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         return ordered_vars, ordered_constr
 
 
-    def extract_block_data(self, vars, bounds, constraints, rhs, A_csr, var_indices, constr_indices):
+    def extract_block_data(self, vars, obj_coeffs, bounds, constraints, rhs, A_csr, var_indices, constr_indices):
         """
         Prepares block data by converting indices and slicing arrays and submatrix.
         
@@ -384,12 +384,13 @@ class RecursiveHierarchicalRuleComposition(OrderingRule):
         bounds_sub = np.asarray(bounds)[var_indices]
         constr_sub = np.asarray(constraints)[constr_indices]
         rhs_sub = np.asarray(rhs)[constr_indices] if rhs is not None else None
+        obj_coeffs_sub = np.asarray(obj_coeffs)[var_indices]
         
         # Extract the submatrix from A in CSR format and convert to CSC once.
         submatrix_csr = A_csr[constr_indices, :][:, var_indices]
         submatrix_csc = submatrix_csr.tocsc()
         
-        return (var_indices, constr_indices, vars_sub, bounds_sub,
+        return (var_indices, constr_indices, vars_sub, obj_coeffs_sub, bounds_sub,
                 constr_sub, rhs_sub, submatrix_csr, submatrix_csc)
 
     def get_granularity_data(self):
