@@ -2,9 +2,9 @@ import os
 import logging
 
 #LICENSE
-WLSACCESSID = os.getenv('WLSACCESSID', '294fddf3-ce09-4342-ab30-91b785932a09')
-WLSSECRET = os.getenv('WLSSECRET', 'fdf7a032-1e62-414c-9820-51fa981ddd25')
-LICENSEID = os.getenv('LICENSEID', '2618416')
+WLSACCESSID = os.getenv('WLSACCESSID', '0f4125b4-a12f-4461-8ece-f8abc8da88c7')
+WLSSECRET = os.getenv('WLSSECRET', '54d16d52-1e7f-44e9-a37f-f98498a2b836')
+LICENSEID = os.getenv('LICENSEID', '2648812')
 
 # Read values from environment variables or use hardcoded defaults
 LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
