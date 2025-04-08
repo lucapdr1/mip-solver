@@ -1,4 +1,5 @@
 # utils/performance_evaluator.py
+from itertools import combinations
 import numpy as np
 from utils.logging_handler import LoggingHandler
 
@@ -76,7 +77,7 @@ class PerformanceEvaluator:
         else:
             self.logger.warning("Canonical form does NOT sufficiently reduce solve-time variability across permutations.")
 
-    def compute_distance_variability_std(self, results):
+    def compute_simple_distance_variability_std(self, results):
         """
         Computes and logs the standard deviation of permutation distances.
         """
@@ -98,3 +99,45 @@ class PerformanceEvaluator:
             self.logger.info("Canonicalization reduces permutation distance variability across permutations.")
         else:
             self.logger.warning("Canonicalization does NOT sufficiently reduce permutation distance variability.")
+    
+    def compute_all_pairs_distance_variability_std(self, permut_storage):
+        """
+        Computes and logs the standard deviation of permutation distances across all pairwise comparisons.
+        Assumes that `permut_storage` has two lists:
+        - permut_storage.permutations: list of (var_order, constr_order) tuples before canonicalization
+        - permut_storage.canonical_forms: list of (var_order, constr_order) tuples after canonicalization
+        """
+        n = len(permut_storage)
+        if n <= 2:
+            self.logger.warning("Not enough runs to compute standard deviation of permutation distances (all pairs).")
+            return
+
+        distances_before = []
+        distances_after = []
+
+        # Iterate over all unique pairs using indices 0 through n-1
+        for i, j in combinations(range(n), 2):
+            p_constr1, p_var1 = permut_storage.get_permutation(i)
+            p_constr2, p_var2 = permut_storage.get_permutation(j)
+            c_constr1, c_var1 = permut_storage.get_canonical_form(i)
+            c_constr2, c_var2 = permut_storage.get_canonical_form(j)
+
+            # Compute the distances for the pair (assumes you have defined self.compute_permutation_distance)
+            distance_before = permut_storage.compute_permutation_distance(p_constr1, p_var1, p_constr2, p_var2)
+            distance_after = permut_storage.compute_permutation_distance(c_constr1, c_var1, c_constr2, c_var2)
+
+            distances_before.append(distance_before)
+            distances_after.append(distance_after)
+
+        std_before = np.std(distances_before, ddof=1)
+        std_after = np.std(distances_after, ddof=1)
+
+        self.logger.info("All-Pairs Permutation Distance Variability (Standard Deviation):")
+        self.logger.info(f" - Std(All-Pairs Distance Before Canonicalization): {std_before:.6f}")
+        self.logger.info(f" - Std(All-Pairs Distance After Canonicalization): {std_after:.6f}")
+
+        if std_after < std_before:
+            self.logger.info("Canonicalization reduces permutation distance variability across all pairwise comparisons.")
+        else:
+            self.logger.warning("Canonicalization does NOT sufficiently reduce permutation distance variability across all pairwise comparisons.")
+

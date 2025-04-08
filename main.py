@@ -20,9 +20,14 @@ from core.ordering.recursive.scale_Invariant_rules import ConstraintIntegerCount
 from core.ordering.recursive.normalized_occurrence_rule import NormalizedOccurrenceCountRule
 from core.ordering.recursive.specific_rules import AllBinaryVariablesRule, AllCoefficientsOneRule, SetPackingRHSRule, UnscaledObjectiveOrderingRule
 from core.ordering.recursive.ladder_intra_rule import LadderIntraRule
+from core.ordering.recursive.adjacency_aware import ReverseCuthillMcKeeRule, AdjacencyClusteringRule
+from core.ordering.constraints.decomposition_rule import DecompositionRule
+from core.ordering.blocks.block_rules import IdentityBlockOrderingRule, SizeBlockOrderingRule, DensityBlockOrderingRule
+from core.ordering.blocks.block_rules_factory import BlockOrderingFactory
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
-from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES
+from utils.dec_parser import DecFileParser
+from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES, BLOCK_ORDERING_ACTIVE
 
 
 def create_hierarchical_ordering():
@@ -39,6 +44,8 @@ def create_hierarchical_ordering():
     ]
 
     constr_block_rules = [
+        AdjacencyClusteringRule(),
+        ReverseCuthillMcKeeRule(),
         ConstraintSenseRule(1),
         ConstraintCompositionRule(1)
     ]
@@ -57,12 +64,15 @@ def create_hierarchical_ordering():
     )
 
 
-def create_recursive_hierarchical_ordering(json_file=None):
+def create_recursive_hierarchical_ordering(input_problem, json_file=None):
+    dec_parser = DecFileParser(input_problem)
+
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
-        VariableTypeRule(),
-        BoundCategoryRule(),
-        ConstraintCompositionRule(),
+        DecompositionRule(dec_parser=dec_parser),
+        #VariableTypeRule(),
+        #BoundCategoryRule(),
+        #ConstraintCompositionRule(),
     ]
 
     if json_file:
@@ -71,21 +81,21 @@ def create_recursive_hierarchical_ordering(json_file=None):
     else:
         matrix_repatable_rules = [
             #Rules that likely are producing blocks only on very few instances
-            AllBinaryVariablesRule(),
-            AllCoefficientsOneRule(),
-            ##All the other rules
-            NonZeroCountRule(),
-            #ObjectiveNonZeroCountRule(),
-            #RHSNonZeroCountRule(),
-            SignPatternRule(),
-            ConstraintIntegerCountRule(),
-            ConstraintContinuousCountRule(),
-            BothBoundsFiniteCountRule(),
-            BothBoundsInfiniteCountRule(),
-            OneBoundFiniteCountRule(),
-            #Specific for setpacking and setcovering
-            SetPackingRHSRule(),
-            UnscaledObjectiveOrderingRule(),
+            #AllBinaryVariablesRule(),
+            #AllCoefficientsOneRule(),
+            ###All the other rules
+            #NonZeroCountRule(),
+            ##ObjectiveNonZeroCountRule(),
+            ##RHSNonZeroCountRule(),
+            #SignPatternRule(),
+            #ConstraintIntegerCountRule(),
+            #ConstraintContinuousCountRule(),
+            #BothBoundsFiniteCountRule(),
+            #BothBoundsInfiniteCountRule(),
+            #OneBoundFiniteCountRule(),
+            ##Specific for setpacking and setcovering
+            #SetPackingRHSRule(),
+            #UnscaledObjectiveOrderingRule(),
             
         ]
 
@@ -99,10 +109,26 @@ def create_recursive_hierarchical_ordering(json_file=None):
         #ConstraintRangeRule(1)
     ]
 
+    block_ordering_rules = [
+        BlockOrderingFactory.lexicographic(
+            # Structured subproblems (set packing, etc.)
+            BlockOrderingFactory.from_ordering_rule(AllCoefficientsOneRule()),  
+            BlockOrderingFactory.from_ordering_rule(SetPackingRHSRule()),  
+            # Bounds and sparsity
+            BlockOrderingFactory.from_ordering_rule(BothBoundsFiniteCountRule()),  
+            BlockOrderingFactory.from_ordering_rule(OneBoundFiniteCountRule()),  
+            BlockOrderingFactory.from_ordering_rule(NonZeroCountRule(), descending=False),  
+            # Objective and homogeneity
+            BlockOrderingFactory.from_ordering_rule(ObjectiveNonZeroCountRule()),  
+            BlockOrderingFactory.from_ordering_rule(VariableTypeRule()),  
+        )
+    ]
+
     return RecursiveHierarchicalRuleComposition(
         matrix_block_rules_parent=matrix_block_rules,
         matrix_block_rules_child=matrix_repatable_rules,
         matrix_intra_rules=matrix_intra_rules,
+        block_ordering_rules=block_ordering_rules if BLOCK_ORDERING_ACTIVE else None,
         max_depth=50
     )
 
@@ -115,7 +141,7 @@ if __name__ == "__main__":
         # Check if a JSON file was passed as an argument
         json_file = sys.argv[1] if len(sys.argv) > 1 else None
 
-        ordering_rule = create_recursive_hierarchical_ordering(json_file) if RECURSIVE_RULES else create_hierarchical_ordering()
+        ordering_rule = create_recursive_hierarchical_ordering(input_problem, json_file) if RECURSIVE_RULES else create_hierarchical_ordering()
 
         experiment = OptimizationExperiment(gp_env, input_problem, ordering_rule)
         results = experiment.run_experiment(NUMBER_OF_PERMUTATIONS)
