@@ -27,7 +27,7 @@ from core.ordering.blocks.block_rules_factory import BlockOrderingFactory
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
 from utils.dec_parser import DecFileParser
-from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES
+from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES, BLOCK_ORDERING_ACTIVE
 
 
 def create_hierarchical_ordering():
@@ -128,7 +128,7 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
         matrix_block_rules_parent=matrix_block_rules,
         matrix_block_rules_child=matrix_repatable_rules,
         matrix_intra_rules=matrix_intra_rules,
-        block_ordering_rules=block_ordering_rules,
+        block_ordering_rules=block_ordering_rules if BLOCK_ORDERING_ACTIVE else None,
         max_depth=50
     )
 
