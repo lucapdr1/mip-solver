@@ -39,7 +39,7 @@ class DecGenerator:
                 PERMUTE_SEED + i  # Maintain seed sequence from original
             )
             # Generate decomposition file name based on original problem name and permutation index
-            dec_path = os.path.join(output_dir, f"{self.base_name}_{i}.dec")
+            dec_path = os.path.join(output_dir, f"{self.base_name}_{i}_{PERMUTE_GRANULARITY_K}.dec")
             self._generate_decomposition(permuted_model, dec_path)
 
     def _generate_decomposition(self, model, dec_output_path):
