@@ -13,6 +13,8 @@ class DecGenerator:
         self.file_path = file_path
         self.original_model = None
         self.permutator = None
+        # Extract base name from the file path
+        self.base_name = os.path.splitext(os.path.basename(file_path))[0]
 
     def load_problem(self):
         """Local file loading implementation"""
@@ -36,7 +38,8 @@ class DecGenerator:
                 PERMUTE_GRANULARITY_K,
                 PERMUTE_SEED + i  # Maintain seed sequence from original
             )
-            dec_path = os.path.join(output_dir, f"perm_{PERMUTE_SEED+i}.dec")
+            # Generate decomposition file name based on original problem name and permutation index
+            dec_path = os.path.join(output_dir, f"{self.base_name}_{i}.dec")
             self._generate_decomposition(permuted_model, dec_path)
 
     def _generate_decomposition(self, model, dec_output_path):
