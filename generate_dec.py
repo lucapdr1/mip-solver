@@ -2,7 +2,7 @@ import os
 import sys
 import argparse
 import concurrent.futures
-from utils.dec_preprocess import DecGenerator
+from utils.dec_generator import DecGenerator
 from utils.gurobi_utils import init_gurobi_env
 from utils.config import NUMBER_OF_PERMUTATIONS
 
@@ -24,12 +24,19 @@ def process_single_file(file_path, output_dir, num_permutations):
         # Initialize Gurobi environment (each process needs its own)
         gp_env = init_gurobi_env()
         
-        # Set environment variables for the DecGenerator
+        # Set environment variable for output directory
+        original_output_dir = os.environ.get('OUTPUT_DIR', None)
         os.environ['OUTPUT_DIR'] = output_dir
         
         # Create generator and process the file
         generator = DecGenerator(gp_env, file_path)
         generator.create_decmpositions(num_permutations)
+        
+        # Restore original output dir environment variable if it existed
+        if original_output_dir is not None:
+            os.environ['OUTPUT_DIR'] = original_output_dir
+        elif 'OUTPUT_DIR' in os.environ:
+            del os.environ['OUTPUT_DIR']
         
         return (file_name, True, "Success")
     except Exception as e:
