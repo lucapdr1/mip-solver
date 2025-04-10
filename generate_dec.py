@@ -1,10 +1,30 @@
 import os
 import sys
+import signal
 import argparse
 import concurrent.futures
+import time
 from utils.dec_generator import DecGenerator
 from utils.gurobi_utils import init_gurobi_env
 from utils.config import NUMBER_OF_PERMUTATIONS
+
+"""
+python generate_dec.py --input-dir="./batch_benchmark_no_dec" --output-dir="./batch_output/dec_files" --workers=2
+"""
+
+# Global flag to indicate shutdown is requested
+shutdown_requested = False
+
+def signal_handler(signum, frame):
+    """Handle Ctrl+C by setting the global shutdown flag"""
+    global shutdown_requested
+    if not shutdown_requested:
+        print("\nShutdown requested. Waiting for current tasks to finish...")
+        shutdown_requested = True
+    else:
+        # If pressed twice, force exit
+        print("\nForced exit.")
+        sys.exit(1)
 
 def process_single_file(file_path, output_dir, num_permutations):
     """
@@ -52,6 +72,8 @@ def process_mps_files(input_dir, output_dir, num_permutations, max_workers):
         num_permutations: Number of permutations to generate for each input
         max_workers: Maximum number of parallel processes
     """
+    global shutdown_requested
+    
     # Ensure directories exist
     if not os.path.exists(input_dir):
         raise FileNotFoundError(f"Input directory not found: {input_dir}")
@@ -68,32 +90,61 @@ def process_mps_files(input_dir, output_dir, num_permutations, max_workers):
     
     print(f"Found {len(mps_files)} MPS files to process")
     print(f"Using {max_workers} parallel workers")
+    print("Press Ctrl+C to stop processing (may wait for current tasks to complete)")
     
-    # Process files in parallel
+    # Set up pool with context manager to ensure proper cleanup
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all tasks
-        future_to_file = {
-            executor.submit(process_single_file, file_path, output_dir, num_permutations): file_path
-            for file_path in mps_files
-        }
+        # Submit initial batch of tasks
+        futures = {}
+        for i, file_path in enumerate(mps_files):
+            if shutdown_requested:
+                break
+            futures[executor.submit(process_single_file, file_path, output_dir, num_permutations)] = file_path
         
         # Process results as they complete
         completed = 0
-        for future in concurrent.futures.as_completed(future_to_file):
-            completed += 1
-            file_path = future_to_file[future]
-            file_name = os.path.basename(file_path)
+        total = len(mps_files)
+        
+        try:
+            for future in concurrent.futures.as_completed(futures):
+                file_path = futures[future]
+                file_name = os.path.basename(file_path)
+                completed += 1
+                
+                try:
+                    name, success, message = future.result()
+                    if success:
+                        print(f"[{completed}/{total}] ✓ Successfully processed {name}")
+                    else:
+                        print(f"[{completed}/{total}] ✗ Failed to process {name}: {message}")
+                except Exception as e:
+                    print(f"[{completed}/{total}] ✗ Error processing {file_name}: {e}")
+                
+                # Check if shutdown was requested
+                if shutdown_requested:
+                    print("Shutdown in progress. Not submitting new tasks.")
+                    break
+        except KeyboardInterrupt:
+            print("\nShutdown requested. Cancelling pending tasks...")
+            shutdown_requested = True
             
-            try:
-                name, success, message = future.result()
-                if success:
-                    print(f"[{completed}/{len(mps_files)}] ✓ Successfully processed {name}")
-                else:
-                    print(f"[{completed}/{len(mps_files)}] ✗ Failed to process {name}: {message}")
-            except Exception as e:
-                print(f"[{completed}/{len(mps_files)}] ✗ Error processing {file_name}: {e}")
+            # Cancel any pending futures
+            for future in futures:
+                if not future.done():
+                    future.cancel()
+            
+            # Wait a moment for cancellation to take effect
+            time.sleep(0.5)
+    
+    if shutdown_requested:
+        print("Shutdown complete.")
+    else:
+        print("All files processed successfully.")
 
 def main():
+    # Set up signal handler for SIGINT (Ctrl+C)
+    signal.signal(signal.SIGINT, signal_handler)
+    
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="Process MPS files and generate decompositions")
     
@@ -116,12 +167,10 @@ def main():
     # Process the files
     try:
         process_mps_files(args.input_dir, args.output_dir, args.permutations, max_workers)
-        print("Batch processing completed successfully")
+        return 0
     except Exception as e:
         print(f"Batch processing failed: {e}")
         return 1
-    
-    return 0
 
 if __name__ == "__main__":
     sys.exit(main())
