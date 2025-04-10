@@ -6,6 +6,7 @@ import tempfile
 from core.problem_transform.problem_permutator import ProblemPermutator
 from utils.config import PERMUTE_SEED, PERMUTE_GRANULARITY_K, OUTPUT_DIR
 from utils.dec_generator import preprocess_with_gcg
+from utils.logging_handler import LoggingHandler
 
 class DecGenerator:
     def __init__(self, gp_env, file_path):
@@ -13,6 +14,7 @@ class DecGenerator:
         self.file_path = file_path
         self.original_model = None
         self.permutator = None
+        self.logger = LoggingHandler().get_logger()
         # Extract base name from the file path
         self.base_name = os.path.splitext(os.path.basename(file_path))[0]
 
