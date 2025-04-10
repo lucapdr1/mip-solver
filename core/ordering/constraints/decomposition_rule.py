@@ -1,7 +1,6 @@
 from core.ordering.ordering_rule_interface import OrderingRule
 import numpy as np
-from collections import defaultdict
-
+from utils.config import PERMUTE_ORIGINAL
 class DecompositionRule(OrderingRule):
     def __init__(self, dec_parser):
         """
@@ -14,11 +13,17 @@ class DecompositionRule(OrderingRule):
         # Track max indices for resizing arrays
         self.max_var_index = -1
         self.max_constr_index = -1
-
+        # Track the current iteration
+        self.current_iteration = -1 if PERMUTE_ORIGINAL else -2
+         # New: Counter for how many times the rule is called
+        self.call_count = -1
     def _initialize_assignments(self, constraints, vars, A_csc):
         """
         Initialize block assignments for variables and constraints
         """
+        # Parse the .dec file for the current iteration
+        dec_data = self.parser.parse_for_iteration(self.current_iteration)
+        
         # Build constraint name to index mapping
         constr_name_to_idx = {constr.ConstrName: idx for idx, constr in enumerate(constraints)}
         
@@ -27,36 +32,36 @@ class DecompositionRule(OrderingRule):
         self.constr_block_assignment = np.zeros(array_size, dtype=int)
         
         current_block = 0
-        for block in self.parser.blocks:
+        for block in dec_data['blocks']:
             for name in block:
                 if name in constr_name_to_idx:
                     self.constr_block_assignment[constr_name_to_idx[name]] = current_block
             current_block += 1
         
         # Master constraints get highest block number
-        for name in self.parser.master:
+        for name in dec_data['master']:
             if name in constr_name_to_idx:
                 self.constr_block_assignment[constr_name_to_idx[name]] = current_block
 
         # Classify variables using the CSC matrix
-        self.var_block_assignment = self._classify_variables(vars, constraints, A_csc)
+        self.var_block_assignment = self._classify_variables(vars, constraints, A_csc, dec_data)
         self.initialized = True
 
-    def _classify_variables(self, vars, constraints, A_csc):
+    def _classify_variables(self, vars, constraints, A_csc, dec_data):
         """
         Classify variables into blocks based on which constraints they appear in
         """
         # Build constraint index to block mapping
         constr_block = {}
-        for block_idx, block in enumerate(self.parser.blocks):
+        for block_idx, block in enumerate(dec_data['blocks']):
             for name in block:
                 for constr_idx, constr in enumerate(constraints):
                     if constr.ConstrName == name:
                         constr_block[constr_idx] = block_idx
-        for name in self.parser.master:
+        for name in dec_data['master']:
             for constr_idx, constr in enumerate(constraints):
                 if constr.ConstrName == name:
-                    constr_block[constr_idx] = self.parser.nblocks  # Master block
+                    constr_block[constr_idx] = dec_data['nblocks']  # Master block
 
         # Classify variables using the CSC matrix with adjusted size
         array_size = max(len(vars), self.max_var_index + 1)
@@ -73,15 +78,23 @@ class DecompositionRule(OrderingRule):
                 constr_idx = indices[i]
                 if constr_idx in constr_block:
                     block = constr_block[constr_idx]
-                    if block != self.parser.nblocks:  # Not master
+                    if block != dec_data['nblocks']:  # Not master
                         blocks_in.add(block)
             
             if len(blocks_in) == 1:
                 var_block[var_idx] = blocks_in.pop()
             else:
-                var_block[var_idx] = self.parser.nblocks  # Linking variables
+                var_block[var_idx] = dec_data['nblocks']  # Linking variables
         
         return var_block
+
+    def set_iteration(self, iteration):
+        """
+        Set the current iteration to use the appropriate .dec file
+        """
+        print(f"[DecompositionRule] Switching to iteration {iteration}")
+        self.current_iteration = iteration
+        self._reset()  # Force reinitialize with new .dec file
 
     def _reset(self):
         """
@@ -134,23 +147,35 @@ class DecompositionRule(OrderingRule):
             self.constr_block_assignment = new_array
         
         return (self.constr_block_assignment[idx],)
-    
+
     def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block based on the decomposition structure from the .dec file.
         Always resets and reinitializes before processing.
         """
+        # Increment usage counter
+        self.call_count += 1
+        # Determine which iteration this corresponds to (assuming a PERMUTE_GRANULARITY_K pattern)
+        iteration = self.current_iteration + 1
+        
+        self.set_iteration(iteration)
+            
+        print(f"[DecompositionRule] score_matrix call count: {self.call_count}, using iteration: {self.current_iteration}")
+
         # Update max indices if needed
         if len(var_indices) > 0:
             self.max_var_index = max(self.max_var_index, np.max(var_indices))
         if len(constr_indices) > 0:
             self.max_constr_index = max(self.max_constr_index, np.max(constr_indices))
         
-        # Reset to ensure fresh initialization
+        # Reset to ensure fresh initialization - this will use the current iteration
         self._reset()
         
         # Initialize with fresh data
         self._initialize_assignments(constraints, vars, A_csc)
+        
+        # Get the current .dec file data
+        dec_data = self.parser.parse_for_iteration(self.current_iteration)
         
         # Ensure arrays are large enough for all indices
         if len(var_indices) > 0 and np.max(var_indices) >= len(self.var_block_assignment):
@@ -188,7 +213,7 @@ class DecompositionRule(OrderingRule):
         label = 0
         
         # First handle regular blocks (0 to nblocks-1)
-        for block in range(self.parser.nblocks):
+        for block in range(dec_data['nblocks']):
             if block in constr_groups or block in var_groups:
                 # Get variables and constraints for this block (may be empty)
                 block_vars = var_groups.get(block, np.array([], dtype=int))
@@ -205,12 +230,12 @@ class DecompositionRule(OrderingRule):
         
         # Collect all master/linking variables
         for score in var_unique_scores:
-            if score >= self.parser.nblocks:
+            if score >= dec_data['nblocks']:
                 master_vars.append(var_groups.get(score, np.array([], dtype=int)))
         
         # Collect all master constraints
         for score in unique_scores:
-            if score >= self.parser.nblocks:
+            if score >= dec_data['nblocks']:
                 master_constrs.append(constr_groups.get(score, np.array([], dtype=int)))
         
         # Combine if we have any master components

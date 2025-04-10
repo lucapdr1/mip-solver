@@ -1,117 +1,167 @@
 import os
 from collections import defaultdict
+from utils.config import PERMUTE_GRANULARITY_K
 
 class DecFileParser:
     def __init__(self, mps_file_path):
-        dec_file_path = self._get_dec_file_path(mps_file_path)
+        self.mps_file_path = mps_file_path
+        self.base_path = self._get_base_name(mps_file_path)
         self.blocks = []  # List of lists of constraint names for each block
         self.master = []  # List of constraint names in MASTERCONSS
         self.nblocks = 0
-        self._parse_dec_file(dec_file_path)
+        # Don't parse immediately - we'll do this on demand based on iteration
 
-    def _get_dec_file_path(self, mps_file_path):
-        """Derives the .dec file path from the .mps file path."""
-        return os.path.splitext(mps_file_path)[0] + ".dec"
+    def _get_base_name(self, mps_file_path):
+        """Derives the base file path from the .mps file path."""
+        return os.path.splitext(mps_file_path)[0]
+    
+    def get_dec_file_path(self, iteration=-1):
+        """Get the .dec file path for a specific iteration."""
+        if iteration == -1:
+            # Default .dec file (no iteration number)
+            return f"{self.base_path}.dec"
+        else:
+            # Iteration-specific .dec file
+            return f"{self.base_path}_{iteration}_{PERMUTE_GRANULARITY_K}.dec"
+    
+    def parse_for_iteration(self, iteration=0):
+        """Parse the .dec file for the specified iteration."""
+        # Reset data structures
+        self.blocks = []
+        self.master = []
+        self.nblocks = 0
+        
+        # Get the appropriate .dec file path for this iteration
+        dec_file_path = self.get_dec_file_path(iteration)
+        
+        # Check if file exists
+        if not os.path.exists(dec_file_path):
+            # Fall back to the default .dec file if iteration-specific one doesn't exist
+            print(f"Warning: {dec_file_path} not found, falling back to default .dec file")
+            dec_file_path = self.get_dec_file_path()
+            
+            # If even the default doesn't exist, raise an error
+            if not os.path.exists(dec_file_path):
+                raise FileNotFoundError(f"Neither iteration-specific ({self.get_dec_file_path(iteration)}) nor default .dec file ({dec_file_path}) found")
+        
+        # Parse the file
+        self._parse_dec_file(dec_file_path)
+        
+        return {
+            'nblocks': self.nblocks,
+            'blocks': self.blocks,
+            'master': self.master
+        }
     
     def _parse_dec_file(self, path):
+        """Internal method to parse a .dec file."""
+        print(f"Parsing .dec file: {path}")
         current_block = None
-        with open(path, 'r') as f:
-            lines = f.readlines()
-            i = 0
-            while i < len(lines):
-                line = lines[i]
-                stripped = line.strip()
-                
-                # Skip empty lines and comments
-                if not stripped or stripped.startswith('\\'):
-                    i += 1
-                    continue
+        try:
+            with open(path, 'r') as f:
+                lines = f.readlines()
+                i = 0
+                while i < len(lines):
+                    line = lines[i]
+                    stripped = line.strip()
                     
-                # Handle PRESOLVED (with value on same line or next line)
-                if stripped.upper().startswith('PRESOLVED'):
-                    # Check if value is on same line
-                    parts = stripped.split()
-                    if len(parts) > 1:
-                        # Has value on same line (e.g., "PRESOLVED 0")
-                        try:
-                            presolved_val = int(parts[1])
-                            i += 1
-                            continue
-                        except ValueError:
-                            raise ValueError(f"Invalid PRESOLVED value: {parts[1]}")
-                    else:
-                        # Value is on next line
-                        if i + 1 >= len(lines):
-                            raise ValueError("PRESOLVED missing value")
-                        next_line = lines[i+1].strip()
-                        try:
-                            presolved_val = int(next_line)
-                            i += 2
-                            continue
-                        except ValueError:
-                            raise ValueError(f"Invalid PRESOLVED value: {next_line}")
-                    
-                # Handle NBLOCKS (with value on same line or next line)
-                if stripped.upper() == 'NBLOCKS':
-                    # Check if value is on same line
-                    parts = stripped.split()
-                    if len(parts) > 1:
-                        # Has value on same line (e.g., "NBLOCKS 24")
-                        try:
-                            self.nblocks = int(parts[1])
-                            i += 1
-                            continue
-                        except ValueError:
-                            raise ValueError(f"Invalid NBLOCKS value: {parts[1]}")
-                    else:
-                        # Value is on next line
-                        if i + 1 >= len(lines):
-                            raise ValueError("NBLOCKS missing value")
-                        next_line = lines[i+1].strip()
-                        try:
-                            self.nblocks = int(next_line)
-                            i += 2
-                            continue
-                        except ValueError:
-                            raise ValueError(f"Invalid NBLOCKS value: {next_line}")
-                    
-                # Handle BLOCK declaration
-                if stripped.upper().startswith('BLOCK'):
-                    parts = stripped.split()
-                    if len(parts) < 2:
-                        raise ValueError("BLOCK line is malformed - missing block number")
-                    try:
-                        block_num = int(parts[1])
-                    except ValueError:
-                        raise ValueError(f"Invalid block number: {parts[1]}")
+                    # Skip empty lines and comments
+                    if not stripped or stripped.startswith('\\'):
+                        i += 1
+                        continue
                         
-                    if block_num != len(self.blocks) + 1:  # Blocks are 1-indexed
-                        raise ValueError(f"Block number {block_num} out of order")
+                    # Handle PRESOLVED (with value on same line or next line)
+                    if stripped.upper().startswith('PRESOLVED'):
+                        # Check if value is on same line
+                        parts = stripped.split()
+                        if len(parts) > 1:
+                            # Has value on same line (e.g., "PRESOLVED 0")
+                            try:
+                                presolved_val = int(parts[1])
+                                i += 1
+                                continue
+                            except ValueError:
+                                raise ValueError(f"Invalid PRESOLVED value: {parts[1]}")
+                        else:
+                            # Value is on next line
+                            if i + 1 >= len(lines):
+                                raise ValueError("PRESOLVED missing value")
+                            next_line = lines[i+1].strip()
+                            try:
+                                presolved_val = int(next_line)
+                                i += 2
+                                continue
+                            except ValueError:
+                                raise ValueError(f"Invalid PRESOLVED value: {next_line}")
                         
-                    current_block = []
-                    self.blocks.append(current_block)
-                    i += 1
-                    continue
-                    
-                # Handle MASTERCONSS
-                if stripped.upper().startswith('MASTERCONSS'):
-                    current_block = self.master
-                    i += 1
-                    continue
-                    
-                # Handle constraint names
-                if current_block is not None:
-                    current_block.append(stripped)
-                    i += 1
-                else:
-                    # Skip unexpected lines outside block/master sections
-                    i += 1
-        
-        # Validate we got the expected number of blocks
-        if len(self.blocks) != self.nblocks:
-            raise ValueError(f"Expected {self.nblocks} blocks, found {len(self.blocks)}")
+                    # Handle NBLOCKS (with value on same line or next line)
+                    if stripped.upper() == 'NBLOCKS' or stripped.upper().startswith('NBLOCKS '):
+                        # Check if value is on same line
+                        parts = stripped.split()
+                        if len(parts) > 1:
+                            # Has value on same line (e.g., "NBLOCKS 24")
+                            try:
+                                self.nblocks = int(parts[1])
+                                i += 1
+                                continue
+                            except ValueError:
+                                raise ValueError(f"Invalid NBLOCKS value: {parts[1]}")
+                        else:
+                            # Value is on next line
+                            if i + 1 >= len(lines):
+                                raise ValueError("NBLOCKS missing value")
+                            next_line = lines[i+1].strip()
+                            try:
+                                self.nblocks = int(next_line)
+                                i += 2
+                                continue
+                            except ValueError:
+                                raise ValueError(f"Invalid NBLOCKS value: {next_line}")
+                        
+                    # Handle BLOCK declaration
+                    if stripped.upper().startswith('BLOCK'):
+                        parts = stripped.split()
+                        if len(parts) < 2:
+                            raise ValueError("BLOCK line is malformed - missing block number")
+                        try:
+                            block_num = int(parts[1])
+                        except ValueError:
+                            raise ValueError(f"Invalid block number: {parts[1]}")
+                            
+                        if block_num != len(self.blocks) + 1:  # Blocks are 1-indexed
+                            raise ValueError(f"Block number {block_num} out of order")
+                            
+                        current_block = []
+                        self.blocks.append(current_block)
+                        i += 1
+                        continue
+                        
+                    # Handle MASTERCONSS
+                    if stripped.upper().startswith('MASTERCONSS'):
+                        current_block = self.master
+                        i += 1
+                        continue
+                        
+                    # Handle constraint names
+                    if current_block is not None:
+                        current_block.append(stripped)
+                        i += 1
+                    else:
+                        # Skip unexpected lines outside block/master sections
+                        i += 1
+            
+            # Validate we got the expected number of blocks
+            if len(self.blocks) != self.nblocks:
+                raise ValueError(f"Expected {self.nblocks} blocks, found {len(self.blocks)}")
+        except Exception as e:
+            print(f"Error parsing .dec file {path}: {str(e)}")
+            raise
 
-    def get_permutations(self, model):
+    def get_permutations(self, model, iteration=0):
+        """Get permutations for a specific iteration."""
+        # Ensure we've parsed the correct .dec file
+        self.parse_for_iteration(iteration)
+        
         # Build constraint name to index mapping
         constr_name_to_idx = {}
         for idx, constr in enumerate(model.getConstrs()):
