@@ -27,7 +27,7 @@ PERMUTE_ORIGINAL = os.getenv('PERMUTE_ORIGINAL', 'True').lower() == 'true'
 PERMUTE_SEED = int(os.getenv('PERMUTE_SEED', 12345))
 PERMUTE_GRANULARITY_K = os.getenv('PERMUTE_GRANULARITY_K', "all")# "all" to permute all, any integer K e.g 10 to define 1O subblocks
 APPLY_DEC = os.getenv('APPLY_DEC', 'True').lower() == 'true'
-NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 3))
+NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 4))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
 SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
 BLOCK_ORDERING_ACTIVE = os.getenv('BLOCK_ORDERING_ACTIVE', 'False').lower() == 'true'
