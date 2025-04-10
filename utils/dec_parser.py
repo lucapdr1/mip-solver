@@ -38,7 +38,7 @@ class DecFileParser:
         if not os.path.exists(dec_file_path):
             # Fall back to the default .dec file if iteration-specific one doesn't exist
             print(f"Warning: {dec_file_path} not found, falling back to default .dec file")
-            dec_file_path = self.get_dec_file_path(0)
+            dec_file_path = self.get_dec_file_path()
             
             # If even the default doesn't exist, raise an error
             if not os.path.exists(dec_file_path):

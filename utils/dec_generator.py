@@ -32,7 +32,6 @@ class DecGenerator:
         Uses environment variables for configuration:
         - PERMUTE_GRANULARITY_K: Block size for permutations
         - PERMUTE_SEED: Base seed for random operations
-        - APPLY_DEC: Whether to generate decomposition files
         """
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         
