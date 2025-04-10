@@ -4,7 +4,7 @@ import numpy as np
 import tempfile
 
 from core.problem_transform.problem_permutator import ProblemPermutator
-from utils.config import PERMUTE_SEED, PERMUTE_GRANULARITY_K
+from utils.config import PERMUTE_SEED, PERMUTE_GRANULARITY_K, OUTPUT_DIR
 from utils.dec_generator import preprocess_with_gcg
 
 class DecGenerator:
@@ -22,7 +22,7 @@ class DecGenerator:
             raise FileNotFoundError(f"Local file {self.file_path} not found")
         return gp.read(self.file_path, env=self.gp_env)
 
-    def process_permutations(self, num_permutations, output_dir="decompositions"):
+    def process_permutations(self, num_permutations):
         """
         Generate permuted models with decomposition files
         Uses environment variables for configuration:
@@ -30,7 +30,7 @@ class DecGenerator:
         - PERMUTE_SEED: Base seed for random operations
         - APPLY_DEC: Whether to generate decomposition files
         """
-        os.makedirs(output_dir, exist_ok=True)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
         
         for i in range(num_permutations):
             # Create permuted model with configured parameters
@@ -39,7 +39,7 @@ class DecGenerator:
                 PERMUTE_SEED + i  # Maintain seed sequence from original
             )
             # Generate decomposition file name based on original problem name and permutation index
-            dec_path = os.path.join(output_dir, f"{self.base_name}_{i}_{PERMUTE_GRANULARITY_K}.dec")
+            dec_path = os.path.join(OUTPUT_DIR, f"{self.base_name}_{i}_{PERMUTE_GRANULARITY_K}.dec")
             self._generate_decomposition(permuted_model, dec_path)
 
     def _generate_decomposition(self, model, dec_output_path):
