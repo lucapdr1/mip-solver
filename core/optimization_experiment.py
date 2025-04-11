@@ -18,7 +18,7 @@ from core.problem_transform.distance import KendallTauDistance, WeightedKendallT
 from utils.problem_printer import ProblemPrinter
 from utils.dec_parser import DecFileParser
 from utils.plots_handler import save_all_plots
-from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME, NUMBER_OF_THREADS
+from utils.config import PERMUTE_ORIGINAL, PERMUTE_SEED, PERMUTE_GRANULARITY_K, APPLY_DEC, LOG_MODEL_COMPARISON, LOG_MATRIX, PRODUCTION, BUCKET_NAME, SCALING_ACTIVE, NORMALIZATION_ACTIVE, DISABLE_SOLVING, RECURSIVE_RULES, MAX_SOLVE_TIME, NUMBER_OF_THREADS
 
 class OptimizationExperiment:
     def __init__(self, gp_env, file_path, ordering_rule):

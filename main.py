@@ -27,7 +27,7 @@ from core.ordering.blocks.block_rules_factory import BlockOrderingFactory
 from utils.gurobi_utils import init_gurobi_env, get_Input_problem
 from utils.rulemap import load_rules_from_json
 from utils.dec_parser import DecFileParser
-from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES, BLOCK_ORDERING_ACTIVE
+from utils.config import NUMBER_OF_PERMUTATIONS, RECURSIVE_RULES, CUSTOM_RULES_ACTIVE, BLOCK_ORDERING_ACTIVE
 
 
 def create_hierarchical_ordering():
@@ -70,34 +70,43 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
         DecompositionRule(dec_parser=dec_parser),
-        #VariableTypeRule(),
-        #BoundCategoryRule(),
-        #ConstraintCompositionRule(),
+    ]
+
+    matrix_repatable_rules = [
+        # Rules that likely are producing blocks only on very few instances
     ]
 
     if json_file:
         print(f"Loading matrix_repeatable_rules from {json_file}...")
-        matrix_repatable_rules = load_rules_from_json(json_file)
+        matrix_repatable_rules_ext = load_rules_from_json(json_file)
     else:
-        matrix_repatable_rules = [
+        matrix_repatable_rules_ext = [
             #Rules that likely are producing blocks only on very few instances
-            #AllBinaryVariablesRule(),
-            #AllCoefficientsOneRule(),
-            ###All the other rules
-            #NonZeroCountRule(),
-            ##ObjectiveNonZeroCountRule(),
-            ##RHSNonZeroCountRule(),
-            #SignPatternRule(),
-            #ConstraintIntegerCountRule(),
-            #ConstraintContinuousCountRule(),
-            #BothBoundsFiniteCountRule(),
-            #BothBoundsInfiniteCountRule(),
-            #OneBoundFiniteCountRule(),
-            ##Specific for setpacking and setcovering
-            #SetPackingRHSRule(),
-            #UnscaledObjectiveOrderingRule(),
-            
+            AllBinaryVariablesRule(),
+            AllCoefficientsOneRule(),
+            ##All the other rules
+            NonZeroCountRule(),
+            #ObjectiveNonZeroCountRule(),
+            #RHSNonZeroCountRule(),
+            SignPatternRule(),
+            ConstraintIntegerCountRule(),
+            ConstraintContinuousCountRule(),
+            BothBoundsFiniteCountRule(),
+            BothBoundsInfiniteCountRule(),
+            OneBoundFiniteCountRule(),
+            #Specific for setpacking and setcovering
+            SetPackingRHSRule(),
+            UnscaledObjectiveOrderingRule(),
         ]
+
+    if CUSTOM_RULES_ACTIVE:
+        matrix_block_rules.extend([
+            VariableTypeRule(),
+            BoundCategoryRule(),
+            ConstraintCompositionRule(),
+        ])
+
+        matrix_repatable_rules.extend(matrix_repatable_rules_ext)
 
     matrix_intra_rules = [
         #LadderIntraRule(0.3),

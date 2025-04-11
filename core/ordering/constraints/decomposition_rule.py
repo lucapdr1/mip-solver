@@ -147,7 +147,6 @@ class DecompositionRule(OrderingRule):
             self.constr_block_assignment = new_array
         
         return (self.constr_block_assignment[idx],)
-
     def score_matrix(self, var_indices, constr_indices, vars, obj_coeffs, bounds, A, A_csc, A_csr, constraints, rhs):
         """
         Partitions the block based on the decomposition structure from the .dec file.
