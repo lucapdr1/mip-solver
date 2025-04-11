@@ -30,6 +30,7 @@ APPLY_DEC = os.getenv('APPLY_DEC', 'True').lower() == 'true'
 NUMBER_OF_PERMUTATIONS = int(os.getenv('NUMBER_OF_PERMUTATIONS', 3))
 NORMALIZATION_ACTIVE = os.getenv('NORMALIZATION_ACTIVE', 'False').lower() == 'true'
 SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true' 
+CUSTOM_RULES_ACTIVE = os.getenv('CUSTOM_RULES_ACTIVE', 'False').lower() == 'true'
 BLOCK_ORDERING_ACTIVE = os.getenv('BLOCK_ORDERING_ACTIVE', 'False').lower() == 'true'
 
 MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
