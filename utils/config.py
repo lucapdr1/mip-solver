@@ -32,11 +32,11 @@ SCALING_ACTIVE = os.getenv('SCALING_ACTIVE', 'False').lower() == 'true'
 BLOCK_ORDERING_ACTIVE = os.getenv('BLOCK_ORDERING_ACTIVE', 'False').lower() == 'true'
 
 MATRICES_TO_CSV = os.getenv('MATRICES_TO_CSV', 'False').lower() == 'true'
-LOG_MATRIX = os.getenv('LOG_MATRIX', 'True').lower() == 'true'
+LOG_MATRIX = os.getenv('LOG_MATRIX', 'False').lower() == 'true'
 LOG_MODEL_COMPARISON = os.getenv('LOG_MODEL_COMPARISON', 'False').lower() == 'true'
 PRODUCTION = os.getenv('PRODUCTION', 'False').lower() == 'true'
 RECURSIVE_RULES = os.getenv('RECURSIVE_RULES', 'True').lower() == 'true'
-DISABLE_SOLVING = os.getenv('DISABLE_SOLVING', 'True').lower() == 'true'
+DISABLE_SOLVING = os.getenv('DISABLE_SOLVING', 'False').lower() == 'true'
 MAX_SOLVE_TIME = int(os.getenv('MAX_SOLVE_TIME', 3600))
 NUMBER_OF_THREADS = int(os.getenv('NUMBER_OF_THREADS', 4))
 
