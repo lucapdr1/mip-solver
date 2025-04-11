@@ -110,14 +110,14 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
     ]
 
     block_ordering_rules = [
+        SizeBlockOrderingRule(descending=False), #first smaller blocks
         BlockOrderingFactory.lexicographic(
             # Structured subproblems (set packing, etc.)
             BlockOrderingFactory.from_ordering_rule(AllCoefficientsOneRule()), 
             # Bounds and sparsity
             BlockOrderingFactory.from_ordering_rule(BothBoundsFiniteCountRule()),  
-            BlockOrderingFactory.from_ordering_rule(OneBoundFiniteCountRule()),  
-            BlockOrderingFactory.from_ordering_rule(NonZeroCountRule(), descending=False),  
-            # Objective and homogeneity
+            BlockOrderingFactory.from_ordering_rule(NonZeroCountRule()),  
+            # Objective and homogeneity as tie-braking rules
             BlockOrderingFactory.from_ordering_rule(ObjectiveNonZeroCountRule()),  
             BlockOrderingFactory.from_ordering_rule(VariableTypeRule()),  
         )
