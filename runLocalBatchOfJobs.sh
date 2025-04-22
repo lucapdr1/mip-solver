@@ -11,6 +11,8 @@
 # Enable job control
 set -m
 
+trap 'echo "Interrupted. Killing all child processes..."; pkill -P $$; exit 1' SIGINT SIGTERM
+
 # Default values:
 DEFAULT_INPUT_DIR="./input/"
 DEFAULT_OUTPUT_DIR="./output/"
