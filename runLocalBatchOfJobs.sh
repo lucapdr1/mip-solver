@@ -8,6 +8,11 @@
 #   parallel ./runLocalBatchOfJobs.sh --input-dir=./batch_easy/ --output-dir=./batch_output/granularity_{} \
 #           --parallel-instances=2 --permute-granularity={} --time-limit=3600 --threads=8 ::: 5 6 8 10 12 15 20 33 all
 #
+# Enable job control
+set -m
+
+trap 'echo "Interrupted. Killing all child processes..."; pkill -P $$; exit 1' SIGINT SIGTERM
+
 # Default values:
 DEFAULT_INPUT_DIR="./input/"
 DEFAULT_OUTPUT_DIR="./output/"
@@ -17,7 +22,6 @@ DEFAULT_PERMUTE_GRANULARITY_K="all"
 DEFAULT_TIME_LIMIT=3600
 DEFAULT_THREADS=8
 
-# Function to display help message.
 print_help() {
     echo "Usage: bash ./runLocalBatchOfJobs.sh [--input-dir=<dir>] [--output-dir=<dir>] [--rules-folder=<dir>]"
     echo "                                  [--parallel-instances=<num>] [--number-of-permutations=<num>]"
@@ -31,14 +35,9 @@ print_help() {
     echo "  PERMUTE_GRANULARITY_K: ${DEFAULT_PERMUTE_GRANULARITY_K}"
     echo "  TIME_LIMIT: ${DEFAULT_TIME_LIMIT}"
     echo "  NUMBER_OF_THREADS: ${DEFAULT_THREADS}"
-    echo ""
-    echo "Example (using GNU parallel):"
-    echo "  parallel ./runLocalBatchOfJobs.sh --input-dir=./batch_easy/ \\
-          --output-dir=./batch_output/granularity_{} --parallel-instances=2 \\
-          --permute-granularity={} --time-limit=3600 --threads=4 ::: 5 6 8 10 12 15 20 33 all"
 }
 
-# Check if help is requested.
+# Check if help is requested
 for arg in "$@"; do
     case $arg in
         --help|-h)
@@ -48,7 +47,7 @@ for arg in "$@"; do
     esac
 done
 
-# Initialize variables with default values.
+# Initialize variables with default values
 INPUT_DIR="$DEFAULT_INPUT_DIR"
 OUTPUT_DIR="$DEFAULT_OUTPUT_DIR"
 RULES_FOLDER=""
@@ -58,76 +57,43 @@ PERMUTE_GRANULARITY_K="$DEFAULT_PERMUTE_GRANULARITY_K"
 TIME_LIMIT="$DEFAULT_TIME_LIMIT"
 NUMBER_OF_THREADS="$DEFAULT_THREADS"
 
-# Parse named parameters.
+# Parse named parameters
 for arg in "$@"; do
     case $arg in
-        --input-dir=*)
-            INPUT_DIR="${arg#*=}"
-            shift
-            ;;
-        --output-dir=*)
-            OUTPUT_DIR="${arg#*=}"
-            shift
-            ;;
-        --rules-folder=*)
-            RULES_FOLDER="${arg#*=}"
-            shift
-            ;;
-        --parallel-instances=*)
-            PARALLEL_INSTANCES="${arg#*=}"
-            shift
-            ;;
-        --number-of-permutations=*)
-            NUMBER_OF_PERMUTATIONS="${arg#*=}"
-            shift
-            ;;
-        --permute-granularity=*)
-            PERMUTE_GRANULARITY_K="${arg#*=}"
-            shift
-            ;;
-        --time-limit=*)
-            TIME_LIMIT="${arg#*=}"
-            shift
-            ;;
-        --threads=*)
-            NUMBER_OF_THREADS="${arg#*=}"
-            shift
-            ;;
-        *)
-            echo "Unknown option: $arg"
-            exit 1
-            ;;
+        --input-dir=*) INPUT_DIR="${arg#*=}" ;;
+        --output-dir=*) OUTPUT_DIR="${arg#*=}" ;;
+        --rules-folder=*) RULES_FOLDER="${arg#*=}" ;;
+        --parallel-instances=*) PARALLEL_INSTANCES="${arg#*=}" ;;
+        --number-of-permutations=*) NUMBER_OF_PERMUTATIONS="${arg#*=}" ;;
+        --permute-granularity=*) PERMUTE_GRANULARITY_K="${arg#*=}" ;;
+        --time-limit=*) TIME_LIMIT="${arg#*=}" ;;
+        --threads=*) NUMBER_OF_THREADS="${arg#*=}" ;;
+        *) echo "Unknown option: $arg"; exit 1 ;;
     esac
 done
 
-# Ensure input folder exists.
+# Ensure input folder exists
 if [ ! -d "$INPUT_DIR" ]; then
     echo "Input folder does not exist: $INPUT_DIR"
     exit 1
 fi
 
-# Function to process input files for a given JSON rule file.
 process_input_files() {
     local json_file="$1"
     local current_output_dir="$2"
-    
-    # Create output folder if needed.
+
     mkdir -p "$current_output_dir"
-    
-    # Create a temporary file to hold file sizes and paths.
     tmpfile=$(mktemp)
-    
-    # Collect file sizes and paths from the input folder, filtering for .mps files only
+
+    # List input .mps files sorted by size
     find "$INPUT_DIR" -maxdepth 1 -type f -name "*.mps" -exec sh -c 'printf "%s %s\n" "$(wc -c < "$1")" "$1"' sh {} \; > "$tmpfile"
-    
-    # Read sorted file list into an array (preserving spaces in filenames).
     mapfile -t files < <(sort -n "$tmpfile" | cut -d ' ' -f 2-)
-    
+
     for file in "${files[@]}"; do
         if [ -f "$file" ]; then
             INPUT_PROBLEM="$(basename "$file")"
-            echo "Processing file: $INPUT_PROBLEM using rule file: $(basename "$json_file")"
-            # Pass all necessary parameters as environment variables.
+            echo "Processing: $INPUT_PROBLEM with $(basename "$json_file")"
+
             env INPUT_PROBLEM="$INPUT_PROBLEM" \
                 INPUT_DIR="$INPUT_DIR" \
                 OUTPUT_DIR="$current_output_dir" \
@@ -136,39 +102,33 @@ process_input_files() {
                 MAX_SOLVE_TIME="$TIME_LIMIT" \
                 NUMBER_OF_THREADS="$NUMBER_OF_THREADS" \
                 python main.py "$json_file" &
-            
-            # Wait if the number of background jobs equals or exceeds the parallel instances limit.
-            while [ "$(jobs -r | wc -l)" -ge "$PARALLEL_INSTANCES" ]; do
-                sleep 0.1
-            done
+
+            # Throttle concurrent jobs
+            if [ "$(jobs -p | wc -l)" -ge "$PARALLEL_INSTANCES" ]; then
+                wait -n
+            fi
         fi
     done
-    
-    # Wait for all background processes to finish.
+
+    # Wait for any remaining jobs to finish
     wait
-    
-    # Cleanup the temporary file.
+
     rm "$tmpfile"
 }
 
-# Main processing:
+# Main loop
 if [ -n "$RULES_FOLDER" ]; then
-    # Loop over each JSON file in the rules folder.
     for json_file in "$RULES_FOLDER"/*.json; do
-        # Check if any JSON files exist.
         if [ ! -e "$json_file" ]; then
-            echo "No JSON files found in rules folder: $RULES_FOLDER"
+            echo "No JSON rule files found in: $RULES_FOLDER"
             exit 1
         fi
-        
-        # Get the base name of the JSON file (without extension).
+
         rule_name=$(basename "$json_file" .json)
-        # Create an output folder specific to this rule file.
         current_output_dir="${OUTPUT_DIR}${rule_name}/"
-        
+
         process_input_files "$json_file" "$current_output_dir"
     done
 else
-    # No rules folder provided: process input files using the default or specified output folder.
     process_input_files "" "$OUTPUT_DIR"
 fi
