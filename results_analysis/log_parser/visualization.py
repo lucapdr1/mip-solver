@@ -75,7 +75,7 @@ def plot_solve_time_variability(ax, df, labels, x, width):
     ax.bar(x + width/2, right_values, width, label='Canonical', color=right_colors)
     ax.set_title('Solve Time Variability')
     ax.set_ylabel('Standard Deviation (Solve Time)')
-    ax.legend()
+    ax.legend(loc='upper right')
     ax.set_yscale("log")
     ax.set_xticks(x)
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
@@ -99,7 +99,7 @@ def plot_work_units_variability(ax, df, labels, x, width):
     ax.bar(x + width/2, right_values, width, label='Canonical', color=right_colors)
     ax.set_title('Work Units Variability')
     ax.set_ylabel('Standard Deviation (Work Units)')
-    ax.legend()
+    ax.legend(loc='upper right')
     ax.set_yscale("log")
     ax.set_xticks(x)
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
@@ -179,7 +179,7 @@ def plot_solve_time_ratio(ax, df, labels, x, bar_width):
     ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
             horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
-    ax.legend()
+    ax.legend(loc='upper right')
 
 def plot_work_units_ratio(ax, df, labels, x, bar_width):
     """
@@ -202,7 +202,7 @@ def plot_work_units_ratio(ax, df, labels, x, bar_width):
     ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
             horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
-    ax.legend()
+    ax.legend(loc='upper right')
 
 
 def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
