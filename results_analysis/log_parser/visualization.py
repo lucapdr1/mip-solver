@@ -57,8 +57,8 @@ def plot_pairwise_distance_variability(ax, df, labels, x, width):
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for color in right_colors if color == 'green')
     percentage_green = (num_green / len(right_colors)) * 100
-    ax.text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
-            horizontalalignment='right', verticalalignment='top',
+    ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
+            horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
 
 def plot_solve_time_variability(ax, df, labels, x, width):
@@ -75,14 +75,14 @@ def plot_solve_time_variability(ax, df, labels, x, width):
     ax.bar(x + width/2, right_values, width, label='Canonical', color=right_colors)
     ax.set_title('Solve Time Variability')
     ax.set_ylabel('Standard Deviation (Solve Time)')
-    ax.legend()
+    ax.legend(loc='upper right')
     ax.set_yscale("log")
     ax.set_xticks(x)
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for color in right_colors if color == 'green')
     percentage_green = (num_green / len(right_colors)) * 100
-    ax.text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
-            horizontalalignment='right', verticalalignment='top',
+    ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
+            horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
 
 def plot_work_units_variability(ax, df, labels, x, width):
@@ -99,14 +99,14 @@ def plot_work_units_variability(ax, df, labels, x, width):
     ax.bar(x + width/2, right_values, width, label='Canonical', color=right_colors)
     ax.set_title('Work Units Variability')
     ax.set_ylabel('Standard Deviation (Work Units)')
-    ax.legend()
+    ax.legend(loc='upper right')
     ax.set_yscale("log")
     ax.set_xticks(x)
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for color in right_colors if color == 'green')
     percentage_green = (num_green / len(right_colors)) * 100
-    ax.text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
-            horizontalalignment='right', verticalalignment='top',
+    ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
+            horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
 
 def plot_perm_distance_ratio(ax, df, labels, x, bar_width):
@@ -123,11 +123,12 @@ def plot_perm_distance_ratio(ax, df, labels, x, bar_width):
     ax.set_title('Permutation Distance Ratio (After/Before)')
     ax.set_ylabel('Ratio (After/Before)')
     ax.set_xticks(x)
+    ax.set_yscale("log")
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for x in reduction_values if x is not None and x >= 0)
     percentage_green = (num_green / len(reduction_values)) * 100
-    ax.text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
-            horizontalalignment='right', verticalalignment='top',
+    ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
+            horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
     ax.legend()
 
@@ -149,11 +150,12 @@ def plot_pairwise_distance_ratio(ax, df, labels, x, bar_width):
     ax.set_title('All-Pairs Permutation Distance Ratio (After/Before)')
     ax.set_ylabel('Ratio (After/Before)')
     ax.set_xticks(x)
+    ax.set_yscale("log")
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for x in reduction_values if x is not None and x >= 0)
     percentage_green = (num_green / len(reduction_values)) * 100
-    ax.text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
-            horizontalalignment='right', verticalalignment='top',
+    ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
+            horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
     ax.legend()
 
@@ -170,13 +172,14 @@ def plot_solve_time_ratio(ax, df, labels, x, bar_width):
     ax.set_title('Solve Time Ratio (After/Before)')
     ax.set_ylabel('Ratio (After/Before)')
     ax.set_xticks(x)
+    ax.set_yscale("log")
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for x in reduction_values if x is not None and x >= 0)
     percentage_green = (num_green / len(reduction_values)) * 100
-    ax.text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
-            horizontalalignment='right', verticalalignment='top',
+    ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
+            horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
-    ax.legend()
+    ax.legend(loc='upper right')
 
 def plot_work_units_ratio(ax, df, labels, x, bar_width):
     """
@@ -184,6 +187,7 @@ def plot_work_units_ratio(ax, df, labels, x, bar_width):
     """
     reduction_values = df['std_work_units_reduction_pct']
     ratio_values = reduction_values.apply(lambda x: 1 - x/100 if x is not None else 1)
+    ratio_values = ratio_values.clip(upper=5)
     ratio_colors = ['green' if (x is not None and x >= 0) else 'red' for x in reduction_values]
     ax.bar(x, ratio_values, bar_width, color=ratio_colors)
     geom_mean = np.exp(np.mean(np.log(ratio_values.clip(lower=1e-10))))
@@ -191,13 +195,14 @@ def plot_work_units_ratio(ax, df, labels, x, bar_width):
     ax.set_title('Work Units Ratio (After/Before)')
     ax.set_ylabel('Ratio (After/Before)')
     ax.set_xticks(x)
+    ax.set_yscale("log")
     ax.set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     num_green = sum(1 for x in reduction_values if x is not None and x >= 0)
     percentage_green = (num_green / len(reduction_values)) * 100
-    ax.text(0.95, 0.95, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
-            horizontalalignment='right', verticalalignment='top',
+    ax.text(0.02, 0.98, f"Green: {percentage_green:.1f}%", transform=ax.transAxes,
+            horizontalalignment='left', verticalalignment='top',
             bbox=dict(facecolor='white', alpha=0.5))
-    ax.legend()
+    ax.legend(loc='upper right')
 
 
 def plot_aggregated_comparisons(df: pd.DataFrame, output_file: str) -> None:
@@ -312,6 +317,7 @@ def plot_granularity_combined(df: pd.DataFrame, output_file: str = None) -> None
                    label=f"Overall Median: {overall_median_percentage:.2f}%")
     axs[1].legend()
     axs[1].set_xticks(x_positions)
+    axs[1].set_yscale("log")
     axs[1].set_xticklabels([str(label) for label in labels], rotation=45, ha='right')
     
     plt.tight_layout()

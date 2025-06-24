@@ -7,7 +7,7 @@ from PIL import Image
 import numpy as np
 from utils.config import OUTPUT_DIR
 
-def plot_sparse_structure(sparse_matrix, title, cmap='Greys_r'):
+def plot_sparse_structure(sparse_matrix, title, cmap='binary'):
     """
     Visualizes sparse matrices clearly by filling squares.
     Nonzero entries in black, zeros in white.
