@@ -1,0 +1,24 @@
+\\ ndetectors 
+\\ 2 
+\\ name time nnewblocks %ofnewborderconss %ofnewblockconss %ofnewlinkingvars %ofnewblockvars  
+\\ varclass 0.000000 0 0.000000 0.000000 0.895522 0.000000 
+\\ connectedbase 0.000000 7 0.000000 1.000000 0.000000 0.000000 
+PRESOLVED
+0
+NBLOCKS
+7
+BLOCK 1
+c1
+BLOCK 2
+c2
+BLOCK 3
+c3
+BLOCK 4
+c4
+BLOCK 5
+c5
+BLOCK 6
+c6
+BLOCK 7
+c7
+MASTERCONSS

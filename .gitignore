@@ -7,14 +7,12 @@
 /rules*
 *mip311
 
-
 # === Terraform ===
 .terraform/
 *.tfstate
 *.tfstate.backup
 *.tfvars
 crash.log
-*.log
 override.tf
 override.tf.json
 terraform.tfvars.json
