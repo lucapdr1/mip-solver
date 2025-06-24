@@ -2,20 +2,20 @@ import os
 import logging
 
 #LICENSE
-WLSACCESSID = os.getenv('WLSACCESSID', '0f4125b4-a12f-4461-8ece-f8abc8da88c7')
-WLSSECRET = os.getenv('WLSSECRET', '54d16d52-1e7f-44e9-a37f-f98498a2b836')
-LICENSEID = os.getenv('LICENSEID', '2648812')
+WLSACCESSID = os.getenv('WLSACCESSID')
+WLSSECRET = os.getenv('WLSSECRET')
+LICENSEID = os.getenv('LICENSEID')
 
 # Read values from environment variables or use hardcoded defaults
 LOG_LEVEL = os.getenv('LOG_LEVEL', logging.INFO)
 INPUT_DIR = os.getenv('INPUT_DIR', "input/")
 OUTPUT_DIR = os.getenv('OUTPUT_DIR', "experiments/")
 
-#INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
+INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy.mps")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_constrT.mps")
 #INPUT_PROBLEM =  os.getenv('INPUT_PROBLEM', "dummy_with_bounds.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "example-min.mps")
-INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-911970.mps")
+#INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "neos-911970.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "exp-1-500-5-5.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "gen-ip054.mps")
 #INPUT_PROBLEM = os.getenv('INPUT_PROBLEM', "markshare2.mps")
