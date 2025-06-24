@@ -158,6 +158,29 @@ Contains all classes and utilities for post-processing experiment logs and compu
 5. **Postprocess Logs**
    Extract statistics from experiment logs to evaluate structural and performance differences across transformations.
 
+
+Sure! Here’s a **Tests** section you can add to your README explaining how to run tests from the root while keeping them inside a `tests/` folder, including the import tip:
+
+---
+
+## Running Tests
+
+All tests are located in the `tests/` directory for better organization.
+
+### How to Run
+
+To ensure imports work correctly, **run tests from the root directory** of the project.
+
+* Using `unittest`:
+
+  ```bash
+  python -m unittest discover -s tests
+  ```
+
+This ensures that your test files can correctly import modules from the root project folder.
+
+---
+
 ## Contributing
 
 Contributions are welcome! Feel free to open an issue or submit a pull request.
