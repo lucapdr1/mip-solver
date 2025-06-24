@@ -12,6 +12,11 @@ Clone the repository to your local machine:
 git clone https://github.com/lucapdr1/mip-solver
 cd mip-solver
 ```
+## Requirements
+
+- Python 3.9+
+- Gurobi Solver (with a valid license)
+- Required Python packages (see [Installation](#installation))
 
 ## Installation
 
@@ -111,93 +116,50 @@ In this command:
 - `{}` is replaced by the granularity value for each job.
 - The output directories will be created as, for example, `./batch_output/granularity_5/` and `./batch_output/granularity_all/` respectively.
 - The script will process all files in the `./mip_lib/` folder. If you wish to run the experiment on only a subset of instances, create a folder with only those instances and provide that folder as the `--input-dir` parameter.
-
 --------------
+Here's your updated README with the **installation section left unchanged**, and the **workflow revised** to reflect the new process:
+
+---
 
 ## Features
 
-- **Load and Solve MIP Problems**: Read problems from MPS files and solve them using the Gurobi solver.
-- **Random Permutations**: Generate permuted versions of MIP problems to analyze solver performance under different variable orderings.
-- **Experimentation Framework**: Log results, compare solutions, and evaluate differences in objective values between original and permuted problems.
-
-## Folder Structure
-
-```plaintext
-mip-solver/
-├── core/
-│   ├── logging_handler.py           # Logging utility for structured experiment logs
-│   ├── problem_permutator.py        # Handles variable permutation for MIP problems
-│   └── optimization_experiment.py   # Main class for running optimization experiments
-├── input/
-│   └── example3.mps                 # Example MPS file for experimentation
-├── main.py                          # Entry point to run the optimization experiment
-├── experiment.ipynb                 # Jupyter notebook for interactive experimentation
-```
-
-## Requirements
-
-- Python 3.8+
-- Gurobi Solver (with a valid license)
-- Required Python packages (see [Installation](#installation))
-
-## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd mip-solver
-   ```
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Install Gurobi and configure your license:
-   Follow the instructions on the [Gurobi website](https://www.gurobi.com/documentation/).
-
-## Usage
-
-### Running the Experiment
-
-1. Place your MPS file in the `input/` directory.
-2. Update the `file_path` in `main.py` to point to your MPS file:
-   ```python
-   file_path = "input/example3.mps"
-   ```
-3. Run the experiment:
-   ```bash
-   python main.py
-   ```
-
-### Interactive Experimentation
-
-You can also use the `experiment.ipynb` notebook for interactive testing. Open the notebook in Jupyter and follow the steps to load and solve problems or to analyze permuted versions.
+* **Load MIP Problems**: Read problems from MPS files.
+* **Structured Permutations**: Apply variable permutations at different granularity levels (global, block-wise, etc.).
+* **Rule-Based Reordering**: Reorder variables and constraints using custom-defined rules (e.g. size, sparsity, structure).
+* **Solver Integration**: Solve the original and transformed problems using Gurobi (or other solvers).
+* **Variability Analysis**: Compute variability matrices to quantify the impact of permutations and reorderings.
+* **Result Postprocessing**: Analyze experiment logs to extract summary statistics and evaluate performance changes.
 
 ## Modules
 
-### `core/logging_handler.py`
-Provides a centralized logging mechanism for recording experiment results, errors, and comparison metrics.
+### `core/problem_transformation/`
 
-### `core/problem_permutator.py`
-Handles the generation of permuted versions of MIP problems by randomly shuffling variables while preserving problem structure.
+Handles the generation of transformed versions of MIP problems by applying permutations to problem matrices, scaling transformations, and provides helper methods for computing distances between matrices.
 
-### `core/optimization_experiment.py`
-Defines the main class for conducting optimization experiments, comparing the performance of solvers on original and permuted problems.
+### `core/ordering/`
+
+Implements logic and rules for reordering variables and constraints to produce canonical forms of MIP problems.
+
+### `results_analysis/`
+
+Contains all classes and utilities for post-processing experiment logs and computing performance and structural statistics.
 
 ## Example Workflow
 
-1. **Load a Problem**: The experiment reads a MIP problem from an MPS file.
-2. **Solve Original Problem**: Solve the original problem using Gurobi.
-3. **Permute Variables**: Generate a new problem with permuted variables.
-4. **Solve Permuted Problem**: Solve the permuted problem and compare results with the original.
+1. **Load**
+   Read a MIP problem from an MPS file.
 
-## Logging and Results
+2. **Permute with Granularity**
+   Apply permutations at different levels (e.g. random, block-wise, structure-aware).
 
-Logs are saved in the `experiments/` directory by default. These logs include:
-- Problem details (variables, constraints, objective sense)
-- Solver status and objective values for original and permuted problems
-- Comparison metrics (absolute and relative differences)
+3. **Reorder with Rules**
+   Sort variables or constraints using defined rules (e.g. number of nonzeros, constraint tightness, block size).
+
+4. **Solve and Analyze**
+   Solve the original and transformed problems, and compute variability matrices to capture solver sensitivity.
+
+5. **Postprocess Logs**
+   Extract statistics from experiment logs to evaluate structural and performance differences across transformations.
 
 ## Contributing
 
