@@ -117,9 +117,6 @@ In this command:
 - The output directories will be created as, for example, `./batch_output/granularity_5/` and `./batch_output/granularity_all/` respectively.
 - The script will process all files in the `./mip_lib/` folder. If you wish to run the experiment on only a subset of instances, create a folder with only those instances and provide that folder as the `--input-dir` parameter.
 --------------
-Here's your updated README with the **installation section left unchanged**, and the **workflow revised** to reflect the new process:
-
----
 
 ## Features
 
