@@ -69,7 +69,7 @@ def create_recursive_hierarchical_ordering(input_problem, json_file=None):
 
     """New Recursive Hierarchical Approach"""
     matrix_block_rules = [
-        DecompositionRule(dec_parser=dec_parser),
+        #DecompositionRule(dec_parser=dec_parser),
     ]
 
     matrix_repatable_rules = [
